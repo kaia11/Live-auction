@@ -7,11 +7,250 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  VIEWER
+  ANCHOR
+  ADMIN
+}
+
+enum LiveRoomStatus {
+  DRAFT
+  LIVE
+  PAUSED
+  CLOSED
+}
+
+enum RoomItemQueueStatus {
+  QUEUED
+  UPCOMING
+  ACTIVE
+  FINISHED
+  CANCELLED
+}
+
+enum AuctionSessionStatus {
+  PENDING
+  BIDDING
+  ENDED_SOLD
+  ENDED_UNSOLD
+  CANCELLED
+}
+
+enum BidStatus {
+  ACCEPTED
+  REJECTED
+  DUPLICATED
+  CANCELLED
+}
+
+enum AuctionResultStatus {
+  SOLD
+  UNSOLD
+  CANCELLED
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  CANCELLED
+  CLOSED
+}
+
 model User {
-  id        String   @id @default(cuid())
-  nickname  String
-  avatar    String?
-  role      String   @default("user")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String         @id @default(cuid())
+  nickname          String
+  avatar            String?
+  role              UserRole       @default(VIEWER)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  anchorRooms       LiveRoom[]     @relation("RoomAnchor")
+  createdItems      AuctionItem[]  @relation("ItemCreator")
+  leadingSessions   AuctionSession[] @relation("SessionLeader")
+  bids              Bid[]
+  wonResults        AuctionResult[] @relation("ResultWinner")
+  orders            Order[]        @relation("OrderBuyer")
+  operationLogs     OperationLog[]
+}
+
+model LiveRoom {
+  id                String            @id @default(cuid())
+  title             String
+  coverImage        String?
+  status            LiveRoomStatus    @default(DRAFT)
+  anchorUserId      String
+  currentSessionId  String?           @unique
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  anchorUser        User              @relation("RoomAnchor", fields: [anchorUserId], references: [id])
+  currentSession    AuctionSession?   @relation("RoomCurrentSession", fields: [currentSessionId], references: [id])
+  items             AuctionItem[]
+  queueEntries      RoomItemQueue[]
+  sessions          AuctionSession[]  @relation("RoomSessions")
+  bids              Bid[]
+  results           AuctionResult[]
+  orders            Order[]
+  operationLogs     OperationLog[]
+
+  @@index([anchorUserId])
+  @@index([status])
+}
+
+model AuctionItem {
+  id                       String          @id @default(cuid())
+  roomId                   String
+  title                    String
+  coverImage               String?
+  description              String?         @db.Text
+  startPrice               Decimal         @db.Decimal(10, 2)
+  incrementStep            Decimal         @db.Decimal(10, 2)
+  ceilingPrice             Decimal?        @db.Decimal(10, 2)
+  durationSeconds          Int
+  extensionSeconds         Int             @default(10)
+  extensionTriggerSeconds  Int             @default(10)
+  createdBy                String?
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+  room                     LiveRoom        @relation(fields: [roomId], references: [id])
+  creator                  User?           @relation("ItemCreator", fields: [createdBy], references: [id])
+  queueEntries             RoomItemQueue[]
+  sessions                 AuctionSession[]
+  bids                     Bid[]
+  results                  AuctionResult[]
+  orders                   Order[]
+
+  @@index([roomId, createdAt])
+  @@index([createdBy])
+}
+
+model RoomItemQueue {
+  id                 String               @id @default(cuid())
+  roomId             String
+  itemId             String
+  sortOrder          Int
+  queueStatus        RoomItemQueueStatus  @default(QUEUED)
+  scheduledStartTime DateTime?
+  actualStartTime    DateTime?
+  actualEndTime      DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  room               LiveRoom             @relation(fields: [roomId], references: [id])
+  item               AuctionItem          @relation(fields: [itemId], references: [id])
+  session            AuctionSession?
+
+  @@unique([roomId, itemId])
+  @@unique([roomId, sortOrder])
+  @@index([roomId, queueStatus, sortOrder])
+}
+
+model AuctionSession {
+  id                        String               @id @default(cuid())
+  roomId                    String
+  itemId                    String
+  queueId                   String               @unique
+  startTime                 DateTime?
+  endTime                   DateTime?
+  finalEndTime              DateTime?
+  startPriceSnapshot        Decimal              @db.Decimal(10, 2)
+  incrementStepSnapshot     Decimal              @db.Decimal(10, 2)
+  ceilingPriceSnapshot      Decimal?             @db.Decimal(10, 2)
+  extensionSecondsSnapshot  Int
+  currentPrice              Decimal              @db.Decimal(10, 2)
+  leaderUserId              String?
+  participantCount          Int                  @default(0)
+  status                    AuctionSessionStatus @default(PENDING)
+  version                   Int                  @default(0)
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  room                      LiveRoom             @relation("RoomSessions", fields: [roomId], references: [id])
+  item                      AuctionItem          @relation(fields: [itemId], references: [id])
+  queueEntry                RoomItemQueue        @relation(fields: [queueId], references: [id])
+  leaderUser                User?                @relation("SessionLeader", fields: [leaderUserId], references: [id])
+  bids                      Bid[]
+  result                    AuctionResult?
+  currentForRoom            LiveRoom[]           @relation("RoomCurrentSession")
+
+  @@index([roomId, status])
+  @@index([itemId])
+  @@index([leaderUserId])
+  @@index([endTime])
+}
+
+model Bid {
+  id            String     @id @default(cuid())
+  sessionId     String
+  roomId        String
+  itemId        String
+  userId        String
+  bidPrice      Decimal    @db.Decimal(10, 2)
+  rankAfterBid  Int?
+  requestId     String     @unique
+  status        BidStatus  @default(ACCEPTED)
+  createdAt     DateTime   @default(now())
+  session       AuctionSession @relation(fields: [sessionId], references: [id])
+  room          LiveRoom   @relation(fields: [roomId], references: [id])
+  item          AuctionItem @relation(fields: [itemId], references: [id])
+  user          User       @relation(fields: [userId], references: [id])
+
+  @@index([sessionId, createdAt])
+  @@index([userId, createdAt])
+  @@index([roomId, itemId])
+}
+
+model AuctionResult {
+  id               String              @id @default(cuid())
+  sessionId        String              @unique
+  roomId           String
+  itemId           String
+  winnerUserId     String?
+  finalPrice       Decimal?            @db.Decimal(10, 2)
+  participantCount Int                 @default(0)
+  resultStatus     AuctionResultStatus
+  endedAt          DateTime
+  createdAt        DateTime            @default(now())
+  session          AuctionSession      @relation(fields: [sessionId], references: [id])
+  room             LiveRoom            @relation(fields: [roomId], references: [id])
+  item             AuctionItem         @relation(fields: [itemId], references: [id])
+  winnerUser       User?               @relation("ResultWinner", fields: [winnerUserId], references: [id])
+  order            Order?
+
+  @@index([roomId, endedAt])
+  @@index([winnerUserId])
+}
+
+model Order {
+  id           String       @id @default(cuid())
+  resultId     String       @unique
+  roomId       String
+  itemId       String
+  buyerUserId  String
+  amount       Decimal      @db.Decimal(10, 2)
+  orderStatus  OrderStatus  @default(PENDING_PAYMENT)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  result       AuctionResult @relation(fields: [resultId], references: [id])
+  room         LiveRoom     @relation(fields: [roomId], references: [id])
+  item         AuctionItem  @relation(fields: [itemId], references: [id])
+  buyerUser    User         @relation("OrderBuyer", fields: [buyerUserId], references: [id])
+
+  @@index([buyerUserId, createdAt])
+  @@index([roomId, createdAt])
+}
+
+model OperationLog {
+  id          String    @id @default(cuid())
+  module      String
+  action      String
+  operatorId  String?
+  roomId      String?
+  targetType  String
+  targetId    String
+  content     String?   @db.Text
+  createdAt   DateTime  @default(now())
+  operator    User?     @relation(fields: [operatorId], references: [id])
+  room        LiveRoom? @relation(fields: [roomId], references: [id])
+
+  @@index([module, createdAt])
+  @@index([operatorId])
+  @@index([roomId, createdAt])
+  @@index([targetType, targetId])
 }

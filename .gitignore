@@ -65,3 +65,6 @@ temp/
 
 # local PDFs / competition materials
 *.pdf
+
+# local extracted previews / temp exports
+_pdf_pages/
