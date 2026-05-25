@@ -1,0 +1,148 @@
+.login-page {
+  background-color: #FFFFFF;
+  padding: 22px 28px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.status-bar {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.time {
+  font-family: Inter;
+  font-size: 16px;
+  font-weight: 600;
+  color: #12131A;
+}
+
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.back-btn {
+  font-size: 34px;
+  font-weight: 300;
+  color: #12131A;
+}
+
+.help-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #12131A;
+}
+
+.spacer-48 {
+  height: 48px;
+}
+
+.login-title {
+  font-family: Inter;
+  font-size: 32px;
+  font-weight: 700;
+  color: #12131A;
+}
+
+.input-wrapper {
+  .phone-input, .password-input {
+    display: flex;
+    align-items: center;
+    height: 74px;
+    background-color: #F6F7F9;
+    border-radius: 16px;
+    padding: 0 20px;
+    gap: 14px;
+  }
+
+  .phone-prefix {
+    font-size: 17px;
+    font-weight: 500;
+    color: #12131A;
+  }
+
+  .eye-icon {
+    font-size: 17px;
+    font-weight: 500;
+    color: #12131A;
+  }
+
+  .divider {
+    width: 1px;
+    height: 26px;
+    background-color: #DADDE5;
+  }
+
+  .input-field {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 17px;
+    color: #12131A;
+  }
+
+  .input-field::placeholder {
+    color: #B9BFCC;
+  }
+}
+
+.links-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.link-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #00629B;
+}
+
+.login-btn {
+  height: 64px;
+  background-color: #FF5E8A;
+  border-radius: 18px;
+  border: none;
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-btn:disabled {
+  opacity: 0.7;
+}
+
+.agreement-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.custom-checkbox {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #C4C9D4;
+  background-color: white;
+}
+
+.custom-checkbox.checked {
+  background-color: #FF5E8A;
+  border-color: #FF5E8A;
+}
+
+.agreement-text {
+  flex: 1;
+  font-size: 14px;
+  color: #7A8191;
+  line-height: 1.4;
+}

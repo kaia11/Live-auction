@@ -1,0 +1,179 @@
+.auction-detail-page {
+  background-color: #F7F7FA;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.scrollable-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.bottom-spacer {
+  height: 20px;
+}
+
+.top-nav-bar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background-color: white;
+}
+
+.back-btn {
+  font-size: 32px;
+  font-weight: 300;
+  color: #12131A;
+}
+
+.anchor-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: #12131A;
+}
+
+.nav-actions {
+  display: flex;
+  gap: 20px;
+  color: #4E5566;
+  font-size: 15px;
+}
+
+.image-swiper-area {
+  width: 100%;
+  height: 375px;
+  background-color: white;
+}
+
+.main-image {
+  width: 100%;
+  height: 100%;
+}
+
+.detail-content {
+  padding: 16px;
+}
+
+.price-info-row {
+  display: flex;
+  justify-content: space-around;
+  background-color: white;
+  border-radius: 16px;
+  padding: 20px 12px;
+  margin-bottom: 12px;
+}
+
+.price-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.label {
+  font-size: 13px;
+  color: #7A8191;
+}
+
+.val {
+  font-size: 20px;
+  font-weight: 700;
+  color: #FF5E8A;
+}
+
+.status-row {
+  background-color: white;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.duration-info {
+  color: #4E5566;
+  font-size: 14px;
+}
+
+.status-tag {
+  color: #FF4F7A;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.item-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #12131A;
+  margin-bottom: 10px;
+}
+
+.item-desc {
+  font-size: 15px;
+  color: #4E5566;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.rule-summary-card {
+  background-color: white;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.rule-summary-card h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.rule-summary-card ul {
+  padding-left: 18px;
+}
+
+.rule-summary-card li {
+  font-size: 14px;
+  color: #4E5566;
+  margin-bottom: 6px;
+}
+
+.bottom-op-bar {
+  flex-shrink: 0;
+  height: 64px;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  border-top: 1px solid #E9ECF2;
+  z-index: 100;
+}
+
+.op-buttons-left {
+  display: flex;
+  gap: 10px;
+}
+
+.small-op-btn {
+  width: 52px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background-color: #F6F7F9;
+  font-size: 12px;
+  color: #4E5566;
+}
+
+.bid-main-btn {
+  flex: 1;
+  --background-color: #FF5E8A;
+  --border-radius: 16px;
+  height: 46px;
+  font-size: 17px;
+  font-weight: 700;
+}

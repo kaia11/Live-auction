@@ -1,0 +1,63 @@
+.custom-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.9);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+}
+
+.modal-inner {
+  width: 330px;
+  background-color: white;
+  border-radius: 24px;
+  padding: 28px 24px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.overtaken-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #FF9500;
+  text-align: center;
+}
+
+.new-price-text {
+  font-size: 17px;
+  color: #12131A;
+  text-align: center;
+}
+
+.my-max-text {
+  font-size: 15px;
+  color: #7A8191;
+  text-align: center;
+}
+
+.btn-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.close-btn {
+  flex: 1;
+  --background-color: #F6F7F9;
+  --text-color: #7A8191;
+  height: 50px;
+  border-radius: 14px;
+}
+
+.bid-again-btn {
+  flex: 1;
+  --background-color: #FF5E8A;
+  height: 50px;
+  border-radius: 14px;
+}

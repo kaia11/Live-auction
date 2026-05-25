@@ -1,0 +1,161 @@
+.live-rooms-page {
+  background-color: #F7F7FA;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.scrollable-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.bottom-spacer {
+  height: 20px;
+}
+
+.status-bar {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.time {
+  font-size: 16px;
+  font-weight: 600;
+  color: #12131A;
+}
+
+.top-search-section {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.back-btn {
+  font-size: 34px;
+  font-weight: 300;
+  color: #12131A;
+}
+
+.search-bar-wrapper {
+  flex: 1;
+}
+
+.custom-search {
+  border-radius: 18px !important;
+  background-color: white !important;
+  box-shadow: 0 8px 20px rgba(187, 194, 209, 0.1);
+}
+
+.custom-tabs {
+  --active-line-color: #FF5E8A;
+  --title-font-size: 15px;
+}
+
+.rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.room-card-wrapper {
+  cursor: pointer;
+}
+
+.room-card {
+  border-radius: 24px;
+  overflow: hidden;
+  padding: 0;
+}
+
+.room-cover {
+  position: relative;
+  width: 100%;
+  height: 220px;
+}
+
+.room-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.live-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background-color: #FF4F7A;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.current-item-thumb {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  border: 2px solid white;
+  overflow: hidden;
+}
+
+.room-info {
+  padding: 14px 16px;
+}
+
+.room-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #12131A;
+  margin-bottom: 8px;
+}
+
+.room-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #7A8191;
+}
+
+.bottom-tab-bar {
+  flex-shrink: 0;
+  height: 56px;
+  background-color: white;
+  display: flex;
+  border-top: 1px solid #E9ECF2;
+  z-index: 100;
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: #7A8191;
+}
+
+.tab-item.active {
+  color: #FF5E8A;
+}
+
+.tab-icon {
+  font-size: 20px;
+}
+
+.tab-text {
+  font-size: 11px;
+}

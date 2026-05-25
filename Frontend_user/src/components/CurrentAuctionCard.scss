@@ -1,0 +1,146 @@
+.current-auction-card {
+  position: absolute;
+  top: 100px;
+  left: 18px;
+  right: 18px;
+  background-color: rgba(255,255,255,0.94);
+  border-radius: 20px;
+  padding: 14px;
+  z-index: 15;
+  backdrop-filter: blur(10px);
+}
+
+.card-top-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.item-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  background-color: #eee;
+}
+
+.item-info-text {
+  flex: 1;
+}
+
+.item-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #12131A;
+  margin-bottom: 6px;
+}
+
+.price-countdown-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.current-price {
+  font-size: 20px;
+  font-weight: 700;
+  color: #FF5E8A;
+}
+
+.countdown-text {
+  font-size: 14px;
+  color: #FF9500;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #4E5566;
+  cursor: pointer;
+}
+
+.ranking-area {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 8px 0;
+  border-top: 1px solid #F0F0F0;
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.top3-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rank-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rank-tag {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rank-1 {
+  background-color: #F4A900;
+}
+
+.rank-2 {
+  background-color: #B0B8C4;
+}
+
+.rank-3 {
+  background-color: #D4936A;
+}
+
+.rank-name {
+  font-size: 13px;
+  color: #4E5566;
+}
+
+.my-status-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+.my-rank, .my-price {
+  font-size: 13px;
+  color: #4E5566;
+}
+
+.card-bottom-btns {
+  display: flex;
+  gap: 10px;
+}
+
+.detail-btn {
+  flex: 1;
+  --background-color: #F6F7F9;
+  --text-color: #4E5566;
+}
+
+.bid-btn {
+  flex: 1;
+  --background-color: #FF5E8A;
+}

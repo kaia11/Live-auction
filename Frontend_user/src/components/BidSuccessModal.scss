@@ -1,0 +1,54 @@
+.custom-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.85);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+}
+
+.modal-inner {
+  width: 320px;
+  background-color: white;
+  border-radius: 24px;
+  padding: 30px 24px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.success-icon {
+  font-size: 64px;
+}
+
+.success-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #12131A;
+}
+
+.success-price {
+  font-size: 20px;
+  font-weight: 700;
+  color: #FF5E8A;
+}
+
+.is-leading-text {
+  font-size: 15px;
+  color: #4E5566;
+}
+
+.back-btn {
+  --background-color: #FF5E8A;
+  height: 52px;
+  border-radius: 16px;
+  font-size: 17px;
+  font-weight: 700;
+  margin-top: 10px;
+}
