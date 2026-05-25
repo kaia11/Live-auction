@@ -2756,139 +2756,384 @@
                 },
                 {
                   "type": "frame",
-                  "id": "Y5KDx",
+                  "id": "bzK36",
                   "width": "fill_container",
                   "layout": "vertical",
                   "gap": 12,
                   "children": [
                     {
                       "type": "frame",
-                      "id": "Izj23",
+                      "id": "sEQJ8",
                       "width": "fill_container",
                       "fill": "#FFF2F6",
-                      "cornerRadius": 14,
+                      "cornerRadius": 16,
                       "stroke": {
                         "thickness": 1,
-                        "fill": "#FFC1D1"
+                        "fill": "#FFC5D2"
                       },
+                      "layout": "vertical",
                       "gap": 10,
-                      "padding": 10,
+                      "padding": 12,
                       "children": [
                         {
                           "type": "frame",
-                          "id": "SIU2j",
-                          "width": 26,
-                          "layout": "vertical",
-                          "gap": 6,
-                          "alignItems": "center",
+                          "id": "bzkrV",
+                          "width": "fill_container",
+                          "gap": 10,
                           "children": [
                             {
-                              "type": "text",
-                              "id": "Q9OiR",
-                              "fill": "#707788",
-                              "content": "1",
-                              "fontFamily": "Inter",
-                              "fontSize": 14,
-                              "fontWeight": "600"
+                              "type": "frame",
+                              "id": "SPJU2",
+                              "width": 20,
+                              "layout": "vertical",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "BnJpc",
+                                  "fill": "#697181",
+                                  "content": "1",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "f47Ooa",
+                              "metadata": {
+                                "type": "unsplash",
+                                "username": "ymoran",
+                                "link": "https://unsplash.com/@ymoran",
+                                "author": "Y M"
+                              },
+                              "clip": true,
+                              "width": 58,
+                              "height": 58,
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1746889028661-94f251df190c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk2ODI2Mzh8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              },
+                              "cornerRadius": 12
+                            },
+                            {
+                              "type": "frame",
+                              "id": "D2UTZz",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 7,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "S0Z9Ye",
+                                  "fill": "#13141A",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "金镶玉平安扣和田玉吊坠项链首饰",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "qABPw",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "jEhnw",
+                                      "fill": "#FF4F7A",
+                                      "cornerRadius": 10,
+                                      "padding": [
+                                        3,
+                                        8
+                                      ],
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "vMYz1",
+                                          "fill": "#FFFFFF",
+                                          "content": "竞拍中",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 10,
+                                          "fontWeight": "700"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "fedNO",
+                                      "fill": "#FF3F65",
+                                      "content": "¥850",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 13,
+                                      "fontWeight": "800"
+                                    }
+                                  ]
+                                }
+                              ]
                             }
                           ]
                         },
                         {
-                          "type": "frame",
-                          "id": "q4ztSd",
-                          "metadata": {
-                            "type": "unsplash",
-                            "username": "dreamwatcherx",
-                            "link": "https://unsplash.com/@dreamwatcherx",
-                            "author": "Free"
-                          },
-                          "clip": true,
-                          "width": 54,
-                          "height": 54,
-                          "fill": {
-                            "type": "image",
-                            "enabled": true,
-                            "url": "https://images.unsplash.com/photo-1611583027838-515a1087afdb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk0MzUzMzV8&ixlib=rb-4.1.0&q=80&w=1080",
-                            "mode": "fill"
-                          },
-                          "cornerRadius": 10
+                          "type": "text",
+                          "id": "HnK3S",
+                          "fill": "#A0A8B6",
+                          "content": "当前卡片点击进入详情",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "500"
                         },
                         {
                           "type": "frame",
-                          "id": "QJWC4",
+                          "id": "col7n",
                           "width": "fill_container",
-                          "layout": "vertical",
-                          "gap": 6,
+                          "gap": 10,
                           "children": [
                             {
-                              "type": "text",
-                              "id": "ad750",
-                              "fill": "#12131A",
-                              "textGrowth": "fixed-width",
-                              "width": "fill_container",
-                              "content": "金镶玉平安扣和田玉吊坠项链首饰",
-                              "fontFamily": "Inter",
-                              "fontSize": 12,
-                              "fontWeight": "500"
-                            },
-                            {
                               "type": "frame",
-                              "id": "KE1IX",
-                              "gap": 8,
+                              "id": "wOSw5",
+                              "width": "fill_container",
+                              "height": 34,
+                              "fill": "#F4F6FA",
+                              "cornerRadius": 17,
+                              "justifyContent": "center",
                               "alignItems": "center",
                               "children": [
                                 {
+                                  "type": "text",
+                                  "id": "Ssoxw",
+                                  "fill": "#5D6678",
+                                  "content": "详情",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "T1YDD",
+                              "width": "fill_container",
+                              "height": 34,
+                              "fill": {
+                                "type": "gradient",
+                                "gradientType": "linear",
+                                "enabled": true,
+                                "rotation": 90,
+                                "size": {
+                                  "height": 1
+                                },
+                                "colors": [
+                                  {
+                                    "color": "#FF6A8D",
+                                    "position": 0
+                                  },
+                                  {
+                                    "color": "#FF3F5E",
+                                    "position": 1
+                                  }
+                                ]
+                              },
+                              "cornerRadius": 17,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "AfvgH",
+                                  "fill": "#FFFFFF",
+                                  "content": "立即出价",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "nzVul",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 16,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#E9ECF2"
+                      },
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 12,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "JRw0d",
+                          "width": "fill_container",
+                          "gap": 10,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "uTHrE",
+                              "width": 20,
+                              "layout": "vertical",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "kVXfo",
+                                  "fill": "#697181",
+                                  "content": "2",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "P8H6r9",
+                              "metadata": {
+                                "type": "unsplash",
+                                "username": "thehouseofthewitch",
+                                "link": "https://unsplash.com/@thehouseofthewitch",
+                                "author": "The Witch's House"
+                              },
+                              "clip": true,
+                              "width": 58,
+                              "height": 58,
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1697026671861-d304be0fdb2e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk2ODI2Mzl8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              },
+                              "cornerRadius": 12
+                            },
+                            {
+                              "type": "frame",
+                              "id": "Dgbrx",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 7,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "M5H6E",
+                                  "fill": "#13141A",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "冰种飘绿平安无事牌吊坠",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "600"
+                                },
+                                {
                                   "type": "frame",
-                                  "id": "p4WGyW",
+                                  "id": "y6lAtn",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "F3fGg",
+                                      "fill": "#FFF1C7",
+                                      "cornerRadius": 10,
+                                      "padding": [
+                                        3,
+                                        8
+                                      ],
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "LwH8I",
+                                          "fill": "#A97A00",
+                                          "content": "即将开始",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 10,
+                                          "fontWeight": "700"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "HXFQh",
+                                      "fill": "#13141A",
+                                      "content": "¥1200",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 13,
+                                      "fontWeight": "800"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "mCIh5",
+                          "fill": "#A0A8B6",
+                          "content": "卡片点击进入详情",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ibLJm",
+                          "width": "fill_container",
+                          "gap": 10,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "kTHV9",
+                              "width": "fill_container",
+                              "height": 34,
+                              "fill": "#F4F6FA",
+                              "cornerRadius": 17,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "DVhlo",
+                                  "fill": "#5D6678",
+                                  "content": "详情",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "nCBL0",
+                              "width": "fill_container",
+                              "height": 34,
+                              "fill": "#FFEFF3",
+                              "cornerRadius": 17,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "B17R3q",
                                   "fill": "#FF4F7A",
-                                  "cornerRadius": 10,
-                                  "padding": [
-                                    3,
-                                    8
-                                  ],
-                                  "children": [
-                                    {
-                                      "type": "text",
-                                      "id": "MFFvG",
-                                      "fill": "#FFFFFF",
-                                      "content": "竞拍中",
-                                      "fontFamily": "Inter",
-                                      "fontSize": 10,
-                                      "fontWeight": "600"
-                                    }
-                                  ]
-                                },
-                                {
-                                  "type": "text",
-                                  "id": "i3ov7",
-                                  "fill": "#FF3B63",
-                                  "content": "¥850",
+                                  "content": "查看倒计时",
                                   "fontFamily": "Inter",
-                                  "fontSize": 13,
+                                  "fontSize": 12,
                                   "fontWeight": "700"
                                 }
                               ]
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "j4t2pD",
-                          "width": 64,
-                          "height": 28,
-                          "fill": "#FF5E8A",
-                          "cornerRadius": 14,
-                          "justifyContent": "center",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "vdZeq",
-                              "fill": "#FFFFFF",
-                              "content": "立即出价",
-                              "fontFamily": "Inter",
-                              "fontSize": 11,
-                              "fontWeight": "600"
                             }
                           ]
                         }
@@ -2896,132 +3141,179 @@
                     },
                     {
                       "type": "frame",
-                      "id": "DqlzT",
+                      "id": "frrQe",
                       "width": "fill_container",
                       "fill": "#FFFFFF",
-                      "cornerRadius": 14,
+                      "cornerRadius": 16,
                       "stroke": {
                         "thickness": 1,
                         "fill": "#E9ECF2"
                       },
+                      "layout": "vertical",
                       "gap": 10,
-                      "padding": 10,
+                      "padding": 12,
                       "children": [
                         {
                           "type": "frame",
-                          "id": "Lf4QY",
-                          "width": 26,
-                          "layout": "vertical",
-                          "gap": 6,
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "kPxGD",
-                              "fill": "#707788",
-                              "content": "2",
-                              "fontFamily": "Inter",
-                              "fontSize": 14,
-                              "fontWeight": "600"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "xptBN",
-                          "metadata": {
-                            "type": "unsplash",
-                            "username": "cyanngala",
-                            "link": "https://unsplash.com/@cyanngala",
-                            "author": "cyann gala"
-                          },
-                          "clip": true,
-                          "width": 54,
-                          "height": 54,
-                          "fill": {
-                            "type": "image",
-                            "enabled": true,
-                            "url": "https://images.unsplash.com/photo-1775147034263-a7e81920cc1f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk0MzUzMzZ8&ixlib=rb-4.1.0&q=80&w=1080",
-                            "mode": "fill"
-                          },
-                          "cornerRadius": 10
-                        },
-                        {
-                          "type": "frame",
-                          "id": "YPyMe",
+                          "id": "hxObo",
                           "width": "fill_container",
-                          "layout": "vertical",
-                          "gap": 6,
+                          "gap": 10,
                           "children": [
-                            {
-                              "type": "text",
-                              "id": "X8XrRh",
-                              "fill": "#12131A",
-                              "textGrowth": "fixed-width",
-                              "width": "fill_container",
-                              "content": "金镶玉平安扣和田玉吊坠项链首饰",
-                              "fontFamily": "Inter",
-                              "fontSize": 12,
-                              "fontWeight": "500"
-                            },
                             {
                               "type": "frame",
-                              "id": "SS20s",
-                              "gap": 8,
+                              "id": "EPRPD",
+                              "width": 20,
+                              "layout": "vertical",
+                              "gap": 4,
                               "alignItems": "center",
                               "children": [
                                 {
-                                  "type": "frame",
-                                  "id": "OwbCp",
-                                  "fill": "#FCE7A9",
-                                  "cornerRadius": 10,
-                                  "padding": [
-                                    3,
-                                    8
-                                  ],
-                                  "children": [
-                                    {
-                                      "type": "text",
-                                      "id": "YlFYz",
-                                      "fill": "#9A6D00",
-                                      "content": "即将开始",
-                                      "fontFamily": "Inter",
-                                      "fontSize": 10,
-                                      "fontWeight": "600"
-                                    }
-                                  ]
-                                },
+                                  "type": "text",
+                                  "id": "xnIDZ",
+                                  "fill": "#697181",
+                                  "content": "3",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "j5tqYI",
+                              "metadata": {
+                                "type": "unsplash",
+                                "username": "coppertistwu",
+                                "link": "https://unsplash.com/@coppertistwu",
+                                "author": "COPPERTIST WU"
+                              },
+                              "clip": true,
+                              "width": 58,
+                              "height": 58,
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1679454597654-1689b5b68b87?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk2ODI2Mzl8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              },
+                              "cornerRadius": 12
+                            },
+                            {
+                              "type": "frame",
+                              "id": "TDXoP",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 7,
+                              "children": [
                                 {
                                   "type": "text",
-                                  "id": "OA9rM",
-                                  "fill": "#12131A",
-                                  "content": "¥1200",
+                                  "id": "xzgxI",
+                                  "fill": "#13141A",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "和田玉玉佛吊坠件",
                                   "fontFamily": "Inter",
-                                  "fontSize": 13,
-                                  "fontWeight": "700"
+                                  "fontSize": 12,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "Vq8dn",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "JKNYM",
+                                      "fill": "#F2F4F8",
+                                      "cornerRadius": 10,
+                                      "padding": [
+                                        3,
+                                        8
+                                      ],
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "Tqn08",
+                                          "fill": "#738094",
+                                          "content": "已流拍",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 10,
+                                          "fontWeight": "700"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "mEXV9",
+                                      "fill": "#13141A",
+                                      "content": "¥900",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 13,
+                                      "fontWeight": "800"
+                                    }
+                                  ]
                                 }
                               ]
                             }
                           ]
                         },
                         {
+                          "type": "text",
+                          "id": "K0lzE4",
+                          "fill": "#A0A8B6",
+                          "content": "卡片点击进入详情",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        },
+                        {
                           "type": "frame",
-                          "id": "VMKTx",
-                          "width": 64,
-                          "height": 28,
-                          "fill": "#F3F5F9",
-                          "cornerRadius": 14,
-                          "justifyContent": "center",
-                          "alignItems": "center",
+                          "id": "SkdRf",
+                          "width": "fill_container",
+                          "gap": 10,
                           "children": [
                             {
-                              "type": "text",
-                              "id": "xCtiX",
-                              "fill": "#7A8292",
-                              "content": "去查看",
-                              "fontFamily": "Inter",
-                              "fontSize": 11,
-                              "fontWeight": "600"
+                              "type": "frame",
+                              "id": "wYZKW",
+                              "width": "fill_container",
+                              "height": 34,
+                              "fill": "#F4F6FA",
+                              "cornerRadius": 17,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "WPbqa",
+                                  "fill": "#5D6678",
+                                  "content": "详情",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "qQKLy",
+                              "width": "fill_container",
+                              "height": 34,
+                              "fill": "#FFEFF3",
+                              "cornerRadius": 17,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "d71U6O",
+                                  "fill": "#FF4F7A",
+                                  "content": "查看结果",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                }
+                              ]
                             }
                           ]
                         }
@@ -3029,132 +3321,179 @@
                     },
                     {
                       "type": "frame",
-                      "id": "gPivC",
+                      "id": "rtprO",
                       "width": "fill_container",
                       "fill": "#FFFFFF",
-                      "cornerRadius": 14,
+                      "cornerRadius": 16,
                       "stroke": {
                         "thickness": 1,
                         "fill": "#E9ECF2"
                       },
+                      "layout": "vertical",
                       "gap": 10,
-                      "padding": 10,
+                      "padding": 12,
                       "children": [
                         {
                           "type": "frame",
-                          "id": "C2Faci",
-                          "width": 26,
-                          "layout": "vertical",
-                          "gap": 6,
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "Y5PtYg",
-                              "fill": "#707788",
-                              "content": "3",
-                              "fontFamily": "Inter",
-                              "fontSize": 14,
-                              "fontWeight": "600"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "iwTbh",
-                          "metadata": {
-                            "type": "unsplash",
-                            "username": "brookebalentine",
-                            "link": "https://unsplash.com/@brookebalentine",
-                            "author": "Brooke Balentine"
-                          },
-                          "clip": true,
-                          "width": 54,
-                          "height": 54,
-                          "fill": {
-                            "type": "image",
-                            "enabled": true,
-                            "url": "https://images.unsplash.com/photo-1760411069721-60d7c378b697?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk0MzUzMzd8&ixlib=rb-4.1.0&q=80&w=1080",
-                            "mode": "fill"
-                          },
-                          "cornerRadius": 10
-                        },
-                        {
-                          "type": "frame",
-                          "id": "RaQcr",
+                          "id": "Vp1Ph",
                           "width": "fill_container",
-                          "layout": "vertical",
-                          "gap": 6,
+                          "gap": 10,
                           "children": [
-                            {
-                              "type": "text",
-                              "id": "DN3C8",
-                              "fill": "#12131A",
-                              "textGrowth": "fixed-width",
-                              "width": "fill_container",
-                              "content": "和田玉无事牌挂件",
-                              "fontFamily": "Inter",
-                              "fontSize": 12,
-                              "fontWeight": "500"
-                            },
                             {
                               "type": "frame",
-                              "id": "H07O5s",
-                              "gap": 8,
+                              "id": "F4GgB",
+                              "width": 20,
+                              "layout": "vertical",
+                              "gap": 4,
                               "alignItems": "center",
                               "children": [
                                 {
-                                  "type": "frame",
-                                  "id": "nfOVB",
-                                  "fill": "#F3F5F9",
-                                  "cornerRadius": 10,
-                                  "padding": [
-                                    3,
-                                    8
-                                  ],
-                                  "children": [
-                                    {
-                                      "type": "text",
-                                      "id": "CpAK3",
-                                      "fill": "#7A8292",
-                                      "content": "竞拍结束-未成交",
-                                      "fontFamily": "Inter",
-                                      "fontSize": 10,
-                                      "fontWeight": "600"
-                                    }
-                                  ]
-                                },
+                                  "type": "text",
+                                  "id": "vHr1h",
+                                  "fill": "#697181",
+                                  "content": "4",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "DTdsc",
+                              "metadata": {
+                                "type": "unsplash",
+                                "username": "thehouseofthewitch",
+                                "link": "https://unsplash.com/@thehouseofthewitch",
+                                "author": "The Witch's House"
+                              },
+                              "clip": true,
+                              "width": 58,
+                              "height": 58,
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1697026672131-7d60cd07b17c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk2ODI2NDB8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              },
+                              "cornerRadius": 12
+                            },
+                            {
+                              "type": "frame",
+                              "id": "TFxj8",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 7,
+                              "children": [
                                 {
                                   "type": "text",
-                                  "id": "eUHbe",
-                                  "fill": "#12131A",
-                                  "content": "¥900",
+                                  "id": "k4xHx",
+                                  "fill": "#13141A",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "俄罗斯碧玉镶银戒指",
                                   "fontFamily": "Inter",
-                                  "fontSize": 13,
-                                  "fontWeight": "700"
+                                  "fontSize": 12,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "xV06n",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "erVaE",
+                                      "fill": "#E4F8EB",
+                                      "cornerRadius": 10,
+                                      "padding": [
+                                        3,
+                                        8
+                                      ],
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "kCfhC",
+                                          "fill": "#21935B",
+                                          "content": "已成交",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 10,
+                                          "fontWeight": "700"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "Qt7OW",
+                                      "fill": "#13141A",
+                                      "content": "¥2200",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 13,
+                                      "fontWeight": "800"
+                                    }
+                                  ]
                                 }
                               ]
                             }
                           ]
                         },
                         {
+                          "type": "text",
+                          "id": "T4k4os",
+                          "fill": "#A0A8B6",
+                          "content": "卡片点击进入详情",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        },
+                        {
                           "type": "frame",
-                          "id": "ycBVh",
-                          "width": 64,
-                          "height": 28,
-                          "fill": "#F3F5F9",
-                          "cornerRadius": 14,
-                          "justifyContent": "center",
-                          "alignItems": "center",
+                          "id": "FnSfx",
+                          "width": "fill_container",
+                          "gap": 10,
                           "children": [
                             {
-                              "type": "text",
-                              "id": "wJrC0",
-                              "fill": "#7A8292",
-                              "content": "看结果",
-                              "fontFamily": "Inter",
-                              "fontSize": 11,
-                              "fontWeight": "600"
+                              "type": "frame",
+                              "id": "fYnaD",
+                              "width": "fill_container",
+                              "height": 34,
+                              "fill": "#F4F6FA",
+                              "cornerRadius": 17,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "pGf4Q",
+                                  "fill": "#5D6678",
+                                  "content": "详情",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "r1LE9",
+                              "width": "fill_container",
+                              "height": 34,
+                              "fill": "#FFEFF3",
+                              "cornerRadius": 17,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "lghQt",
+                                  "fill": "#FF4F7A",
+                                  "content": "查看结果",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                }
+                              ]
                             }
                           ]
                         }
@@ -3162,265 +3501,179 @@
                     },
                     {
                       "type": "frame",
-                      "id": "y0OBE",
+                      "id": "KZoiT",
                       "width": "fill_container",
                       "fill": "#FFFFFF",
-                      "cornerRadius": 14,
+                      "cornerRadius": 16,
                       "stroke": {
                         "thickness": 1,
                         "fill": "#E9ECF2"
                       },
+                      "layout": "vertical",
                       "gap": 10,
-                      "padding": 10,
+                      "padding": 12,
                       "children": [
                         {
                           "type": "frame",
-                          "id": "a9YK9W",
-                          "width": 26,
-                          "layout": "vertical",
-                          "gap": 6,
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "zrbq4",
-                              "fill": "#707788",
-                              "content": "4",
-                              "fontFamily": "Inter",
-                              "fontSize": 14,
-                              "fontWeight": "600"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "REgut",
-                          "metadata": {
-                            "type": "unsplash",
-                            "username": "zulfugarkarimov",
-                            "link": "https://unsplash.com/@zulfugarkarimov",
-                            "author": "Zulfugar Karimov"
-                          },
-                          "clip": true,
-                          "width": 54,
-                          "height": 54,
-                          "fill": {
-                            "type": "image",
-                            "enabled": true,
-                            "url": "https://images.unsplash.com/photo-1762337369857-ddf1e9932a0e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk0MzUzMzh8&ixlib=rb-4.1.0&q=80&w=1080",
-                            "mode": "fill"
-                          },
-                          "cornerRadius": 10
-                        },
-                        {
-                          "type": "frame",
-                          "id": "kIztw",
+                          "id": "F728gN",
                           "width": "fill_container",
-                          "layout": "vertical",
-                          "gap": 6,
+                          "gap": 10,
                           "children": [
-                            {
-                              "type": "text",
-                              "id": "nvKAb",
-                              "fill": "#12131A",
-                              "textGrowth": "fixed-width",
-                              "width": "fill_container",
-                              "content": "翡翠蛋面戒指",
-                              "fontFamily": "Inter",
-                              "fontSize": 12,
-                              "fontWeight": "500"
-                            },
                             {
                               "type": "frame",
-                              "id": "U2kZX",
-                              "gap": 8,
+                              "id": "x1TDq",
+                              "width": 20,
+                              "layout": "vertical",
+                              "gap": 4,
                               "alignItems": "center",
                               "children": [
                                 {
-                                  "type": "frame",
-                                  "id": "VH2qN",
-                                  "fill": "#DFF6E8",
-                                  "cornerRadius": 10,
-                                  "padding": [
-                                    3,
-                                    8
-                                  ],
-                                  "children": [
-                                    {
-                                      "type": "text",
-                                      "id": "vPFl4",
-                                      "fill": "#29985F",
-                                      "content": "竞拍结束-成交",
-                                      "fontFamily": "Inter",
-                                      "fontSize": 10,
-                                      "fontWeight": "600"
-                                    }
-                                  ]
-                                },
+                                  "type": "text",
+                                  "id": "AXGL5",
+                                  "fill": "#697181",
+                                  "content": "5",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "GKfHd",
+                              "metadata": {
+                                "type": "unsplash",
+                                "username": "eino_art",
+                                "link": "https://unsplash.com/@eino_art",
+                                "author": "Eino"
+                              },
+                              "clip": true,
+                              "width": 58,
+                              "height": 58,
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1726825990567-73f6d3597cdb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk2ODI2NDF8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              },
+                              "cornerRadius": 12
+                            },
+                            {
+                              "type": "frame",
+                              "id": "wKO2B",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 7,
+                              "children": [
                                 {
                                   "type": "text",
-                                  "id": "w5CTP2",
-                                  "fill": "#12131A",
-                                  "content": "¥2200",
+                                  "id": "zJaRu",
+                                  "fill": "#13141A",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "日本手工复古胸针",
                                   "fontFamily": "Inter",
-                                  "fontSize": 13,
-                                  "fontWeight": "700"
+                                  "fontSize": 12,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "s4ZqDh",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "MWybv",
+                                      "fill": "#F2F4F8",
+                                      "cornerRadius": 10,
+                                      "padding": [
+                                        3,
+                                        8
+                                      ],
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "qSzPc",
+                                          "fill": "#738094",
+                                          "content": "结束",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 10,
+                                          "fontWeight": "700"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "oE9Wz",
+                                      "fill": "#13141A",
+                                      "content": "¥5000000",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 13,
+                                      "fontWeight": "800"
+                                    }
+                                  ]
                                 }
                               ]
                             }
                           ]
                         },
                         {
-                          "type": "frame",
-                          "id": "xXCFj",
-                          "width": 64,
-                          "height": 28,
-                          "fill": "#F3F5F9",
-                          "cornerRadius": 14,
-                          "justifyContent": "center",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "rXaFH",
-                              "fill": "#7A8292",
-                              "content": "看结果",
-                              "fontFamily": "Inter",
-                              "fontSize": 11,
-                              "fontWeight": "600"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "RKKua",
-                      "width": "fill_container",
-                      "fill": "#FFFFFF",
-                      "cornerRadius": 14,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#E9ECF2"
-                      },
-                      "gap": 10,
-                      "padding": 10,
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "AbCI9",
-                          "width": 26,
-                          "layout": "vertical",
-                          "gap": 6,
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "DubFC",
-                              "fill": "#707788",
-                              "content": "5",
-                              "fontFamily": "Inter",
-                              "fontSize": 14,
-                              "fontWeight": "600"
-                            }
-                          ]
+                          "type": "text",
+                          "id": "bihYf",
+                          "fill": "#A0A8B6",
+                          "content": "卡片点击进入详情",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "500"
                         },
                         {
                           "type": "frame",
-                          "id": "cThMb",
-                          "metadata": {
-                            "type": "unsplash",
-                            "username": "sabrinnaringquist",
-                            "link": "https://unsplash.com/@sabrinnaringquist",
-                            "author": "Sabrianna"
-                          },
-                          "clip": true,
-                          "width": 54,
-                          "height": 54,
-                          "fill": {
-                            "type": "image",
-                            "enabled": true,
-                            "url": "https://images.unsplash.com/photo-1598560917505-59a3ad559071?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk0MzUzMzl8&ixlib=rb-4.1.0&q=80&w=1080",
-                            "mode": "fill"
-                          },
-                          "cornerRadius": 10
-                        },
-                        {
-                          "type": "frame",
-                          "id": "aJVQw",
+                          "id": "w7tQFx",
                           "width": "fill_container",
-                          "layout": "vertical",
-                          "gap": 6,
+                          "gap": 10,
                           "children": [
-                            {
-                              "type": "text",
-                              "id": "s72zW",
-                              "fill": "#12131A",
-                              "textGrowth": "fixed-width",
-                              "width": "fill_container",
-                              "content": "日本手工花束陶瓷盘",
-                              "fontFamily": "Inter",
-                              "fontSize": 12,
-                              "fontWeight": "500"
-                            },
                             {
                               "type": "frame",
-                              "id": "ujWZU",
-                              "gap": 8,
+                              "id": "WOV2o",
+                              "width": "fill_container",
+                              "height": 34,
+                              "fill": "#F4F6FA",
+                              "cornerRadius": 17,
+                              "justifyContent": "center",
                               "alignItems": "center",
                               "children": [
                                 {
-                                  "type": "frame",
-                                  "id": "kP8Mq",
-                                  "fill": "#F3F5F9",
-                                  "cornerRadius": 10,
-                                  "padding": [
-                                    3,
-                                    8
-                                  ],
-                                  "children": [
-                                    {
-                                      "type": "text",
-                                      "id": "ebpML",
-                                      "fill": "#7A8292",
-                                      "content": "竞拍结束",
-                                      "fontFamily": "Inter",
-                                      "fontSize": 10,
-                                      "fontWeight": "600"
-                                    }
-                                  ]
-                                },
-                                {
                                   "type": "text",
-                                  "id": "tiDVG",
-                                  "fill": "#12131A",
-                                  "content": "¥5000000",
+                                  "id": "Fim8l",
+                                  "fill": "#5D6678",
+                                  "content": "详情",
                                   "fontFamily": "Inter",
-                                  "fontSize": 13,
+                                  "fontSize": 12,
                                   "fontWeight": "700"
                                 }
                               ]
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "XvfEU",
-                          "width": 64,
-                          "height": 28,
-                          "fill": "#F3F5F9",
-                          "cornerRadius": 14,
-                          "justifyContent": "center",
-                          "alignItems": "center",
-                          "children": [
+                            },
                             {
-                              "type": "text",
-                              "id": "U3qDiv",
-                              "fill": "#7A8292",
-                              "content": "结束",
-                              "fontFamily": "Inter",
-                              "fontSize": 11,
-                              "fontWeight": "600"
+                              "type": "frame",
+                              "id": "b7gAsK",
+                              "width": "fill_container",
+                              "height": 34,
+                              "fill": "#FFEFF3",
+                              "cornerRadius": 17,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "iUuTm",
+                                  "fill": "#FF4F7A",
+                                  "content": "查看结果",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "700"
+                                }
+                              ]
                             }
                           ]
                         }
@@ -4732,7 +4985,7 @@
           "fill": {
             "type": "image",
             "enabled": true,
-            "url": "./images/generated-1779437166813.png",
+            "url": "images/generated-1779437166813.png",
             "mode": "fill"
           },
           "layout": "none"
@@ -5534,6 +5787,877 @@
                   "fontFamily": "Inter",
                   "fontSize": 20,
                   "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "AOeiz",
+      "x": 4950,
+      "y": 0,
+      "name": "12 拍品详情页",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "#FFFFFF",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "B0DfCH",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 768,
+          "fill": "#FFFFFF",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "K9yanW",
+              "width": "fill_container",
+              "padding": [
+                12,
+                16,
+                0,
+                16
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "KhA3b",
+                  "fill": "#12131A",
+                  "content": "11:45",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "frame",
+                  "id": "z4wjM",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "av2kr",
+                      "fill": "#12131A",
+                      "content": "4G",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "NSW7D",
+                      "fill": "#12131A",
+                      "content": "4G",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "S4mP0I",
+                      "fill": "#F6B11A",
+                      "content": "75",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "700"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "FsXek",
+              "width": "fill_container",
+              "padding": [
+                16,
+                16,
+                14,
+                16
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "voKaH",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "VrpVL",
+                      "fill": "#12131A",
+                      "content": "‹",
+                      "fontFamily": "Inter",
+                      "fontSize": 34,
+                      "fontWeight": "300"
+                    },
+                    {
+                      "type": "ellipse",
+                      "id": "juInq",
+                      "metadata": {
+                        "type": "unsplash",
+                        "username": "vinstratton_",
+                        "link": "https://unsplash.com/@vinstratton_",
+                        "author": "Vin Stratton"
+                      },
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1529446486093-51f0efc1178b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk2ODI2NDJ8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      },
+                      "width": 44,
+                      "height": 44
+                    },
+                    {
+                      "type": "text",
+                      "id": "iGc2Q",
+                      "fill": "#12131A",
+                      "content": "玉之典珠宝冰姐",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "700"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "dmwZ9",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "eDeOG",
+                      "width": 86,
+                      "height": 38,
+                      "fill": "#20131A",
+                      "cornerRadius": 19,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#5B2C39"
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "x0SFy1",
+                          "fill": "#D84B67",
+                          "content": "关注",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "UjsST",
+                      "width": 42,
+                      "height": 42,
+                      "fill": "#141519",
+                      "cornerRadius": 21,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "LhDem",
+                          "fill": "#9B9FAB",
+                          "content": "↗",
+                          "fontFamily": "Inter",
+                          "fontSize": 20,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f1a6c",
+              "width": "fill_container",
+              "height": 356,
+              "fill": "#101114",
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "R7AUq",
+                  "metadata": {
+                    "type": "unsplash",
+                    "username": "jonathanborba",
+                    "link": "https://unsplash.com/@jonathanborba",
+                    "author": "Jonathan Borba"
+                  },
+                  "clip": true,
+                  "width": "fill_container",
+                  "height": 296,
+                  "fill": {
+                    "type": "image",
+                    "enabled": true,
+                    "url": "https://images.unsplash.com/photo-1718915871758-d3b38aea25f2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk2ODI3ODZ8&ixlib=rb-4.1.0&q=80&w=1080",
+                    "mode": "fill"
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "F0pVC",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "padding": 12,
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "oU7gL",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "xfcuO",
+                          "metadata": {
+                            "type": "unsplash",
+                            "username": "stacysuxx",
+                            "link": "https://unsplash.com/@stacysuxx",
+                            "author": "Stacy"
+                          },
+                          "clip": true,
+                          "width": 58,
+                          "height": 58,
+                          "fill": {
+                            "type": "image",
+                            "enabled": true,
+                            "url": "https://images.unsplash.com/photo-1766185387587-531a5f992940?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk2ODI3ODd8&ixlib=rb-4.1.0&q=80&w=1080",
+                            "mode": "fill"
+                          },
+                          "cornerRadius": 10,
+                          "stroke": {
+                            "thickness": 2,
+                            "fill": "#FF4F7A"
+                          }
+                        },
+                        {
+                          "type": "frame",
+                          "id": "DCycb",
+                          "metadata": {
+                            "type": "unsplash",
+                            "username": "jonathanborba",
+                            "link": "https://unsplash.com/@jonathanborba",
+                            "author": "Jonathan Borba"
+                          },
+                          "clip": true,
+                          "width": 58,
+                          "height": 58,
+                          "fill": {
+                            "type": "image",
+                            "enabled": true,
+                            "url": "https://images.unsplash.com/photo-1769812343766-902f4a29f1a9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk2ODI3ODh8&ixlib=rb-4.1.0&q=80&w=1080",
+                            "mode": "fill"
+                          },
+                          "cornerRadius": 10,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "#EBEEF4"
+                          }
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Nxt72",
+                          "metadata": {
+                            "type": "unsplash",
+                            "username": "customerbox",
+                            "link": "https://unsplash.com/@customerbox",
+                            "author": "Customerbox"
+                          },
+                          "clip": true,
+                          "width": 58,
+                          "height": 58,
+                          "fill": {
+                            "type": "image",
+                            "enabled": true,
+                            "url": "https://images.unsplash.com/photo-1588756164640-a9f10546e1b3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk2ODI3ODl8&ixlib=rb-4.1.0&q=80&w=1080",
+                            "mode": "fill"
+                          },
+                          "cornerRadius": 10,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "#EBEEF4"
+                          }
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Xb2uJ",
+                          "metadata": {
+                            "type": "unsplash",
+                            "username": "jonathanborba",
+                            "link": "https://unsplash.com/@jonathanborba",
+                            "author": "Jonathan Borba"
+                          },
+                          "clip": true,
+                          "width": 58,
+                          "height": 58,
+                          "fill": {
+                            "type": "image",
+                            "enabled": true,
+                            "url": "https://images.unsplash.com/photo-1769812343615-2541444f090b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk2ODI3ODl8&ixlib=rb-4.1.0&q=80&w=1080",
+                            "mode": "fill"
+                          },
+                          "cornerRadius": 10,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "#EBEEF4"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "C73yKg",
+                      "fill": "#6F7687",
+                      "content": "共4款  ›",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "gEepf",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "padding": [
+                12,
+                16,
+                0,
+                16
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "qdMb2",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "end",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "AHE5u",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "EqlfF",
+                          "fill": "#FF4F4F",
+                          "content": "当前价 ¥16.9",
+                          "fontFamily": "Inter",
+                          "fontSize": 20,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Dha0q",
+                          "fill": {
+                            "type": "gradient",
+                            "gradientType": "linear",
+                            "enabled": true,
+                            "rotation": 90,
+                            "size": {
+                              "height": 1
+                            },
+                            "colors": [
+                              {
+                                "color": "#FF6B8F",
+                                "position": 0
+                              },
+                              {
+                                "color": "#FF3F65",
+                                "position": 1
+                              }
+                            ]
+                          },
+                          "cornerRadius": 20,
+                          "padding": [
+                            10,
+                            16
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "gGpvv",
+                              "fill": "#FFFFFF",
+                              "content": "到手价 ¥6.9",
+                              "fontFamily": "Inter",
+                              "fontSize": 16,
+                              "fontWeight": "800"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "EeFD5",
+                      "fill": "#8B93A3",
+                      "content": "当前状态：竞拍中",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "gFwSI",
+                  "width": "fill_container",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "lQCCx",
+                      "fill": "#FFF5F7",
+                      "cornerRadius": 14,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#FFD0DB"
+                      },
+                      "padding": [
+                        8,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "NTnoL",
+                          "fill": "#D34A68",
+                          "content": "0元起拍",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "PiQeW",
+                      "fill": "#FFF5F7",
+                      "cornerRadius": 14,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#FFD0DB"
+                      },
+                      "padding": [
+                        8,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "AvAr2",
+                          "fill": "#D34A68",
+                          "content": "每次加价 +¥5",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "T91E3w",
+                      "fill": "#FFF5F7",
+                      "cornerRadius": 14,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#FFD0DB"
+                      },
+                      "padding": [
+                        8,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "EVKua",
+                          "fill": "#D34A68",
+                          "content": "无封顶",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "fkUa9",
+                  "fill": "#17181D",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "【天然和田玉平安扣吊坠】玉质温润，搭配手工编绳与银扣。当前页面为竞拍拍品详情，重点展示起拍价、加价幅度、封顶价、延时规则与出价入口。",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "zFvaa",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "padding": [
+                16,
+                16,
+                100,
+                16
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "TEbvF",
+                  "width": "fill_container",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "v4cXXe",
+                      "width": "fill_container",
+                      "height": 46,
+                      "fill": "#F7F8FA",
+                      "cornerRadius": 14,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "J8zwo1",
+                          "fill": "#55B38D",
+                          "content": "起拍价 ¥0",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "nsrUH",
+                      "width": "fill_container",
+                      "height": 46,
+                      "fill": "#F7F8FA",
+                      "cornerRadius": 14,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "lgoDW",
+                          "fill": "#6D7484",
+                          "content": "加价幅度 +¥5",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "z8YvqU",
+                      "width": "fill_container",
+                      "height": 46,
+                      "fill": "#F7F8FA",
+                      "cornerRadius": 14,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "gILJg",
+                          "fill": "#6D7484",
+                          "content": "时长 10分钟",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "yrOBt",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "#EEF1F5"
+                  },
+                  "padding": 16,
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "z0bCTd",
+                      "fill": "#454D5E",
+                      "textGrowth": "fixed-width",
+                      "width": 300,
+                      "content": "拍品规则：最后30秒内有人出价，则在原结束时间基础上延长30秒；达到封顶价时直接成交。",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "MoGxb",
+                      "fill": "#9EA5B3",
+                      "content": "›",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bRmZb",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "#EEF1F5"
+                  },
+                  "padding": 16,
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "tvSzM",
+                      "fill": "#454D5E",
+                      "textGrowth": "fixed-width",
+                      "width": 300,
+                      "content": "出价说明：每次出价增量必须是加价幅度的整数倍；当前拍品仅拍卖一次；主播可手动切换下一件。",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Uqn94",
+                      "fill": "#9EA5B3",
+                      "content": "›",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "vj8lT",
+          "x": 0,
+          "y": 768,
+          "width": 390,
+          "height": 76,
+          "fill": "#FFFFFF",
+          "stroke": {
+            "thickness": {
+              "top": 1
+            },
+            "fill": "#EEF1F5"
+          },
+          "gap": 10,
+          "padding": [
+            10,
+            12,
+            12,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "OAlW1",
+              "width": 46,
+              "layout": "vertical",
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "ellipse",
+                  "id": "EnHez",
+                  "metadata": {
+                    "type": "unsplash",
+                    "username": "umurbatur",
+                    "link": "https://unsplash.com/@umurbatur",
+                    "author": "Umur Batur Kocak"
+                  },
+                  "fill": {
+                    "type": "image",
+                    "enabled": true,
+                    "url": "https://images.unsplash.com/photo-1603023436454-c91a5d12b580?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3Nzk2ODI2NDd8&ixlib=rb-4.1.0&q=80&w=1080",
+                    "mode": "fill"
+                  },
+                  "width": 28,
+                  "height": 28
+                },
+                {
+                  "type": "text",
+                  "id": "IJSZK",
+                  "fill": "#61697A",
+                  "content": "店铺",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "FJHf3",
+              "width": 46,
+              "layout": "vertical",
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vkCGf",
+                  "width": 28,
+                  "height": 28,
+                  "fill": "#F7F8FA",
+                  "cornerRadius": 14,
+                  "justifyContent": "center",
+                  "alignItems": "center"
+                },
+                {
+                  "type": "text",
+                  "id": "jzh0B",
+                  "fill": "#61697A",
+                  "content": "客服",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Qn3qm",
+              "width": 46,
+              "layout": "vertical",
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "wvdfT",
+                  "width": 28,
+                  "height": 28,
+                  "fill": "#F7F8FA",
+                  "cornerRadius": 14,
+                  "justifyContent": "center",
+                  "alignItems": "center"
+                },
+                {
+                  "type": "text",
+                  "id": "fgWK1",
+                  "fill": "#61697A",
+                  "content": "详情",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ri8xa",
+              "width": 100,
+              "height": 52,
+              "fill": "#FFF1F4",
+              "cornerRadius": 26,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "iQ3sD",
+                  "fill": "#F05B79",
+                  "content": "查看规则",
+                  "fontFamily": "Inter",
+                  "fontSize": 17,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "J6GkDf",
+              "width": 130,
+              "height": 52,
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 90,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#FF6A8D",
+                    "position": 0
+                  },
+                  {
+                    "color": "#FF3F65",
+                    "position": 1
+                  }
+                ]
+              },
+              "cornerRadius": 26,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "R5moh",
+                  "fill": "#FFFFFF",
+                  "content": "立即出价",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "800"
                 }
               ]
             }

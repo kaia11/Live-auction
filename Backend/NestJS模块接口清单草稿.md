@@ -100,6 +100,7 @@ src/
 
 - 管理拍品静态信息
 - 获取房间内拍品基础信息
+- 获取拍品详情信息
 - 修改未开始拍品规则
 
 依赖：
@@ -113,6 +114,7 @@ src/
 - 管理某直播间拍品顺序
 - 标记 `queued / upcoming / active / finished / cancelled`
 - 场次结束后推进到下一个拍品
+- 支持主播手动切换到下一件拍品
 
 依赖：
 
@@ -131,6 +133,15 @@ src/
 - 封顶成交
 - 异常取消
 
+规则约定：
+
+- 允许 `0 元起拍`
+- 封顶价按拍品单独设置，不设置则无封顶
+- 每次加价必须是该拍品 `incrementStep` 的整数倍
+- 最后 `30s` 内有人出价，则在原结束时间基础上 `+30s`
+- 延时次数无限
+- 达到封顶价直接成交
+
 依赖：
 
 - `PrismaService`
@@ -147,6 +158,7 @@ src/
 - 幂等校验
 - 原子更新当前价和领先者
 - 触发排名变化和实时通知
+- 为代理出价 / 智能跟随预留扩展点
 
 依赖：
 
@@ -164,6 +176,12 @@ src/
 - 维护当前场次排行榜
 - 提供前 N 名查询
 - 提供“我的名次 / 我的最高出价 / 我是否领先”
+
+当前版本建议固定支持：
+
+- 前 `3` 名排行榜
+- 我的当前名次
+- 我的最高有效出价
 
 依赖：
 
@@ -190,6 +208,15 @@ src/
 - 根据成交结果生成模拟订单
 - 查询用户订单和后台订单列表
 
+当前版本建议先做：
+
+- 模拟订单
+- 成交金额
+- 买家信息
+- 订单状态
+
+真实物流履约先不作为第一版必做能力。
+
 依赖：
 
 - `PrismaService`
@@ -204,6 +231,10 @@ src/
 - 启动场次
 - 修改未开始规则
 - 取消异常竞拍
+- 手动切换下一件拍品
+- 查看后台静态统计
+- 查看成交统计卡片
+- 查看拍品出价时间线
 
 依赖：
 
@@ -273,6 +304,7 @@ src/
 建议路由：
 
 - `GET /rooms/:roomId/queue`
+- `POST /admin/rooms/:roomId/queue/next`
 
 ### `AuctionSessionsController`
 
@@ -288,6 +320,12 @@ src/
 
 - `GET /sessions/:sessionId/ranking`
 - `GET /sessions/:sessionId/ranking/me`
+
+返回建议固定包含：
+
+- 前 3 名榜单
+- 我的名次
+- 我的最高有效出价
 
 ### `BidsController`
 
@@ -378,6 +416,7 @@ src/
 - `endTime: string`
 - `version: number`
 - `message: string`
+- `isCeilingReached: boolean`
 
 ## 4.2 场次快照相关
 
@@ -392,6 +431,8 @@ src/
 - `itemCoverImage`
 - `status`
 - `currentPrice`
+- `incrementStep`
+- `ceilingPrice`
 - `leaderUserId`
 - `participantCount`
 - `endTime`
@@ -423,6 +464,10 @@ src/
 - `isLeading`
 - `version`
 
+约定：
+
+- `topRanks` 默认只返回前 `3` 名
+
 ## 4.4 后台相关
 
 ### `CreateAuctionItemDto`
@@ -439,6 +484,13 @@ src/
 - `extensionSeconds`
 - `extensionTriggerSeconds`
 
+规则约定：
+
+- `startPrice` 允许为 `0`
+- `ceilingPrice` 为空时表示无封顶
+- `incrementStep` 为每个拍品单独配置
+- 前端与后端都必须校验：每次出价增量只能是 `incrementStep` 的整数倍
+
 ### `ReorderQueueDto`
 
 字段建议：
@@ -452,6 +504,26 @@ src/
 
 - `sessionId`
 - `startTime`
+
+### `SwitchNextQueueItemDto`
+
+字段建议：
+
+- `roomId`
+- `currentQueueId`
+- `operatorId`
+- `reason`
+
+### `ProxyBidConfigDto`
+
+这是后续智能跟随功能的预留 DTO。
+
+字段建议：
+
+- `sessionId`
+- `enabled`
+- `maxAutoBidPrice`
+- `incrementStrategy`
 
 ### `CancelSessionDto`
 
@@ -475,6 +547,7 @@ src/
 - `room_joined`
 - `room_online_count_updated`
 - `auction_price_updated`
+- `auction_detail_updated`
 - `auction_ranking_updated`
 - `auction_bid_success`
 - `auction_overtaken`
@@ -482,6 +555,7 @@ src/
 - `auction_session_ended`
 - `auction_session_activated`
 - `room_item_queue_updated`
+- `device_vibrate_signal`
 
 ## 5.3 推荐消息结构
 
@@ -512,6 +586,7 @@ src/
 - `AdminQueueController`
 - `AdminSessionsController`
 - `AdminOrdersController`
+- `AdminStatsController`
 
 ---
 
@@ -549,17 +624,21 @@ src/
 1. `GET /rooms`
 2. `GET /rooms/:roomId`
 3. `GET /rooms/:roomId/items`
-4. `GET /rooms/:roomId/current-session`
-5. `POST /bids`
-6. WebSocket 推 `auction_price_updated`
+4. `GET /rooms/:roomId/items/:itemId`
+5. `GET /rooms/:roomId/current-session`
+6. `POST /bids`
+7. WebSocket 推 `auction_price_updated`
 
 然后第二步再补：
 
 - `GET /sessions/:sessionId/ranking`
+- `GET /admin/stats/overview`
+- `GET /admin/stats/timeline`
 - `auction_ranking_updated`
 - `auction_session_ended`
 - `auction_session_activated`
 - `room_item_queue_updated`
+- `device_vibrate_signal`
 
 ---
 
@@ -573,5 +652,11 @@ NestJS 这一版不要按“页面”拆，而要按“业务状态流”拆：
 - 并发写入口归 `bids`
 - 实时同步归 `websocket`
 - 名次能力归 `ranking`
+
+同时要提前预留：
+
+- 智能跟随 / 代理出价
+- 设备振动提醒
+- 后台统计页
 
 这样后面你们不管是继续写接口，还是让 AI 生成模块代码，都会顺很多。
