@@ -8,6 +8,8 @@ coverage/
 .next/
 .nuxt/
 .turbo/
+bin/
+Backend/bin/
 
 # logs
 logs/
@@ -58,6 +60,7 @@ temp/
 *.pid
 *.seed
 *.pid.lock
+*.test
 
 # optional local docs or exports
 *.bak
@@ -68,3 +71,6 @@ temp/
 
 # local extracted previews / temp exports
 _pdf_pages/
+
+# local planning docs
+后端开发计划.md
