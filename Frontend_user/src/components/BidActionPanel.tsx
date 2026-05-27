@@ -4,7 +4,7 @@ import { useLiveRoomStore } from '../stores/useLiveRoomStore'
 import './BidActionPanel.scss'
 
 const BidActionPanel: React.FC = () => {
-  const { items, currentItemId, closeAllModals, submitBid, myBidStatus } = useLiveRoomStore()
+  const { items, currentItemId, closeAllModals, submitBid, currentCountdown } = useLiveRoomStore()
   const item = items.find(i => i.id === currentItemId)
   const [biddingPrice, setBiddingPrice] = useState(item?.currentPrice || 0)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -41,12 +41,15 @@ const BidActionPanel: React.FC = () => {
       <div className="bid-panel" onClick={(e) => e.stopPropagation()}>
         <div className="bid-panel-inner">
           <div className="countdown-top">
-            <span className="countdown-text">⏱ 当前剩余: 300s</span>
+            <span className="countdown-text">⏱ 当前剩余: {currentCountdown}s</span>
           </div>
 
           <div className="bid-item-card">
-            <div className="bid-item-thumb" />
+            <div className="bid-item-thumb">
+              <img src={item.images[0]} alt={item.title} />
+            </div>
             <div className="bid-item-info">
+              <span className="panel-badge">限时竞拍</span>
               <h4 className="bid-item-title">{item.title}</h4>
               <div className="current-price-wrap">
                 <span className="label">当前价</span>

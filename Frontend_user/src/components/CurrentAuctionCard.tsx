@@ -12,7 +12,7 @@ interface Props {
 
 const CurrentAuctionCard: React.FC<Props> = ({ item, onClose }) => {
   const navigate = useNavigate()
-  const { toggleBidPanel, top3Ranking, myBidStatus } = useLiveRoomStore()
+  const { toggleBidPanel, top3Ranking, myBidStatus, currentCountdown } = useLiveRoomStore()
 
   const goToDetail = () => {
     navigate(`/auction/${item.id}`)
@@ -21,12 +21,15 @@ const CurrentAuctionCard: React.FC<Props> = ({ item, onClose }) => {
   return (
     <div className="current-auction-card">
       <div className="card-top-row">
-        <div className="item-thumb" />
+        <div className="item-thumb">
+          <img src={item.images[0]} alt={item.title} />
+        </div>
         <div className="item-info-text">
+          <span className="item-tag">当前拍品</span>
           <h4 className="item-title">{item.title}</h4>
           <div className="price-countdown-row">
             <span className="current-price">¥{item.currentPrice}</span>
-            <span className="countdown-text">⏱ {300}s</span>
+            <span className="countdown-text">⏱ {currentCountdown}s</span>
           </div>
         </div>
         <span className="close-btn" onClick={onClose}>×</span>

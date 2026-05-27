@@ -4,26 +4,49 @@
   box-sizing: border-box;
 }
 
+:root {
+  --bg-base: #120f14;
+  --surface-page: #f8f2ee;
+  --surface-card: rgba(255, 255, 255, 0.84);
+  --surface-card-strong: #ffffff;
+  --text-primary: #1f1721;
+  --text-secondary: #6f6673;
+  --text-tertiary: #9e93a0;
+  --line-soft: rgba(60, 36, 52, 0.08);
+  --brand-pink: #ff4f88;
+  --brand-rose: #ff6b7a;
+  --brand-orange: #ff9a3d;
+  --brand-gold: #ffcf70;
+  --brand-plum: #3c2036;
+  --shadow-soft: 0 18px 40px rgba(64, 25, 58, 0.12);
+  --shadow-strong: 0 28px 60px rgba(16, 10, 18, 0.28);
+  --gradient-brand: linear-gradient(135deg, #ff5b85 0%, #ff8a5b 48%, #ffc36b 100%);
+  --gradient-dark: linear-gradient(180deg, rgba(18, 14, 20, 0.05) 0%, rgba(18, 14, 20, 0.82) 100%);
+}
+
 html, body, #root {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: #000;
+  background: #141016;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: var(--text-primary);
 }
 
 .mobile-frame {
-  width: 390px;
-  height: 844px;
-  max-width: 100vw;
-  max-height: 100vh;
-  background-color: #F7F7FA;
-  border-radius: 44px;
+  width: min(100vw, calc(100vh * 390 / 844));
+  height: min(100vh, calc(100vw * 844 / 390));
+  aspect-ratio: 390 / 844;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(250, 242, 238, 0.98) 100%);
+  border-radius: 12px;
   overflow: hidden;
   position: relative;
-  box-shadow: 0 0 60px rgba(0,0,0,0.5);
+  box-shadow: none;
+  border: none;
 }
 
 .page-container {
@@ -37,10 +60,29 @@ html, body, #root {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+button,
+input {
+  font: inherit;
+}
+
+.adm-toast-main {
+  border-radius: 18px !important;
+  backdrop-filter: blur(18px);
+}
+
 @media (max-width: 391px) {
   .mobile-frame {
     width: 100vw;
     height: 100vh;
+    aspect-ratio: auto;
     border-radius: 0;
+    border: none;
+  }
+}
+
+@media (min-width: 392px) {
+  .mobile-frame {
+    height: 100vh;
+    width: calc(100vh * 390 / 844);
   }
 }

@@ -4,40 +4,45 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0,0,0,0.6);
+  background:
+    radial-gradient(circle at top, rgba(255, 147, 102, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(19, 14, 20, 0.12) 0%, rgba(19, 14, 20, 0.42) 100%);
   z-index: 1000;
   display: flex;
   align-items: flex-end;
+  backdrop-filter: blur(10px);
 }
 
 .drawer-container {
   width: 100%;
-  background-color: white;
-  border-radius: 24px 24px 0 0;
-  padding: 14px 16px 20px 16px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(255,244,239,0.96) 100%);
+  border-radius: 30px 30px 0 0;
+  padding: 16px 16px 22px 16px;
   max-height: 550px;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 -20px 46px rgba(18, 11, 19, 0.2);
 }
 
 .drawer-handle-bar {
   width: 44px;
   height: 5px;
-  background-color: #16171D;
+  background-color: rgba(32, 23, 35, 0.82);
   border-radius: 3px;
   margin: 0 auto 10px auto;
 }
 
 .drawer-title {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 800;
   text-align: center;
-  color: #15161D;
+  color: var(--brand-plum);
 }
 
 .drawer-divider {
   height: 1px;
-  background-color: #EEF1F5;
+  background-color: var(--line-soft);
   margin: 10px 0 14px 0;
 }
 
@@ -53,15 +58,16 @@
   align-items: center;
   gap: 12px;
   padding: 10px;
-  background-color: #F7F7FA;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 18px;
+  box-shadow: 0 10px 24px rgba(26, 14, 20, 0.06);
 }
 
 .item-row-thumb {
   width: 64px;
   height: 64px;
-  border-radius: 10px;
-  background-color: #ddd;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f3d4cb 0%, #e9edf6 100%);
 }
 
 .item-row-info {
@@ -73,14 +79,14 @@
 
 .item-row-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #12131A;
+  font-weight: 700;
+  color: var(--brand-plum);
 }
 
 .item-row-price {
   font-size: 17px;
-  font-weight: 700;
-  color: #FF5E8A;
+  font-weight: 800;
+  color: var(--brand-pink);
 }
 
 .item-row-action {
@@ -92,5 +98,5 @@
 
 .status-label {
   font-size: 11px;
-  color: #7A8191;
+  color: var(--text-secondary);
 }

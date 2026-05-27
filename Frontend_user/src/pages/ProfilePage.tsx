@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Image, Card } from 'antd-mobile'
+import { Image, Card } from 'antd-mobile'
 import { useUserStore } from '../stores/useUserStore'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
 import { useAppStore } from '../stores/useAppStore'
@@ -9,8 +9,12 @@ import './ProfilePage.scss'
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate()
   const { user, logout } = useUserStore()
-  const { bidHistories } = useLiveRoomStore()
+  const { bidHistories, loadBidHistories } = useLiveRoomStore()
   const { currentTab, setCurrentTab, lastVisitedRoomId } = useAppStore()
+
+  useEffect(() => {
+    void loadBidHistories()
+  }, [loadBidHistories])
 
   const handleLogout = () => {
     logout()
@@ -41,6 +45,7 @@ const ProfilePage: React.FC = () => {
         <div className="user-info-card">
           <Image className="user-avatar" src={user?.avatar || 'https://picsum.photos/avatar/150/150'} fit="cover" />
           <div className="user-text">
+            <p className="user-badge">VIP 收藏用户</p>
             <h2 className="nickname">{user?.nickname || '未登录'}</h2>
             <p className="user-id-text">ID: {user?.id || '-'}</p>
           </div>
@@ -67,6 +72,7 @@ const ProfilePage: React.FC = () => {
           </div>
           {bidHistories.map((h) => (
             <div key={h.id} className="history-item-row">
+              <Image className="history-thumb" src={h.itemImage} fit="cover" />
               <div className="history-info">
                 <div className="history-item-title">{h.itemTitle}</div>
                 <div className="history-time">{h.bidTime}</div>

@@ -12,6 +12,7 @@ import (
 
 type BidHandler struct {
 	bidService *service.BidService
+	userService *service.UserService
 	hub        *ws.Hub
 }
 
@@ -24,8 +25,8 @@ type createBidRequest struct {
 	RequestID string `json:"requestId"`
 }
 
-func NewBidHandler(bidService *service.BidService, hub *ws.Hub) *BidHandler {
-	return &BidHandler{bidService: bidService, hub: hub}
+func NewBidHandler(bidService *service.BidService, userService *service.UserService, hub *ws.Hub) *BidHandler {
+	return &BidHandler{bidService: bidService, userService: userService, hub: hub}
 }
 
 func (h *BidHandler) CreateBid(w nethttp.ResponseWriter, r *nethttp.Request) {
@@ -81,8 +82,15 @@ func (h *BidHandler) CreateBid(w nethttp.ResponseWriter, r *nethttp.Request) {
 func (h *BidHandler) ListMyBids(w nethttp.ResponseWriter, r *nethttp.Request) {
 	userID := r.URL.Query().Get("userId")
 	if userID == "" {
-		userID = "user-001"
+		resolvedUserID, err := h.userService.GetCurrentUserID(r.Header.Get("Authorization"))
+		if err == nil {
+			userID = resolvedUserID
+		}
+	}
+	if userID == "" {
+		api.Error(w, nethttp.StatusUnauthorized, api.CodeUnauthorized, "missing user identity")
+		return
 	}
 
-	api.Success(w, nethttp.StatusOK, h.bidService.ListMyBids(userID))
+	api.Success(w, nethttp.StatusOK, h.bidService.ListMyBidHistories(userID))
 }

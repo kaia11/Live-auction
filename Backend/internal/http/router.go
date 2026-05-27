@@ -7,6 +7,7 @@ import (
 )
 
 type Handlers struct {
+	Auth    *handler.AuthHandler
 	Health  *handler.HealthHandler
 	Rooms   *handler.RoomHandler
 	Items   *handler.ItemHandler
@@ -18,14 +19,16 @@ type Handlers struct {
 func NewRouter(handlers Handlers) http.Handler {
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("POST /auth/login", handlers.Auth.Login)
+	mux.HandleFunc("GET /users/me", handlers.Auth.GetCurrentUser)
 	mux.HandleFunc("GET /health", handlers.Health.GetHealth)
-
 	mux.HandleFunc("GET /rooms", handlers.Rooms.ListRooms)
 	mux.HandleFunc("GET /rooms/{roomId}", handlers.Rooms.GetRoomDetail)
 	mux.HandleFunc("GET /rooms/{roomId}/items", handlers.Items.ListRoomItems)
 	mux.HandleFunc("GET /rooms/{roomId}/items/{itemId}", handlers.Items.GetItemDetail)
 	mux.HandleFunc("GET /rooms/{roomId}/current-session", handlers.Session.GetCurrentSession)
 	mux.HandleFunc("GET /rooms/{roomId}/events", handlers.Session.GetRoomEvents)
+	mux.HandleFunc("POST /rooms/{roomId}/comments", handlers.Session.CreateRoomComment)
 	mux.HandleFunc("GET /sessions/{sessionId}/ranking", handlers.Session.GetRanking)
 	mux.HandleFunc("GET /sessions/{sessionId}/my-status", handlers.Session.GetMyStatus)
 	mux.HandleFunc("GET /users/me/bids", handlers.Bids.ListMyBids)

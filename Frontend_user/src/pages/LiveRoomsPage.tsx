@@ -1,18 +1,18 @@
 import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SearchBar, Tabs, Card, Image, Tag } from 'antd-mobile'
+import { SearchBar, Tabs, Card, Image } from 'antd-mobile'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
 import { useAppStore } from '../stores/useAppStore'
 import './LiveRoomsPage.scss'
 
 const LiveRoomsPage: React.FC = () => {
   const navigate = useNavigate()
-  const { rooms, loadMockData, setCurrentRoomId } = useLiveRoomStore()
+  const { rooms, loadRooms, setCurrentRoomId } = useLiveRoomStore()
   const { setCurrentTab } = useAppStore()
 
   useEffect(() => {
-    loadMockData()
-  }, [loadMockData])
+    void loadRooms()
+  }, [loadRooms])
 
   const enterRoom = (roomId: string) => {
     setCurrentRoomId(roomId)
@@ -24,6 +24,12 @@ const LiveRoomsPage: React.FC = () => {
       <div className="scrollable-content">
         <div className="status-bar">
           <span className="time">15:25</span>
+        </div>
+
+        <div className="page-hero">
+          <p className="hero-kicker">LIVE AUCTION</p>
+          <h1 className="hero-title">今晚值得蹲守的珠宝专场</h1>
+          <p className="hero-subtitle">从直播间直接出价，实时查看排行和拍卖进度。</p>
         </div>
 
         <div className="top-search-section">
@@ -60,6 +66,10 @@ const LiveRoomsPage: React.FC = () => {
                   )}
                 </div>
                 <div className="room-info">
+                  <div className="room-chip-row">
+                    <span className="room-chip">精选专场</span>
+                    <span className="room-chip subtle">{room.status === 'living' ? '进行中' : '已下播'}</span>
+                  </div>
                   <h3 className="room-title">{room.title}</h3>
                   <div className="room-meta">
                     <span className="anchor-name">{room.anchorName}</span>

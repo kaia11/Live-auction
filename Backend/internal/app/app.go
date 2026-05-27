@@ -16,7 +16,9 @@ type App struct {
 
 func New(cfg config.Config) *App {
 	hub := ws.NewHub()
+	ws.SeedDemoMessages(hub)
 
+	userService := service.NewUserService()
 	roomService := service.NewRoomService()
 	itemService := service.NewItemService()
 	sessionService := service.NewSessionService()
@@ -24,20 +26,22 @@ func New(cfg config.Config) *App {
 	adminService := service.NewAdminService()
 
 	handlers := httpx.Handlers{
+		Auth:    handler.NewAuthHandler(userService),
 		Health:  handler.NewHealthHandler(cfg),
 		Rooms:   handler.NewRoomHandler(roomService),
 		Items:   handler.NewItemHandler(itemService),
-		Session: handler.NewSessionHandler(sessionService, hub),
-		Bids:    handler.NewBidHandler(bidService, hub),
+		Session: handler.NewSessionHandler(sessionService, userService, hub),
+		Bids:    handler.NewBidHandler(bidService, userService, hub),
 		Admin:   handler.NewAdminHandler(adminService, hub),
 	}
 
 	router := httpx.NewRouter(handlers)
+	handlerWithCORS := httpx.WithCORS(router, cfg.WSAllowedOrigin)
 
 	return &App{
 		server: &http.Server{
 			Addr:    cfg.HTTPAddress(),
-			Handler: router,
+			Handler: handlerWithCORS,
 		},
 	}
 }

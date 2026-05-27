@@ -9,21 +9,30 @@ import ProfilePage from './pages/ProfilePage'
 import { useUserStore } from './stores/useUserStore'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useUserStore()
+  const { user, isHydrated } = useUserStore()
   const navigate = useNavigate()
   const location = useLocation()
 
   useEffect(() => {
-    if (!user?.isLoggedIn && location.pathname !== '/login') {
+    if (isHydrated && !user?.isLoggedIn && location.pathname !== '/login') {
       navigate('/login')
     }
-  }, [user, navigate, location.pathname])
+  }, [isHydrated, user, navigate, location.pathname])
+
+  if (!isHydrated && location.pathname !== '/login') {
+    return null
+  }
 
   return <>{children}</>
 }
 
 function App() {
-  console.log('App 组件渲染成功！')
+  const hydrateUser = useUserStore((state) => state.hydrateUser)
+
+  useEffect(() => {
+    void hydrateUser()
+  }, [hydrateUser])
+
   return (
     <ConfigProvider>
       <Routes>

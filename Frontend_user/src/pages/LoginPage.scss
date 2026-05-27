@@ -1,5 +1,7 @@
 .login-page {
-  background-color: #FFFFFF;
+  background:
+    radial-gradient(circle at top, rgba(255, 145, 109, 0.18), transparent 24%),
+    linear-gradient(180deg, #fffdfb 0%, #f7eeeb 100%);
   padding: 22px 28px 24px 28px;
   display: flex;
   flex-direction: column;
@@ -14,10 +16,9 @@
 }
 
 .time {
-  font-family: Inter;
   font-size: 16px;
   font-weight: 600;
-  color: #12131A;
+  color: var(--text-primary);
 }
 
 .top-nav {
@@ -29,13 +30,13 @@
 .back-btn {
   font-size: 34px;
   font-weight: 300;
-  color: #12131A;
+  color: var(--text-primary);
 }
 
 .help-text {
   font-size: 16px;
-  font-weight: 500;
-  color: #12131A;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .spacer-48 {
@@ -43,10 +44,10 @@
 }
 
 .login-title {
-  font-family: Inter;
   font-size: 32px;
-  font-weight: 700;
-  color: #12131A;
+  font-weight: 800;
+  color: var(--brand-plum);
+  line-height: 1.14;
 }
 
 .input-wrapper {
@@ -54,28 +55,31 @@
     display: flex;
     align-items: center;
     height: 74px;
-    background-color: #F6F7F9;
-    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.78);
+    border-radius: 22px;
     padding: 0 20px;
     gap: 14px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px);
   }
 
   .phone-prefix {
     font-size: 17px;
-    font-weight: 500;
-    color: #12131A;
+    font-weight: 700;
+    color: var(--brand-plum);
   }
 
   .eye-icon {
     font-size: 17px;
-    font-weight: 500;
-    color: #12131A;
+    font-weight: 700;
+    color: var(--brand-plum);
   }
 
   .divider {
     width: 1px;
     height: 26px;
-    background-color: #DADDE5;
+    background-color: rgba(80, 55, 72, 0.12);
   }
 
   .input-field {
@@ -84,11 +88,11 @@
     outline: none;
     background: transparent;
     font-size: 17px;
-    color: #12131A;
+    color: var(--brand-plum);
   }
 
   .input-field::placeholder {
-    color: #B9BFCC;
+    color: #b0a3b0;
   }
 }
 
@@ -99,22 +103,23 @@
 
 .link-text {
   font-size: 16px;
-  font-weight: 500;
-  color: #00629B;
+  font-weight: 700;
+  color: #8b5269;
 }
 
 .login-btn {
   height: 64px;
-  background-color: #FF5E8A;
-  border-radius: 18px;
+  background: var(--gradient-brand);
+  border-radius: 22px;
   border: none;
   color: white;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 18px 32px rgba(255, 93, 123, 0.26);
 }
 
 .login-btn:disabled {
@@ -131,18 +136,18 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 2px solid #C4C9D4;
+  border: 2px solid #d0c4cf;
   background-color: white;
 }
 
 .custom-checkbox.checked {
-  background-color: #FF5E8A;
-  border-color: #FF5E8A;
+  background-color: var(--brand-pink);
+  border-color: var(--brand-pink);
 }
 
 .agreement-text {
   flex: 1;
   font-size: 14px;
-  color: #7A8191;
+  color: var(--text-secondary);
   line-height: 1.4;
 }

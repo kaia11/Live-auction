@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Loading, Checkbox } from 'antd-mobile'
+import { Loading, Checkbox, Toast } from 'antd-mobile'
 import { useUserStore } from '../stores/useUserStore'
 import './LoginPage.scss'
 
@@ -20,6 +20,8 @@ const LoginPage: React.FC = () => {
     setLoading(false)
     if (success) {
       navigate('/rooms')
+    } else {
+      Toast.show('登录失败，请稍后重试')
     }
   }
 
@@ -80,7 +82,7 @@ const LoginPage: React.FC = () => {
         <Checkbox
           checked={agreed}
           onChange={(val) => setAgreed(val)}
-          icon={({ checked }) => (
+          icon={(checked) => (
             <div className={`custom-checkbox ${checked ? 'checked' : ''}`}>
             </div>
           )}

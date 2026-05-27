@@ -165,6 +165,37 @@ func (s *BidService) ListMyBids(userID string) []model.Bid {
 	return bids
 }
 
+func (s *BidService) ListMyBidHistories(userID string) []model.UserBidHistory {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	histories := make([]model.UserBidHistory, 0)
+	for _, bid := range s.store.bids {
+		if bid.UserID != userID {
+			continue
+		}
+
+		item := s.store.items[bid.ItemID]
+		session := s.store.sessions[bid.SessionID]
+
+		histories = append(histories, model.UserBidHistory{
+			ID:        bid.ID,
+			ItemID:    bid.ItemID,
+			ItemTitle: item.Title,
+			ItemImage: item.CoverImage,
+			BidPrice:  bid.BidPrice,
+			Result:    resolveBidHistoryResult(session, userID),
+			BidTime:   bid.CreateTime,
+		})
+	}
+
+	sort.SliceStable(histories, func(i, j int) bool {
+		return histories[i].BidTime > histories[j].BidTime
+	})
+
+	return histories
+}
+
 func currentParticipantsCount(bids []model.Bid, sessionID string, userID string) int {
 	seen := map[string]struct{}{userID: {}}
 	for _, bid := range bids {
@@ -174,6 +205,25 @@ func currentParticipantsCount(bids []model.Bid, sessionID string, userID string)
 	}
 
 	return len(seen)
+}
+
+func resolveBidHistoryResult(session model.AuctionSession, userID string) string {
+	switch session.Status {
+	case "bidding", "pending":
+		return "pending"
+	case "ended_sold":
+		if session.LeaderUserID == userID {
+			return "win"
+		}
+		return "lose"
+	case "ended_passed", "cancelled":
+		return "lose"
+	default:
+		if session.LeaderUserID == userID {
+			return "win"
+		}
+		return "pending"
+	}
 }
 
 func buildRankings(bids []model.Bid, users map[string]model.User, sessionID string) []model.RankingEntry {

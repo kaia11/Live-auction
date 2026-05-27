@@ -14,6 +14,9 @@ type LiveRoom struct {
 	VideoURL         string `json:"videoUrl"`
 	Status           string `json:"status"`
 	AnchorUserID     string `json:"anchorUserId"`
+	AnchorName       string `json:"anchorName"`
+	OnlineCount      int    `json:"onlineCount"`
+	Thumbnail        string `json:"thumbnail,omitempty"`
 	CurrentSessionID string `json:"currentSessionId"`
 }
 
@@ -59,6 +62,16 @@ type Bid struct {
 	RankAfter  int    `json:"rankAfter"`
 	Status     string `json:"status"`
 	CreateTime string `json:"createTime"`
+}
+
+type UserBidHistory struct {
+	ID        string `json:"id"`
+	ItemID    string `json:"itemId"`
+	ItemTitle string `json:"itemTitle"`
+	ItemImage string `json:"itemImage"`
+	BidPrice  int64  `json:"bidPrice"`
+	Result    string `json:"result"`
+	BidTime   string `json:"bidTime"`
 }
 
 type BidResult struct {

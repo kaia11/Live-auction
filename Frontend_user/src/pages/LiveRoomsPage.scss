@@ -1,5 +1,7 @@
 .live-rooms-page {
-  background-color: #F7F7FA;
+  background:
+    radial-gradient(circle at top left, rgba(255, 133, 104, 0.18), transparent 24%),
+    linear-gradient(180deg, #fff8f4 0%, #f8f1ee 52%, #f3eaef 100%);
   width: 100%;
   height: 100%;
   display: flex;
@@ -10,7 +12,7 @@
 .scrollable-content {
   flex: 1;
   overflow-y: auto;
-  padding: 18px;
+  padding: 18px 18px 28px;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -30,7 +32,33 @@
 .time {
   font-size: 16px;
   font-weight: 600;
-  color: #12131A;
+  color: var(--text-primary);
+}
+
+.page-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hero-kicker {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--brand-rose);
+  font-weight: 800;
+}
+
+.hero-title {
+  font-size: 32px;
+  line-height: 1.08;
+  font-weight: 800;
+  color: var(--brand-plum);
+}
+
+.hero-subtitle {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary);
 }
 
 .top-search-section {
@@ -42,7 +70,7 @@
 .back-btn {
   font-size: 34px;
   font-weight: 300;
-  color: #12131A;
+  color: var(--text-primary);
 }
 
 .search-bar-wrapper {
@@ -50,20 +78,28 @@
 }
 
 .custom-search {
-  border-radius: 18px !important;
-  background-color: white !important;
-  box-shadow: 0 8px 20px rgba(187, 194, 209, 0.1);
+  border-radius: 24px !important;
+  background-color: rgba(255, 255, 255, 0.72) !important;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+}
+
+.custom-search .adm-search-bar-input-box {
+  background: transparent !important;
 }
 
 .custom-tabs {
-  --active-line-color: #FF5E8A;
+  --active-line-color: var(--brand-pink);
   --title-font-size: 15px;
+  --active-title-color: var(--brand-plum);
+  --title-color: var(--text-secondary);
 }
 
 .rooms-list {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 22px;
 }
 
 .room-card-wrapper {
@@ -71,15 +107,18 @@
 }
 
 .room-card {
-  border-radius: 24px;
+  border-radius: 30px;
   overflow: hidden;
   padding: 0;
+  box-shadow: var(--shadow-soft);
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.74);
 }
 
 .room-cover {
   position: relative;
   width: 100%;
-  height: 220px;
+  height: 248px;
 }
 
 .room-cover img {
@@ -88,54 +127,88 @@
   object-fit: cover;
 }
 
+.room-cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(26, 14, 18, 0.02) 0%, rgba(26, 14, 18, 0.55) 100%);
+}
+
 .live-badge {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  background-color: #FF4F7A;
+  top: 16px;
+  left: 16px;
+  background: var(--gradient-brand);
   color: white;
   font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 6px;
+  font-weight: 700;
+  padding: 7px 12px;
+  border-radius: 999px;
+  z-index: 1;
+  box-shadow: 0 12px 24px rgba(255, 91, 133, 0.28);
 }
 
 .current-item-thumb {
   position: absolute;
-  bottom: 12px;
-  right: 12px;
-  width: 60px;
-  height: 60px;
-  border-radius: 8px;
-  border: 2px solid white;
+  bottom: 16px;
+  right: 16px;
+  width: 74px;
+  height: 74px;
+  border-radius: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.94);
   overflow: hidden;
+  z-index: 1;
+  box-shadow: 0 12px 24px rgba(14, 9, 17, 0.22);
 }
 
 .room-info {
-  padding: 14px 16px;
+  padding: 18px 18px 20px;
+}
+
+.room-chip-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.room-chip {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 110, 124, 0.12);
+  color: var(--brand-rose);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.room-chip.subtle {
+  background: rgba(52, 29, 50, 0.08);
+  color: var(--text-secondary);
 }
 
 .room-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: #12131A;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--brand-plum);
   margin-bottom: 8px;
+  line-height: 1.2;
 }
 
 .room-meta {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
-  color: #7A8191;
+  color: var(--text-secondary);
 }
 
 .bottom-tab-bar {
   flex-shrink: 0;
-  height: 56px;
-  background-color: white;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.84);
   display: flex;
-  border-top: 1px solid #E9ECF2;
+  border-top: 1px solid rgba(46, 23, 38, 0.08);
   z-index: 100;
+  backdrop-filter: blur(18px);
 }
 
 .tab-item {
@@ -145,11 +218,11 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  color: #7A8191;
+  color: var(--text-tertiary);
 }
 
 .tab-item.active {
-  color: #FF5E8A;
+  color: var(--brand-pink);
 }
 
 .tab-icon {
@@ -158,4 +231,5 @@
 
 .tab-text {
   font-size: 11px;
+  font-weight: 700;
 }

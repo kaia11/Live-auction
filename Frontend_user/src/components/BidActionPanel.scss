@@ -4,11 +4,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(60, 59, 68, 0.85);
+  background:
+    radial-gradient(circle at top, rgba(255, 132, 101, 0.14), transparent 22%),
+    rgba(18, 13, 19, 0.82);
   z-index: 1000;
   display: flex;
   align-items: center;
-  padding: 60px 34px 40px 34px;
+  padding: 48px 28px 34px 28px;
 }
 
 .bid-panel {
@@ -16,12 +18,14 @@
 }
 
 .bid-panel-inner {
-  background-color: white;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,244,239,0.98) 100%);
   border-radius: 24px;
-  padding: 16px 18px 24px 18px;
+  padding: 16px 16px 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
+  box-shadow: 0 28px 58px rgba(15, 9, 18, 0.34);
 }
 
 .countdown-top {
@@ -29,9 +33,9 @@
 }
 
 .countdown-text {
-  font-size: 16px;
-  font-weight: 600;
-  color: #FF5E8A;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--brand-pink);
 }
 
 .bid-item-card {
@@ -41,10 +45,17 @@
 }
 
 .bid-item-thumb {
-  width: 72px;
-  height: 72px;
-  border-radius: 12px;
-  background-color: #eee;
+  width: 62px;
+  height: 62px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 24px rgba(18, 11, 17, 0.12);
+}
+
+.bid-item-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .bid-item-info {
@@ -54,10 +65,22 @@
   gap: 8px;
 }
 
+.panel-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(255, 103, 127, 0.12);
+  color: var(--brand-rose);
+  font-size: 10px;
+  font-weight: 800;
+}
+
 .bid-item-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #12131A;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--brand-plum);
 }
 
 .current-price-wrap {
@@ -67,14 +90,14 @@
 }
 
 .current-price-wrap .label {
-  font-size: 13px;
-  color: #7A8191;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .current-price-wrap .price {
-  font-size: 22px;
-  font-weight: 700;
-  color: #FF5E8A;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--brand-pink);
 }
 
 .my-bid-area {
@@ -84,9 +107,9 @@
 }
 
 .my-bid-label {
-  font-size: 15px;
-  font-weight: 600;
-  color: #12131A;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand-plum);
 }
 
 .price-adjust-row {
@@ -96,32 +119,35 @@
 }
 
 .adjust-btn {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: none;
-  background-color: #F6F7F9;
-  font-size: 28px;
+  background-color: #f8eff1;
+  font-size: 24px;
   font-weight: 600;
-  color: #4E5566;
+  color: var(--brand-plum);
+  box-shadow: inset 0 0 0 1px rgba(60, 32, 54, 0.06);
 }
 
 .my-big-price {
-  font-size: 36px;
-  font-weight: 700;
-  color: #FF5E8A;
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--brand-pink);
 }
 
 .increment-tip {
-  font-size: 13px;
-  color: #7A8191;
+  font-size: 12px;
+  color: var(--text-secondary);
   text-align: center;
 }
 
 .submit-bid-btn {
-  --background-color: #FF5E8A;
-  height: 56px;
-  font-size: 18px;
-  font-weight: 700;
+  --background-color: transparent;
+  background: var(--gradient-brand) !important;
+  height: 50px;
+  font-size: 16px;
+  font-weight: 800;
   --border-radius: 18px;
+  box-shadow: 0 14px 28px rgba(255, 93, 123, 0.28);
 }

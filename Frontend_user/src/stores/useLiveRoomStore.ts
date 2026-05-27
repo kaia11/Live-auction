@@ -1,11 +1,19 @@
 import { create } from 'zustand'
-import { LiveRoom, AuctionItem, AuctionItemStatus, RankingItem, MyBidStatus, BidHistory } from '@/types'
+import { LiveRoom, AuctionItem, RankingItem, MyBidStatus, BidHistory, LiveComment } from '@/types'
+import { BackendCommentPayload, getCurrentSession, getRoomEvents, getRoomItems, getRooms, createRoomComment } from '@/api/rooms'
+import { createBid, getMyBidHistories } from '@/api/bids'
+import { getMyBidStatus, getSessionRanking } from '@/api/sessions'
+import { mapAuctionRuntime, mapBackendRoom, mapBidHistories } from '@/adapters/auction'
+import { useUserStore } from './useUserStore'
 
 interface LiveRoomState {
   rooms: LiveRoom[]
   currentRoomId: string | null
   items: AuctionItem[]
   currentItemId: string | null
+  currentSessionId: string | null
+  lastEventVersion: number
+  comments: LiveComment[]
   top3Ranking: RankingItem[]
   myBidStatus: MyBidStatus
   bidHistories: BidHistory[]
@@ -21,25 +29,33 @@ interface LiveRoomState {
   showDelayBanner: boolean
   setCurrentRoomId: (roomId: string) => void
   setCurrentItemId: (itemId: string) => void
-  loadMockData: () => void
+  loadRooms: () => Promise<void>
+  loadRoomRuntime: (roomId: string) => Promise<void>
+  loadBidHistories: () => Promise<void>
+  loadRoomComments: (roomId: string) => Promise<void>
+  pollRoomEvents: (roomId: string) => Promise<void>
   toggleAuctionItemDrawer: () => void
   toggleBidPanel: () => void
   toggleRuleModal: () => void
   closeAllModals: () => void
   setCurrentAuctionCardClosed: (closed: boolean) => void
   submitBid: (price: number) => Promise<boolean>
+  submitComment: (content: string) => Promise<boolean>
 }
 
-export const useLiveRoomStore = create<LiveRoomState>((set, get) => ({
+export const useLiveRoomStore = create<LiveRoomState>((set) => ({
   rooms: [],
   currentRoomId: null,
   items: [],
   currentItemId: null,
+  currentSessionId: null,
+  lastEventVersion: 0,
+  comments: [],
   top3Ranking: [],
   myBidStatus: { myHighestPrice: 0, myRank: 0, isLeading: false },
   bidHistories: [],
-  onlineCount: 1234,
-  currentCountdown: 300,
+  onlineCount: 0,
+  currentCountdown: 0,
   isCurrentAuctionCardClosed: false,
   showAuctionItemDrawer: false,
   showBidPanel: false,
@@ -53,88 +69,73 @@ export const useLiveRoomStore = create<LiveRoomState>((set, get) => ({
 
   setCurrentItemId: (itemId) => set({ currentItemId: itemId }),
 
-  loadMockData: () => {
-    const mockRooms: LiveRoom[] = [
-      {
-        id: 'room-001',
-        title: '翡翠专场直播',
-        anchorName: '珠宝大师阿静',
-        coverImage: 'https://picsum.photos/seed/jade1/800/500',
-        status: 'living',
-        onlineCount: 1234,
-        thumbnail: 'https://picsum.photos/seed/jade2/200/200',
-      },
-      {
-        id: 'room-002',
-        title: '和田玉精品直播',
-        anchorName: '玉石老王',
-        coverImage: 'https://picsum.photos/seed/jade3/800/500',
-        status: 'living',
-        onlineCount: 856,
-        thumbnail: 'https://picsum.photos/seed/jade4/200/200',
-      },
-    ]
+  loadRooms: async () => {
+    const rooms = await getRooms()
+    set({
+      rooms: rooms.map(mapBackendRoom),
+    })
+  },
 
-    const mockItems: AuctionItem[] = [
-      {
-        id: 'item-001',
-        title: '冰种翡翠手镯 58圈口',
-        description: '天然A货冰种翡翠，水润通透，58mm标准圈口',
-        images: ['https://picsum.photos/seed/gem1/1000/1000'],
-        startPrice: 0,
-        currentPrice: 28000,
-        minIncrement: 1000,
-        maxPrice: 100000,
-        status: AuctionItemStatus.BIDDING,
-        duration: 300,
-        extendedSeconds: 0,
-      },
-      {
-        id: 'item-002',
-        title: '羊脂白玉挂件 观音',
-        description: '新疆和田玉羊脂白玉，大师工观音挂件',
-        images: ['https://picsum.photos/seed/gem2/1000/1000'],
-        startPrice: 5000,
-        currentPrice: 12000,
-        minIncrement: 500,
-        maxPrice: null,
-        status: AuctionItemStatus.COMING_SOON,
-        duration: 300,
-        extendedSeconds: 0,
-      },
-      {
-        id: 'item-003',
-        title: '18K金钻石项链',
-        description: '经典四爪镶嵌，主钻0.5克拉',
-        images: ['https://picsum.photos/seed/gem3/1000/1000'],
-        startPrice: 8000,
-        currentPrice: 18500,
-        minIncrement: 500,
-        maxPrice: 30000,
-        status: AuctionItemStatus.ENDED,
-        duration: 300,
-        extendedSeconds: 0,
-      },
-    ]
+  loadRoomRuntime: async (roomId) => {
+    const userId = useUserStore.getState().user?.id
+    const [items, session] = await Promise.all([
+      getRoomItems(roomId),
+      getCurrentSession(roomId),
+    ])
+    const [ranking, myStatus] = await Promise.all([
+      getSessionRanking(session.id),
+      getMyBidStatus(session.id, userId ?? 'user-001'),
+    ])
 
-    const mockTop3: RankingItem[] = [
-      { userId: 'u1', nickname: '翡翠之王', avatar: '', price: 30000 },
-      { userId: 'u2', nickname: '玉石收藏家', avatar: '', price: 29000 },
-      { userId: 'u3', nickname: '珠宝爱好者', avatar: '', price: 28500 },
-    ]
-
-    const mockHistories: BidHistory[] = [
-      { id: 'h1', itemId: 'item-001', itemTitle: '冰种翡翠手镯', itemImage: '', bidPrice: 28000, result: 'win', bidTime: '2024-01-15 20:30' },
-      { id: 'h2', itemId: 'item-002', itemTitle: '和田玉把件', itemImage: '', bidPrice: 8500, result: 'lose', bidTime: '2024-01-14 19:00' },
-    ]
+    const currentRoom = getMappedRoomById(roomId, useLiveRoomStore.getState().rooms)
+    const runtime = mapAuctionRuntime(items, session, ranking, myStatus)
 
     set({
-      rooms: mockRooms,
-      items: mockItems,
-      currentItemId: 'item-001',
-      top3Ranking: mockTop3,
-      bidHistories: mockHistories,
+      currentRoomId: roomId,
+      items: runtime.items,
+      currentItemId: runtime.currentItemId,
+      currentSessionId: runtime.currentSessionId,
+      lastEventVersion: useLiveRoomStore.getState().lastEventVersion,
+      top3Ranking: runtime.top3Ranking,
+      myBidStatus: runtime.myBidStatus,
+      onlineCount: currentRoom?.onlineCount ?? session.participantCount,
+      currentCountdown: runtime.currentCountdown,
     })
+  },
+
+  loadBidHistories: async () => {
+    const histories = await getMyBidHistories()
+    set({
+      bidHistories: mapBidHistories(histories),
+    })
+  },
+
+  loadRoomComments: async (roomId) => {
+    const events = await getRoomEvents(roomId)
+    set({
+      comments: extractComments(events),
+      lastEventVersion: events.length > 0 ? events[events.length - 1].version : 0,
+    })
+  },
+
+  pollRoomEvents: async (roomId) => {
+    const events = await getRoomEvents(roomId)
+    const latestVersion = events.length > 0 ? events[events.length - 1].version : 0
+    const { lastEventVersion, loadRoomRuntime, loadBidHistories } = useLiveRoomStore.getState()
+
+    if (latestVersion <= lastEventVersion) {
+      return
+    }
+
+    set({
+      lastEventVersion: latestVersion,
+      comments: extractComments(events),
+    })
+
+    await Promise.all([
+      loadRoomRuntime(roomId),
+      loadBidHistories(),
+    ])
   },
 
   toggleAuctionItemDrawer: () => set(state => ({ showAuctionItemDrawer: !state.showAuctionItemDrawer })),
@@ -156,11 +157,54 @@ export const useLiveRoomStore = create<LiveRoomState>((set, get) => ({
   setCurrentAuctionCardClosed: (closed) => set({ isCurrentAuctionCardClosed: closed }),
 
   submitBid: async (price) => {
-    await new Promise(resolve => setTimeout(resolve, 800))
-    set(state => ({
-      myBidStatus: { ...state.myBidStatus, myHighestPrice: price, isLeading: true },
+    const { currentRoomId, currentSessionId, currentItemId, loadRoomRuntime, loadBidHistories } = useLiveRoomStore.getState()
+    const userId = useUserStore.getState().user?.id
+
+    if (!currentRoomId || !currentSessionId || !currentItemId || !userId) {
+      return false
+    }
+
+    const requestId = `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
+    await createBid({
+      roomId: currentRoomId,
+      sessionId: currentSessionId,
+      itemId: currentItemId,
+      userId,
+      bidPrice: price,
+      requestId,
+    })
+
+    await Promise.all([
+      loadRoomRuntime(currentRoomId),
+      loadBidHistories(),
+    ])
+
+    const events = await getRoomEvents(currentRoomId)
+    const latestVersion = events.length > 0 ? events[events.length - 1].version : 0
+
+    set(() => ({
+      lastEventVersion: latestVersion,
       showBidSuccessModal: true,
     }))
     return true
   },
+
+  submitComment: async (content) => {
+    const roomId = useLiveRoomStore.getState().currentRoomId
+    if (!roomId) {
+      return false
+    }
+
+    await createRoomComment(roomId, content)
+    await useLiveRoomStore.getState().loadRoomComments(roomId)
+    return true
+  },
 }))
+
+const getMappedRoomById = (roomId: string, rooms: LiveRoom[]) => rooms.find((room) => room.id === roomId)
+
+const extractComments = (events: Awaited<ReturnType<typeof getRoomEvents>>): LiveComment[] =>
+  events
+    .filter((event) => event.event === 'room_comment_received')
+    .map((event) => event.payload as BackendCommentPayload)

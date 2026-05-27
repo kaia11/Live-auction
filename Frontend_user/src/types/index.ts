@@ -66,6 +66,12 @@ export interface BidHistory {
   bidTime: string
 }
 
+export interface LiveComment {
+  userId: string
+  nickname: string
+  content: string
+}
+
 export interface AppState {
   lastVisitedRoomId: string | null
   currentTab: 'live' | 'profile'
