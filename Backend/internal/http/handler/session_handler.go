@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	nethttp "net/http"
+	"strconv"
 	"strings"
 
 	api "auction-live/backend/internal/api"
@@ -50,13 +51,14 @@ func (h *SessionHandler) GetRanking(w nethttp.ResponseWriter, r *nethttp.Request
 
 func (h *SessionHandler) GetMyStatus(w nethttp.ResponseWriter, r *nethttp.Request) {
 	sessionID := r.PathValue("sessionId")
-	userID := r.URL.Query().Get("userId")
-	if userID == "" {
-		userID = "user-001"
-	}
-
 	if sessionID == "" {
 		api.BadRequest(w, "sessionId is required")
+		return
+	}
+
+	userID, err := h.userService.GetCurrentUserID(r.Header.Get("Authorization"))
+	if err != nil {
+		api.Error(w, nethttp.StatusUnauthorized, api.CodeUnauthorized, err.Error())
 		return
 	}
 
@@ -70,7 +72,24 @@ func (h *SessionHandler) GetRoomEvents(w nethttp.ResponseWriter, r *nethttp.Requ
 		return
 	}
 
-	api.Success(w, nethttp.StatusOK, h.hub.List(roomID))
+	sinceVersion, err := parseInt64Query(r, "sinceVersion")
+	if err != nil {
+		api.BadRequest(w, "sinceVersion must be a valid integer")
+		return
+	}
+
+	limit, err := parseIntQuery(r, "limit")
+	if err != nil {
+		api.BadRequest(w, "limit must be a valid integer")
+		return
+	}
+
+	api.Success(w, nethttp.StatusOK, map[string]any{
+		"roomId":        roomID,
+		"sinceVersion":  sinceVersion,
+		"latestVersion": h.hub.LatestVersion(roomID),
+		"events":        h.hub.List(roomID, sinceVersion, limit),
+	})
 }
 
 func (h *SessionHandler) CreateRoomComment(w nethttp.ResponseWriter, r *nethttp.Request) {
@@ -116,7 +135,25 @@ func (h *SessionHandler) CreateRoomComment(w nethttp.ResponseWriter, r *nethttp.
 		Content:  content,
 	}
 
-	h.hub.Publish(roomID, "room_comment_received", comment)
+	h.hub.Publish(roomID, ws.EventRoomCommentReceived, comment)
 	logger.Info("room comment created room_id=%s user_id=%s nickname=%s", roomID, user.ID, user.Nickname)
 	api.Success(w, nethttp.StatusOK, comment)
+}
+
+func parseInt64Query(r *nethttp.Request, key string) (int64, error) {
+	raw := strings.TrimSpace(r.URL.Query().Get(key))
+	if raw == "" {
+		return 0, nil
+	}
+
+	return strconv.ParseInt(raw, 10, 64)
+}
+
+func parseIntQuery(r *nethttp.Request, key string) (int, error) {
+	raw := strings.TrimSpace(r.URL.Query().Get(key))
+	if raw == "" {
+		return 0, nil
+	}
+
+	return strconv.Atoi(raw)
 }

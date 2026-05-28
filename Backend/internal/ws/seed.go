@@ -18,6 +18,6 @@ func SeedDemoMessages(hub *Hub) {
 	}
 
 	for _, comment := range demoComments {
-		hub.Publish("room-001", "room_comment_received", comment)
+		hub.Publish("room-001", EventRoomCommentReceived, comment)
 	}
 }

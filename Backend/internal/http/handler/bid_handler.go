@@ -75,14 +75,14 @@ func (h *BidHandler) CreateBid(w nethttp.ResponseWriter, r *nethttp.Request) {
 		return
 	}
 
-	h.hub.Publish(req.RoomID, "auction_price_updated", result)
+	h.hub.Publish(req.RoomID, ws.EventAuctionPriceUpdated, result)
 	if settlement != nil {
-		h.hub.Publish(req.RoomID, "auction_session_ended", settlement)
+		h.hub.Publish(req.RoomID, ws.EventAuctionSessionEnded, settlement)
 		if settlement.Order != nil {
-			h.hub.Publish(req.RoomID, "auction_order_created", settlement.Order)
+			h.hub.Publish(req.RoomID, ws.EventAuctionOrderCreated, settlement.Order)
 		}
 		if settlement.NextSessionID != "" {
-			h.hub.Publish(req.RoomID, "auction_session_upcoming", map[string]any{
+			h.hub.Publish(req.RoomID, ws.EventAuctionSessionUpcoming, map[string]any{
 				"roomId":        settlement.RoomID,
 				"nextSessionId": settlement.NextSessionID,
 				"nextItemId":    settlement.NextItemID,

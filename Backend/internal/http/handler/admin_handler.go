@@ -81,7 +81,7 @@ func (h *AdminHandler) CreateItem(w nethttp.ResponseWriter, r *nethttp.Request) 
 		return
 	}
 
-	h.hub.Publish(roomID, "room_item_queue_updated", meta)
+	h.hub.Publish(roomID, ws.EventRoomItemQueueUpdated, meta)
 	api.Created(w, item)
 }
 
@@ -119,7 +119,7 @@ func (h *AdminHandler) UpdateItem(w nethttp.ResponseWriter, r *nethttp.Request) 
 		return
 	}
 
-	h.hub.Publish(item.RoomID, "room_item_queue_updated", map[string]any{
+	h.hub.Publish(item.RoomID, ws.EventRoomItemQueueUpdated, map[string]any{
 		"itemId":      item.ID,
 		"queueStatus": item.QueueStatus,
 		"title":       item.Title,
@@ -151,7 +151,7 @@ func (h *AdminHandler) ReorderQueue(w nethttp.ResponseWriter, r *nethttp.Request
 	}
 
 	api.Success(w, nethttp.StatusOK, result)
-	h.hub.Publish(roomID, "room_item_queue_updated", result)
+	h.hub.Publish(roomID, ws.EventRoomItemQueueUpdated, result)
 }
 
 func (h *AdminHandler) ActivateNextItem(w nethttp.ResponseWriter, r *nethttp.Request) {
@@ -175,7 +175,7 @@ func (h *AdminHandler) ActivateNextItem(w nethttp.ResponseWriter, r *nethttp.Req
 	}
 
 	api.Success(w, nethttp.StatusOK, result)
-	h.hub.Publish(roomID, "auction_session_upcoming", result)
+	h.hub.Publish(roomID, ws.EventAuctionSessionUpcoming, result)
 }
 
 func (h *AdminHandler) StartSession(w nethttp.ResponseWriter, r *nethttp.Request) {
@@ -200,7 +200,7 @@ func (h *AdminHandler) StartSession(w nethttp.ResponseWriter, r *nethttp.Request
 
 	roomID, _ := result["roomId"].(string)
 	if roomID != "" {
-		h.hub.Publish(roomID, "auction_session_activated", result)
+		h.hub.Publish(roomID, ws.EventAuctionSessionActivated, result)
 	}
 	api.Success(w, nethttp.StatusOK, result)
 }
@@ -227,7 +227,7 @@ func (h *AdminHandler) CancelSession(w nethttp.ResponseWriter, r *nethttp.Reques
 
 	roomID, _ := result["roomId"].(string)
 	if roomID != "" {
-		h.hub.Publish(roomID, "auction_session_ended", result)
+		h.hub.Publish(roomID, ws.EventAuctionSessionEnded, result)
 	}
 	api.Success(w, nethttp.StatusOK, result)
 }
@@ -253,12 +253,12 @@ func (h *AdminHandler) SettleSession(w nethttp.ResponseWriter, r *nethttp.Reques
 	}
 
 	if result.RoomID != "" {
-		h.hub.Publish(result.RoomID, "auction_session_ended", result)
+		h.hub.Publish(result.RoomID, ws.EventAuctionSessionEnded, result)
 		if result.Order != nil {
-			h.hub.Publish(result.RoomID, "auction_order_created", result.Order)
+			h.hub.Publish(result.RoomID, ws.EventAuctionOrderCreated, result.Order)
 		}
 		if result.NextSessionID != "" {
-			h.hub.Publish(result.RoomID, "auction_session_upcoming", map[string]any{
+			h.hub.Publish(result.RoomID, ws.EventAuctionSessionUpcoming, map[string]any{
 				"roomId":        result.RoomID,
 				"nextSessionId": result.NextSessionID,
 				"nextItemId":    result.NextItemID,

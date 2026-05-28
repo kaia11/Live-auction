@@ -25,6 +25,7 @@ func NewRouter(handlers Handlers) http.Handler {
 	mux.HandleFunc("GET /health", handlers.Health.GetHealth)
 	mux.HandleFunc("GET /rooms", handlers.Rooms.ListRooms)
 	mux.HandleFunc("GET /rooms/{roomId}", handlers.Rooms.GetRoomDetail)
+	mux.HandleFunc("GET /rooms/{roomId}/live-snapshot", handlers.Rooms.GetLiveSnapshot)
 	mux.HandleFunc("GET /rooms/{roomId}/items", handlers.Items.ListRoomItems)
 	mux.HandleFunc("GET /rooms/{roomId}/items/{itemId}", handlers.Items.GetItemDetail)
 	mux.HandleFunc("GET /rooms/{roomId}/current-session", handlers.Session.GetCurrentSession)

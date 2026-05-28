@@ -67,7 +67,7 @@ func (h *OrderHandler) UpdateOrderStatus(w nethttp.ResponseWriter, r *nethttp.Re
 		return
 	}
 
-	h.hub.Publish(order.RoomID, "auction_order_updated", order)
+	h.hub.Publish(order.RoomID, ws.EventAuctionOrderUpdated, order)
 	api.Success(w, nethttp.StatusOK, order)
 }
 

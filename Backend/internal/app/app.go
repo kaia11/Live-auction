@@ -24,6 +24,7 @@ func New(cfg config.Config) *App {
 
 	userService := service.NewUserService()
 	roomService := service.NewRoomService()
+	liveSnapshotService := service.NewLiveSnapshotService(hub)
 	itemService := service.NewItemService()
 	sessionService := service.NewSessionService()
 	bidService := service.NewBidService()
@@ -34,7 +35,7 @@ func New(cfg config.Config) *App {
 	handlers := httpx.Handlers{
 		Auth:    handler.NewAuthHandler(userService),
 		Health:  handler.NewHealthHandler(cfg),
-		Rooms:   handler.NewRoomHandler(roomService),
+		Rooms:   handler.NewRoomHandler(roomService, liveSnapshotService, userService),
 		Items:   handler.NewItemHandler(itemService),
 		Orders:  handler.NewOrderHandler(orderService, userService, hub),
 		Session: handler.NewSessionHandler(sessionService, userService, hub),

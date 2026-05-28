@@ -88,12 +88,12 @@ func (s *SettlementScheduler) publishOutcome(outcome SessionSettlement) {
 		return
 	}
 
-	s.hub.Publish(outcome.RoomID, "auction_session_ended", outcome)
+	s.hub.Publish(outcome.RoomID, ws.EventAuctionSessionEnded, outcome)
 	if outcome.Order != nil {
-		s.hub.Publish(outcome.RoomID, "auction_order_created", outcome.Order)
+		s.hub.Publish(outcome.RoomID, ws.EventAuctionOrderCreated, outcome.Order)
 	}
 	if outcome.NextSessionID != "" {
-		s.hub.Publish(outcome.RoomID, "auction_session_upcoming", map[string]any{
+		s.hub.Publish(outcome.RoomID, ws.EventAuctionSessionUpcoming, map[string]any{
 			"roomId":        outcome.RoomID,
 			"nextSessionId": outcome.NextSessionID,
 			"nextItemId":    outcome.NextItemID,

@@ -50,6 +50,12 @@ func (s *SessionService) GetUserStatus(sessionID string, userID string) model.Se
 	session := s.store.sessions[sessionID]
 	rankings := buildRankings(s.store.bids, s.store.users, sessionID)
 
+	return buildSessionUserStatus(session, rankings, userID)
+}
+
+func buildSessionUserStatus(session model.AuctionSession, rankings []model.RankingEntry, userID string) model.SessionUserStatus {
+	sessionID := session.ID
+
 	status := model.SessionUserStatus{
 		SessionID:      sessionID,
 		UserID:         userID,

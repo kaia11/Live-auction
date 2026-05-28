@@ -69,6 +69,15 @@ func (s *UserService) GetCurrentUserID(authorization string) (string, error) {
 	return parseMockToken(authorization)
 }
 
+func (s *UserService) TryGetCurrentUserID(authorization string) (string, bool) {
+	userID, err := parseMockToken(authorization)
+	if err != nil {
+		return "", false
+	}
+
+	return userID, true
+}
+
 func buildMockToken(userID string) string {
 	return mockTokenPrefix + userID
 }

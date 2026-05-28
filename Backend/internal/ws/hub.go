@@ -38,16 +38,39 @@ func (h *Hub) Publish(roomID string, event string, payload any) {
 	})
 }
 
-func (h *Hub) List(roomID string) []Message {
+func (h *Hub) List(roomID string, sinceVersion int64, limit int) []Message {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
 	result := make([]Message, 0)
 	for _, message := range h.buffer {
-		if roomID == "" || message.RoomID == roomID {
-			result = append(result, message)
+		if roomID != "" && message.RoomID != roomID {
+			continue
+		}
+		if message.Version <= sinceVersion {
+			continue
+		}
+
+		result = append(result, message)
+		if limit > 0 && len(result) >= limit {
+			break
 		}
 	}
 
 	return result
+}
+
+func (h *Hub) LatestVersion(roomID string) int64 {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	var latest int64
+	for _, message := range h.buffer {
+		if roomID != "" && message.RoomID != roomID {
+			continue
+		}
+		latest = message.Version
+	}
+
+	return latest
 }
