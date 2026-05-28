@@ -11,6 +11,7 @@ type Handlers struct {
 	Health  *handler.HealthHandler
 	Rooms   *handler.RoomHandler
 	Items   *handler.ItemHandler
+	Orders  *handler.OrderHandler
 	Session *handler.SessionHandler
 	Bids    *handler.BidHandler
 	Admin   *handler.AdminHandler
@@ -32,6 +33,7 @@ func NewRouter(handlers Handlers) http.Handler {
 	mux.HandleFunc("GET /sessions/{sessionId}/ranking", handlers.Session.GetRanking)
 	mux.HandleFunc("GET /sessions/{sessionId}/my-status", handlers.Session.GetMyStatus)
 	mux.HandleFunc("GET /users/me/bids", handlers.Bids.ListMyBids)
+	mux.HandleFunc("GET /users/me/orders", handlers.Orders.ListMyOrders)
 	mux.HandleFunc("POST /bids", handlers.Bids.CreateBid)
 
 	mux.HandleFunc("POST /admin/rooms/{roomId}/items", handlers.Admin.CreateItem)
@@ -40,8 +42,10 @@ func NewRouter(handlers Handlers) http.Handler {
 	mux.HandleFunc("POST /admin/rooms/{roomId}/queue/next", handlers.Admin.ActivateNextItem)
 	mux.HandleFunc("POST /admin/sessions/{sessionId}/start", handlers.Admin.StartSession)
 	mux.HandleFunc("POST /admin/sessions/{sessionId}/cancel", handlers.Admin.CancelSession)
+	mux.HandleFunc("POST /admin/sessions/{sessionId}/settle", handlers.Admin.SettleSession)
 	mux.HandleFunc("GET /admin/rooms/{roomId}/sessions", handlers.Admin.ListRoomSessions)
 	mux.HandleFunc("GET /admin/orders", handlers.Admin.ListOrders)
+	mux.HandleFunc("POST /admin/orders/{orderId}/status", handlers.Orders.UpdateOrderStatus)
 	mux.HandleFunc("GET /admin/stats/overview", handlers.Admin.GetStatsOverview)
 	mux.HandleFunc("GET /admin/stats/timeline", handlers.Admin.GetStatsTimeline)
 

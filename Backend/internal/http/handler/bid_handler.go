@@ -6,14 +6,15 @@ import (
 	nethttp "net/http"
 
 	api "auction-live/backend/internal/api"
+	"auction-live/backend/internal/logger"
 	"auction-live/backend/internal/service"
 	"auction-live/backend/internal/ws"
 )
 
 type BidHandler struct {
-	bidService *service.BidService
+	bidService  *service.BidService
 	userService *service.UserService
-	hub        *ws.Hub
+	hub         *ws.Hub
 }
 
 type createBidRequest struct {
@@ -46,7 +47,7 @@ func (h *BidHandler) CreateBid(w nethttp.ResponseWriter, r *nethttp.Request) {
 		return
 	}
 
-	result, err := h.bidService.CreateBid(service.CreateBidInput{
+	result, settlement, err := h.bidService.CreateBid(service.CreateBidInput{
 		RoomID:    req.RoomID,
 		SessionID: req.SessionID,
 		ItemID:    req.ItemID,
@@ -75,6 +76,28 @@ func (h *BidHandler) CreateBid(w nethttp.ResponseWriter, r *nethttp.Request) {
 	}
 
 	h.hub.Publish(req.RoomID, "auction_price_updated", result)
+	if settlement != nil {
+		h.hub.Publish(req.RoomID, "auction_session_ended", settlement)
+		if settlement.Order != nil {
+			h.hub.Publish(req.RoomID, "auction_order_created", settlement.Order)
+		}
+		if settlement.NextSessionID != "" {
+			h.hub.Publish(req.RoomID, "auction_session_upcoming", map[string]any{
+				"roomId":        settlement.RoomID,
+				"nextSessionId": settlement.NextSessionID,
+				"nextItemId":    settlement.NextItemID,
+			})
+		}
+	}
+	logger.Info(
+		"bid accepted room_id=%s session_id=%s item_id=%s user_id=%s price=%d request_id=%s",
+		req.RoomID,
+		req.SessionID,
+		req.ItemID,
+		req.UserID,
+		result.AcceptedBidPrice,
+		req.RequestID,
+	)
 
 	api.Success(w, nethttp.StatusOK, result)
 }

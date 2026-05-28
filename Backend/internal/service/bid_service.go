@@ -4,11 +4,13 @@ import (
 	"sort"
 	"time"
 
+	"auction-live/backend/internal/domain"
 	"auction-live/backend/internal/model"
 )
 
 type BidService struct {
-	store *memoryStore
+	store  *memoryStore
+	engine *AuctionEngine
 }
 
 type CreateBidInput struct {
@@ -21,57 +23,57 @@ type CreateBidInput struct {
 }
 
 func NewBidService() *BidService {
-	return &BidService{store: sharedStore}
+	return &BidService{store: sharedStore, engine: NewAuctionEngine(sharedStore)}
 }
 
-func (s *BidService) CreateBid(input CreateBidInput) (model.BidResult, error) {
+func (s *BidService) CreateBid(input CreateBidInput) (model.BidResult, *SessionSettlement, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 
 	if _, ok := s.store.users[input.UserID]; !ok {
-		return model.BidResult{}, ErrUserNotFound
+		return model.BidResult{}, nil, ErrUserNotFound
 	}
 
 	room, ok := s.store.rooms[input.RoomID]
 	if !ok {
-		return model.BidResult{}, ErrRoomNotFound
+		return model.BidResult{}, nil, ErrRoomNotFound
 	}
 
 	session, ok := s.store.sessions[input.SessionID]
 	if !ok {
-		return model.BidResult{}, ErrSessionNotFound
+		return model.BidResult{}, nil, ErrSessionNotFound
 	}
 
 	item, ok := s.store.items[input.ItemID]
 	if !ok {
-		return model.BidResult{}, ErrItemNotFound
+		return model.BidResult{}, nil, ErrItemNotFound
 	}
 
 	if room.CurrentSessionID != session.ID || session.RoomID != room.ID || session.ItemID != item.ID || item.RoomID != room.ID {
-		return model.BidResult{}, ErrBidOwnershipMismatch
+		return model.BidResult{}, nil, ErrBidOwnershipMismatch
 	}
 
-	if session.Status != "bidding" {
-		return model.BidResult{}, ErrSessionNotBidding
+	if session.Status != domain.SessionStateBidding {
+		return model.BidResult{}, nil, ErrSessionNotBidding
 	}
 
 	if cached, exists := s.store.processedRequests[input.RequestID]; exists {
-		return cached, ErrDuplicateBidRequest
+		return cached, nil, ErrDuplicateBidRequest
 	}
 
 	nextMinimumBid := session.CurrentPrice + session.IncrementStep
 	if session.CurrentPrice == 0 && input.BidPrice < item.StartPrice {
-		return model.BidResult{}, ErrInvalidBidPrice
+		return model.BidResult{}, nil, ErrInvalidBidPrice
 	}
 
 	if input.BidPrice < nextMinimumBid {
-		return model.BidResult{}, ErrInvalidBidPrice
+		return model.BidResult{}, nil, ErrInvalidBidPrice
 	}
 
 	if session.IncrementStep > 0 {
 		delta := input.BidPrice - session.CurrentPrice
 		if delta%session.IncrementStep != 0 {
-			return model.BidResult{}, ErrInvalidBidPrice
+			return model.BidResult{}, nil, ErrInvalidBidPrice
 		}
 	}
 
@@ -105,7 +107,7 @@ func (s *BidService) CreateBid(input CreateBidInput) (model.BidResult, error) {
 		UserID:     input.UserID,
 		BidPrice:   acceptedBidPrice,
 		RequestID:  input.RequestID,
-		Status:     "accepted",
+		Status:     domain.BidStatusAccepted,
 		CreateTime: time.Now().Format(time.RFC3339),
 	}
 	s.store.bids = append(s.store.bids, bid)
@@ -119,13 +121,15 @@ func (s *BidService) CreateBid(input CreateBidInput) (model.BidResult, error) {
 	}
 	s.store.bids[len(s.store.bids)-1] = bid
 
+	var settlement *SessionSettlement
 	if ceilingReached {
-		session.Status = "ended_sold"
-	}
-	s.store.sessions[session.ID] = session
-
-	if ceilingReached {
-		s.finishCurrentSessionLocked(session, "ended_sold")
+		outcome, err := s.engine.ReachCeilingLocked(session.ID)
+		if err != nil {
+			return model.BidResult{}, nil, err
+		}
+		settlement = &outcome
+	} else {
+		s.store.sessions[session.ID] = session
 	}
 
 	result := model.BidResult{
@@ -144,7 +148,7 @@ func (s *BidService) CreateBid(input CreateBidInput) (model.BidResult, error) {
 	}
 	s.store.processedRequests[input.RequestID] = result
 
-	return result, nil
+	return result, settlement, nil
 }
 
 func (s *BidService) ListMyBids(userID string) []model.Bid {
@@ -209,14 +213,14 @@ func currentParticipantsCount(bids []model.Bid, sessionID string, userID string)
 
 func resolveBidHistoryResult(session model.AuctionSession, userID string) string {
 	switch session.Status {
-	case "bidding", "pending":
+	case domain.SessionStateBidding, domain.SessionStatePending:
 		return "pending"
-	case "ended_sold":
+	case domain.SessionStateEndedSold:
 		if session.LeaderUserID == userID {
 			return "win"
 		}
 		return "lose"
-	case "ended_passed", "cancelled":
+	case domain.SessionStateEndedPassed, domain.SessionStateCancelled:
 		return "lose"
 	default:
 		if session.LeaderUserID == userID {
@@ -257,55 +261,4 @@ func buildRankings(bids []model.Bid, users map[string]model.User, sessionID stri
 	}
 
 	return rankings
-}
-
-func (s *BidService) finishCurrentSessionLocked(session model.AuctionSession, finalStatus string) {
-	session.Status = finalStatus
-	s.store.sessions[session.ID] = session
-
-	item := s.store.items[session.ItemID]
-	item.QueueStatus = "finished"
-	s.store.items[item.ID] = item
-
-	nextSessionID, nextItemID := s.findNextQueuedLocked(session.RoomID)
-	if nextSessionID == "" || nextItemID == "" {
-		room := s.store.rooms[session.RoomID]
-		room.CurrentSessionID = session.ID
-		s.store.rooms[session.RoomID] = room
-		return
-	}
-
-	nextItem := s.store.items[nextItemID]
-	nextItem.QueueStatus = "upcoming"
-	s.store.items[nextItemID] = nextItem
-
-	nextSession := s.store.sessions[nextSessionID]
-	nextSession.Status = "pending"
-	nextSession.CurrentPrice = nextItem.StartPrice
-	nextSession.LeaderUserID = ""
-	nextSession.ParticipantCount = 0
-	nextSession.EndTime = ""
-	nextSession.IncrementStep = nextItem.IncrementStep
-	nextSession.ExtensionSeconds = nextItem.ExtensionSeconds
-	nextSession.ExtensionTrigger = nextItem.ExtensionTriggerSeconds
-	nextSession.CeilingPrice = nextItem.CeilingPrice
-	s.store.sessions[nextSessionID] = nextSession
-
-	room := s.store.rooms[session.RoomID]
-	room.CurrentSessionID = nextSessionID
-	s.store.rooms[session.RoomID] = room
-}
-
-func (s *BidService) findNextQueuedLocked(roomID string) (string, string) {
-	for _, itemID := range s.store.roomItems[roomID] {
-		item := s.store.items[itemID]
-		if item.QueueStatus == "queued" || item.QueueStatus == "upcoming" {
-			for sessionID, session := range s.store.sessions {
-				if session.RoomID == roomID && session.ItemID == itemID {
-					return sessionID, itemID
-				}
-			}
-		}
-	}
-	return "", ""
 }

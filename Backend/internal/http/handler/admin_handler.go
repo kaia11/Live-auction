@@ -232,6 +232,43 @@ func (h *AdminHandler) CancelSession(w nethttp.ResponseWriter, r *nethttp.Reques
 	api.Success(w, nethttp.StatusOK, result)
 }
 
+func (h *AdminHandler) SettleSession(w nethttp.ResponseWriter, r *nethttp.Request) {
+	sessionID := r.PathValue("sessionId")
+	if sessionID == "" {
+		api.BadRequest(w, "sessionId is required")
+		return
+	}
+
+	result, err := h.adminService.SettleSession(sessionID)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrSessionNotFound):
+			api.Error(w, nethttp.StatusNotFound, api.CodeSessionNotFound, err.Error())
+		case errors.Is(err, service.ErrInvalidSessionState):
+			api.Conflict(w, api.CodeSessionNotBidding, err.Error())
+		default:
+			api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to settle session")
+		}
+		return
+	}
+
+	if result.RoomID != "" {
+		h.hub.Publish(result.RoomID, "auction_session_ended", result)
+		if result.Order != nil {
+			h.hub.Publish(result.RoomID, "auction_order_created", result.Order)
+		}
+		if result.NextSessionID != "" {
+			h.hub.Publish(result.RoomID, "auction_session_upcoming", map[string]any{
+				"roomId":        result.RoomID,
+				"nextSessionId": result.NextSessionID,
+				"nextItemId":    result.NextItemID,
+			})
+		}
+	}
+
+	api.Success(w, nethttp.StatusOK, result)
+}
+
 func (h *AdminHandler) ListRoomSessions(w nethttp.ResponseWriter, r *nethttp.Request) {
 	roomID := r.PathValue("roomId")
 	if roomID == "" {

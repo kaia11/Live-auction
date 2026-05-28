@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	api "auction-live/backend/internal/api"
+	"auction-live/backend/internal/logger"
 	"auction-live/backend/internal/service"
 	"auction-live/backend/internal/ws"
 )
@@ -116,5 +117,6 @@ func (h *SessionHandler) CreateRoomComment(w nethttp.ResponseWriter, r *nethttp.
 	}
 
 	h.hub.Publish(roomID, "room_comment_received", comment)
+	logger.Info("room comment created room_id=%s user_id=%s nickname=%s", roomID, user.ID, user.Nickname)
 	api.Success(w, nethttp.StatusOK, comment)
 }

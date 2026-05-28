@@ -2,17 +2,18 @@ package service
 
 import (
 	"fmt"
-	"time"
 
+	"auction-live/backend/internal/domain"
 	"auction-live/backend/internal/model"
 )
 
 type AdminService struct {
-	store *memoryStore
+	store  *memoryStore
+	engine *AuctionEngine
 }
 
 func NewAdminService() *AdminService {
-	return &AdminService{store: sharedStore}
+	return &AdminService{store: sharedStore, engine: NewAuctionEngine(sharedStore)}
 }
 
 type CreateItemInput struct {
@@ -66,7 +67,7 @@ func (s *AdminService) CreateItem(roomID string, input CreateItemInput) (model.A
 		DurationSeconds:         input.DurationSeconds,
 		ExtensionSeconds:        input.ExtensionSeconds,
 		ExtensionTriggerSeconds: input.ExtensionTriggerSeconds,
-		QueueStatus:             "queued",
+		QueueStatus:             domain.QueueStateQueued,
 	}
 	s.store.items[itemID] = item
 	s.store.roomItems[roomID] = append(s.store.roomItems[roomID], itemID)
@@ -74,7 +75,7 @@ func (s *AdminService) CreateItem(roomID string, input CreateItemInput) (model.A
 		ID:                sessionID,
 		RoomID:            roomID,
 		ItemID:            itemID,
-		Status:            "pending",
+		Status:            domain.SessionStatePending,
 		CurrentPrice:      input.StartPrice,
 		LeaderUserID:      "",
 		EndTime:           "",
@@ -104,7 +105,7 @@ func (s *AdminService) UpdateItem(itemID string, input UpdateItemInput) (model.A
 	if !ok {
 		return model.AuctionItem{}, ErrItemNotFound
 	}
-	if item.QueueStatus == "active" || item.QueueStatus == "finished" || item.QueueStatus == "cancelled" {
+	if item.QueueStatus == domain.QueueStateActive || item.QueueStatus == domain.QueueStateFinished || item.QueueStatus == domain.QueueStateCancelled {
 		return model.AuctionItem{}, ErrInvalidSessionState
 	}
 
@@ -138,7 +139,7 @@ func (s *AdminService) UpdateItem(itemID string, input UpdateItemInput) (model.A
 
 	s.store.items[itemID] = item
 	for sessionID, session := range s.store.sessions {
-		if session.ItemID == itemID && session.Status == "pending" {
+		if session.ItemID == itemID && session.Status == domain.SessionStatePending {
 			session.CurrentPrice = item.StartPrice
 			session.IncrementStep = item.IncrementStep
 			session.ExtensionSeconds = item.ExtensionSeconds
@@ -185,13 +186,13 @@ func (s *AdminService) ReorderQueue(roomID string, itemIDs []string) (map[string
 	upcomingCount := 0
 	for _, itemID := range itemIDs {
 		status := s.store.items[itemID].QueueStatus
-		if status == "finished" || status == "cancelled" {
+		if status == domain.QueueStateFinished || status == domain.QueueStateCancelled {
 			return nil, ErrInvalidQueueOrder
 		}
-		if status == "active" {
+		if status == domain.QueueStateActive {
 			activeCount++
 		}
-		if status == "upcoming" {
+		if status == domain.QueueStateUpcoming {
 			upcomingCount++
 		}
 	}
@@ -210,127 +211,28 @@ func (s *AdminService) ActivateNextItem(roomID string) (map[string]any, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 
-	room, ok := s.store.rooms[roomID]
-	if !ok {
-		return nil, ErrRoomNotFound
-	}
-
-	currentSession, ok := s.store.sessions[room.CurrentSessionID]
-	if !ok {
-		return nil, ErrSessionNotFound
-	}
-
-	currentItem := s.store.items[currentSession.ItemID]
-	if currentItem.QueueStatus == "active" {
-		currentItem.QueueStatus = "cancelled"
-		s.store.items[currentItem.ID] = currentItem
-	}
-	if currentSession.Status == "bidding" || currentSession.Status == "pending" {
-		currentSession.Status = "cancelled"
-		s.store.sessions[currentSession.ID] = currentSession
-	}
-
-	nextSessionID, nextItemID := s.findNextQueuedLocked(roomID)
-	if nextSessionID == "" {
-		return nil, ErrQueueExhausted
-	}
-
-	nextItem := s.store.items[nextItemID]
-	nextItem.QueueStatus = "upcoming"
-	s.store.items[nextItemID] = nextItem
-
-	nextSession := s.store.sessions[nextSessionID]
-	nextSession.Status = "pending"
-	nextSession.CurrentPrice = nextItem.StartPrice
-	nextSession.LeaderUserID = ""
-	nextSession.ParticipantCount = 0
-	nextSession.EndTime = ""
-	nextSession.IncrementStep = nextItem.IncrementStep
-	nextSession.ExtensionSeconds = nextItem.ExtensionSeconds
-	nextSession.ExtensionTrigger = nextItem.ExtensionTriggerSeconds
-	nextSession.CeilingPrice = nextItem.CeilingPrice
-	s.store.sessions[nextSessionID] = nextSession
-
-	room.CurrentSessionID = nextSessionID
-	s.store.rooms[roomID] = room
-
-	return map[string]any{
-		"roomId":        roomID,
-		"nextItemId":    nextItemID,
-		"nextSessionId": nextSessionID,
-		"status":        nextSession.Status,
-		"queueStatus":   nextItem.QueueStatus,
-	}, nil
+	return s.engine.ActivateNextItemLocked(roomID)
 }
 
 func (s *AdminService) StartSession(sessionID string) (map[string]any, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 
-	session, ok := s.store.sessions[sessionID]
-	if !ok {
-		return nil, ErrSessionNotFound
-	}
-
-	if session.Status != "pending" {
-		return nil, ErrInvalidSessionState
-	}
-
-	item, ok := s.store.items[session.ItemID]
-	if !ok {
-		return nil, ErrItemNotFound
-	}
-
-	session.Status = "bidding"
-	session.CurrentPrice = item.StartPrice
-	session.EndTime = time.Now().Add(time.Duration(item.DurationSeconds) * time.Second).Format(time.RFC3339)
-	session.IncrementStep = item.IncrementStep
-	session.ExtensionSeconds = item.ExtensionSeconds
-	session.ExtensionTrigger = item.ExtensionTriggerSeconds
-	session.CeilingPrice = item.CeilingPrice
-	s.store.sessions[sessionID] = session
-
-	item.QueueStatus = "active"
-	s.store.items[item.ID] = item
-
-	room := s.store.rooms[session.RoomID]
-	room.CurrentSessionID = sessionID
-	s.store.rooms[session.RoomID] = room
-
-	return map[string]any{
-		"roomId":      session.RoomID,
-		"sessionId":   sessionID,
-		"status":      session.Status,
-		"endTime":     session.EndTime,
-		"queueStatus": item.QueueStatus,
-	}, nil
+	return s.engine.StartSessionLocked(sessionID)
 }
 
 func (s *AdminService) CancelSession(sessionID string) (map[string]any, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 
-	session, ok := s.store.sessions[sessionID]
-	if !ok {
-		return nil, ErrSessionNotFound
-	}
+	return s.engine.CancelSessionLocked(sessionID)
+}
 
-	if session.Status == "ended_sold" || session.Status == "ended_unsold" {
-		return nil, ErrInvalidSessionState
-	}
+func (s *AdminService) SettleSession(sessionID string) (SessionSettlement, error) {
+	s.store.mu.Lock()
+	defer s.store.mu.Unlock()
 
-	session.Status = "cancelled"
-	s.store.sessions[sessionID] = session
-
-	item := s.store.items[session.ItemID]
-	item.QueueStatus = "cancelled"
-	s.store.items[item.ID] = item
-
-	return map[string]any{
-		"roomId":    session.RoomID,
-		"sessionId": sessionID,
-		"status":    session.Status,
-	}, nil
+	return s.engine.SettleSessionLocked(sessionID)
 }
 
 func (s *AdminService) ListRoomSessions(roomID string) []map[string]any {
@@ -360,17 +262,17 @@ func (s *AdminService) ListOrders() []map[string]any {
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 
-	orders := make([]map[string]any, 0)
-	for _, session := range s.store.sessions {
-		if session.Status != "ended_sold" {
-			continue
-		}
+	orders := make([]map[string]any, 0, len(s.store.orders))
+	for _, order := range s.store.orders {
 		orders = append(orders, map[string]any{
-			"orderId":     fmt.Sprintf("order-%s", session.ID),
-			"itemId":      session.ItemID,
-			"buyerUserId": session.LeaderUserID,
-			"amount":      session.CurrentPrice,
-			"status":      "pending_payment",
+			"orderId":     order.ID,
+			"sessionId":   order.SessionID,
+			"roomId":      order.RoomID,
+			"itemId":      order.ItemID,
+			"buyerUserId": order.BuyerUserID,
+			"amount":      order.Amount,
+			"status":      order.Status,
+			"createTime":  order.CreateTime,
 		})
 	}
 	return orders
@@ -383,10 +285,10 @@ func (s *AdminService) GetStatsOverview() map[string]any {
 	sold := 0
 	cancelled := 0
 	for _, session := range s.store.sessions {
-		if session.Status == "ended_sold" {
+		if session.Status == domain.SessionStateEndedSold {
 			sold++
 		}
-		if session.Status == "cancelled" {
+		if session.Status == domain.SessionStateCancelled {
 			cancelled++
 		}
 	}
@@ -415,18 +317,4 @@ func (s *AdminService) GetStatsTimeline() []map[string]any {
 		})
 	}
 	return timeline
-}
-
-func (s *AdminService) findNextQueuedLocked(roomID string) (string, string) {
-	for _, itemID := range s.store.roomItems[roomID] {
-		item := s.store.items[itemID]
-		if item.QueueStatus == "queued" || item.QueueStatus == "upcoming" {
-			for sessionID, session := range s.store.sessions {
-				if session.RoomID == roomID && session.ItemID == itemID {
-					return sessionID, itemID
-				}
-			}
-		}
-	}
-	return "", ""
 }

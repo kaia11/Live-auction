@@ -116,3 +116,14 @@ type AuctionResult struct {
 	FinalPrice       int64  `json:"finalPrice"`
 	ParticipantCount int    `json:"participantCount"`
 }
+
+type AuctionOrder struct {
+	ID          string `json:"id"`
+	SessionID   string `json:"sessionId"`
+	RoomID      string `json:"roomId"`
+	ItemID      string `json:"itemId"`
+	BuyerUserID string `json:"buyerUserId"`
+	Amount      int64  `json:"amount"`
+	Status      string `json:"status"`
+	CreateTime  string `json:"createTime"`
+}
