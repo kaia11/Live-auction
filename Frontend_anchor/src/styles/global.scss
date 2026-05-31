@@ -71,6 +71,11 @@ body {
   }
 }
 
+.pc-admin-header .ant-space {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .pc-admin-content {
   padding: 20px;
 }
@@ -154,6 +159,7 @@ body {
 .toolbar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 14px;
 }
@@ -206,4 +212,25 @@ body {
   padding: 12px;
   color: #475569;
   line-height: 1.6;
+}
+
+.mock-upload-preview,
+.dashboard-mock-preview {
+  display: grid;
+  gap: 10px;
+}
+
+.mock-upload-preview img,
+.dashboard-mock-preview img {
+  width: 100%;
+  max-width: 320px;
+  border-radius: 12px;
+  border: 1px solid #dbeafe;
+  object-fit: cover;
+}
+
+.mock-upload-copy,
+.dashboard-mock-preview span {
+  color: #64748b;
+  font-size: 13px;
 }

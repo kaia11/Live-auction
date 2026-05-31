@@ -1,16 +1,64 @@
-import { Button, Card, Image, Input, Select, Space, Table, Tag } from 'antd'
-import { useMemo, useState } from 'react'
+import { App, Button, Card, Image, Input, Select, Space, Table, Tag } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
 import AdminLayout from '@/layouts/AdminLayout'
-import { mockGoods } from '@/mock/data'
-import type { AuctionGoods } from '@/types'
+import {
+  activateNextItem,
+  cancelSession,
+  getRoomItems,
+  getRoomSessions,
+  settleSession,
+  startSession,
+  updateItem,
+} from '@/api/admin'
+import { getMerchantItemImage } from '@/assets/localImages'
+import type { GoodsRow } from '@/types'
 import { GoodsEditDrawer, RuleConfigDrawer } from '@/components/goods/GoodsDrawers'
 import RuleModal from '@/components/modals/RuleModal'
 import { AuctionResultModal, ExceptionCancelModal } from '@/components/modals/StatusModals'
+import { useAdminStore } from '@/stores/useAdminStore'
+
+const queueStatusLabelMap: Record<string, string> = {
+  queued: '待上架',
+  upcoming: '即将开始',
+  active: '竞拍中',
+  finished: '已结束',
+  cancelled: '已取消',
+}
+
+const sessionStatusLabelMap: Record<string, string> = {
+  pending: '待上架',
+  bidding: '竞拍中',
+  ended_sold: '已成交',
+  ended_passed: '已流拍',
+  cancelled: '已取消',
+}
+
+const buildDisplayStatus = (row: GoodsRow) => {
+  if (row.sessionStatus === 'ended_sold') {
+    return '已成交'
+  }
+  if (row.sessionStatus === 'ended_passed') {
+    return '已流拍'
+  }
+  if (row.sessionStatus === 'cancelled' || row.queueStatus === 'cancelled') {
+    return '已取消'
+  }
+  if (row.sessionStatus === 'bidding' || row.queueStatus === 'active') {
+    return '竞拍中'
+  }
+  if (row.queueStatus === 'upcoming') {
+    return '即将开始'
+  }
+  return queueStatusLabelMap[row.queueStatus] ?? sessionStatusLabelMap[row.sessionStatus] ?? '待上架'
+}
 
 function GoodsPage() {
+  const { message } = App.useApp()
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState<string>('全部')
-  const [selectedGoods, setSelectedGoods] = useState<AuctionGoods | undefined>()
+  const [goodsRows, setGoodsRows] = useState<GoodsRow[]>([])
+  const [selectedGoods, setSelectedGoods] = useState<GoodsRow | undefined>()
+  const [loading, setLoading] = useState(false)
 
   const [editOpen, setEditOpen] = useState(false)
   const [rulePanelOpen, setRulePanelOpen] = useState(false)
@@ -18,23 +66,132 @@ function GoodsPage() {
   const [cancelOpen, setCancelOpen] = useState(false)
   const [resultOpen, setResultOpen] = useState(false)
   const [resultStatus, setResultStatus] = useState<'成交' | '流拍' | '异常取消'>('成交')
+  const currentRoomId = useAdminStore((state) => state.currentRoomId)
+
+  useEffect(() => {
+    if (!currentRoomId) {
+      setGoodsRows([])
+      return
+    }
+
+    const loadGoods = async () => {
+      setLoading(true)
+      try {
+        const [items, sessions] = await Promise.all([
+          getRoomItems(currentRoomId),
+          getRoomSessions(currentRoomId),
+        ])
+
+        const rows = items.map((item) => {
+          const session = sessions.find((entry) => entry.itemId === item.id)
+          const row: GoodsRow = {
+            itemId: item.id,
+            sessionId: session?.sessionId ?? '',
+            roomId: item.roomId,
+            title: item.title,
+            coverImage: item.coverImage || getMerchantItemImage(item.id),
+            description: item.description,
+            startPrice: item.startPrice,
+            incrementStep: item.incrementStep,
+            ceilingPrice: item.ceilingPrice,
+            durationSeconds: item.durationSeconds,
+            extensionSeconds: item.extensionSeconds,
+            extensionTriggerSeconds: item.extensionTriggerSeconds,
+            currentPrice: session?.currentPrice ?? item.startPrice,
+            queueStatus: session?.queueStatus ?? item.queueStatus,
+            sessionStatus: session?.status ?? 'pending',
+            endTime: session?.endTime ?? '',
+            displayStatus: '',
+          }
+
+          row.displayStatus = buildDisplayStatus(row)
+          return row
+        })
+
+        setGoodsRows(rows)
+      } catch (error) {
+        const nextMessage =
+          error instanceof Error ? error.message : '商品数据加载失败，请稍后重试'
+        message.error(nextMessage)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadGoods()
+  }, [currentRoomId, message])
 
   const goodsList = useMemo(() => {
-    return mockGoods.filter((item) => {
-      const hitKeyword = !keyword || item.name.includes(keyword) || item.id.includes(keyword)
-      const hitStatus = status === '全部' || item.status === status
+    return goodsRows.filter((item) => {
+      const hitKeyword = !keyword || item.title.includes(keyword) || item.itemId.includes(keyword)
+      const hitStatus = status === '全部' || item.displayStatus === status
       return hitKeyword && hitStatus
     })
-  }, [keyword, status])
+  }, [goodsRows, keyword, status])
+
+  const refreshGoods = async () => {
+    if (!currentRoomId) {
+      return
+    }
+
+    const [items, sessions] = await Promise.all([getRoomItems(currentRoomId), getRoomSessions(currentRoomId)])
+    const rows = items.map((item) => {
+      const session = sessions.find((entry) => entry.itemId === item.id)
+      const row: GoodsRow = {
+        itemId: item.id,
+        sessionId: session?.sessionId ?? '',
+        roomId: item.roomId,
+        title: item.title,
+        coverImage: item.coverImage || getMerchantItemImage(item.id),
+        description: item.description,
+        startPrice: item.startPrice,
+        incrementStep: item.incrementStep,
+        ceilingPrice: item.ceilingPrice,
+        durationSeconds: item.durationSeconds,
+        extensionSeconds: item.extensionSeconds,
+        extensionTriggerSeconds: item.extensionTriggerSeconds,
+        currentPrice: session?.currentPrice ?? item.startPrice,
+        queueStatus: session?.queueStatus ?? item.queueStatus,
+        sessionStatus: session?.status ?? 'pending',
+        endTime: session?.endTime ?? '',
+        displayStatus: '',
+      }
+
+      row.displayStatus = buildDisplayStatus(row)
+      return row
+    })
+    setGoodsRows(rows)
+  }
 
   return (
     <AdminLayout
       activePath="/goods"
       title="商品管理"
       actions={
-        <Button type="primary" onClick={() => setRulePanelOpen(true)}>
-          全局规则配置
-        </Button>
+        <Space>
+          <Button onClick={() => setRulePanelOpen(true)}>全局规则配置</Button>
+          <Button
+            type="primary"
+            onClick={async () => {
+              if (!currentRoomId) {
+                message.warning('请先选择直播间')
+                return
+              }
+
+              try {
+                await activateNextItem(currentRoomId)
+                message.success('已切换到下一件待开始拍品')
+                await refreshGoods()
+              } catch (error) {
+                const nextMessage =
+                  error instanceof Error ? error.message : '切换下一件失败，请稍后重试'
+                message.error(nextMessage)
+              }
+            }}
+          >
+            切换下一件
+          </Button>
+        </Space>
       }
     >
       <Card className="jewel-card">
@@ -57,38 +214,39 @@ function GoodsPage() {
         </div>
 
         <Table
-          rowKey="id"
+          rowKey="itemId"
           dataSource={goodsList}
+          loading={loading}
           pagination={false}
           columns={[
             {
               title: '商品',
-              dataIndex: 'name',
+              dataIndex: 'title',
               width: 340,
-              render: (_, row: AuctionGoods) => (
+              render: (_, row: GoodsRow) => (
                 <Space>
-                  <Image src={row.cover} width={56} height={56} style={{ borderRadius: 8 }} />
+                  <Image src={row.coverImage || getMerchantItemImage(row.itemId)} width={56} height={56} style={{ borderRadius: 8 }} />
                   <div>
-                    <div className="goods-name">{row.name}</div>
-                    <div className="goods-sub">ID: {row.id}</div>
+                    <div className="goods-name">{row.title}</div>
+                    <div className="goods-sub">ID: {row.itemId}</div>
                   </div>
                 </Space>
               ),
             },
             { title: '起拍价', dataIndex: 'startPrice', render: (v: number) => `¥${v}` },
-            { title: '固定加价', dataIndex: 'increment', render: (v: number) => `¥${v}` },
+            { title: '固定加价', dataIndex: 'incrementStep', render: (v: number) => `¥${v}` },
             {
               title: '封顶价',
               dataIndex: 'ceilingPrice',
               render: (v?: number) => (typeof v === 'number' ? `¥${v}` : '无封顶'),
             },
             { title: '当前出价', dataIndex: 'currentPrice', render: (v: number) => `¥${v}` },
-            { title: '出价次数', dataIndex: 'bidCount' },
+            { title: '场次', dataIndex: 'sessionId', render: (v: string) => v || '--' },
             {
               title: '状态',
-              dataIndex: 'status',
-              render: (v: AuctionGoods['status']) => {
-                const colorMap: Record<AuctionGoods['status'], string> = {
+              dataIndex: 'displayStatus',
+              render: (v: GoodsRow['displayStatus']) => {
+                const colorMap: Record<string, string> = {
                   待上架: 'default',
                   即将开始: 'gold',
                   竞拍中: 'processing',
@@ -101,12 +259,12 @@ function GoodsPage() {
             },
             {
               title: '操作',
-              width: 320,
-              render: (_, row: AuctionGoods) => (
+              width: 420,
+              render: (_, row: GoodsRow) => (
                 <Space wrap>
                   <Button
                     size="small"
-                    disabled={!['待上架', '即将开始'].includes(row.status)}
+                    disabled={!['待上架', '即将开始'].includes(row.displayStatus)}
                     onClick={() => {
                       setSelectedGoods(row)
                       setEditOpen(true)
@@ -117,7 +275,7 @@ function GoodsPage() {
                   <Button
                     size="small"
                     danger
-                    disabled={!['待上架', '即将开始'].includes(row.status)}
+                    disabled={!['待上架', '即将开始', '竞拍中'].includes(row.displayStatus)}
                     onClick={() => {
                       setSelectedGoods(row)
                       setCancelOpen(true)
@@ -128,10 +286,42 @@ function GoodsPage() {
                   <Button
                     size="small"
                     type="primary"
+                    disabled={row.sessionStatus !== 'pending'}
+                    onClick={async () => {
+                      try {
+                        await startSession(row.sessionId)
+                        message.success('竞拍已开始')
+                        await refreshGoods()
+                      } catch (error) {
+                        const nextMessage =
+                          error instanceof Error ? error.message : '开始竞拍失败，请稍后重试'
+                        message.error(nextMessage)
+                      }
+                    }}
+                  >
+                    开始竞拍
+                  </Button>
+                  <Button
+                    size="small"
+                    type="primary"
                     ghost
-                    onClick={() => {
+                    onClick={async () => {
                       setSelectedGoods(row)
-                      setResultStatus(row.status === '已成交' ? '成交' : '流拍')
+                      if (row.sessionStatus === 'bidding') {
+                        try {
+                          const result = await settleSession(row.sessionId)
+                          setResultStatus(result.status === 'ended_sold' ? '成交' : '流拍')
+                          setResultOpen(true)
+                          await refreshGoods()
+                        } catch (error) {
+                          const nextMessage =
+                            error instanceof Error ? error.message : '结算失败，请稍后重试'
+                          message.error(nextMessage)
+                        }
+                        return
+                      }
+
+                      setResultStatus(row.displayStatus === '已成交' ? '成交' : row.displayStatus === '已取消' ? '异常取消' : '流拍')
                       setResultOpen(true)
                     }}
                   >
@@ -148,18 +338,52 @@ function GoodsPage() {
         open={editOpen}
         goods={selectedGoods}
         onClose={() => setEditOpen(false)}
-        onSave={() => setEditOpen(false)}
+        onSave={async (values) => {
+          if (!selectedGoods) {
+            return
+          }
+
+          try {
+            await updateItem(selectedGoods.itemId, {
+              startPrice: values.startPrice,
+              incrementStep: values.incrementStep,
+              ceilingPrice: typeof values.ceilingPrice === 'number' ? values.ceilingPrice : null,
+              durationSeconds: values.durationSeconds,
+              extensionSeconds: values.extensionSeconds,
+              extensionTriggerSeconds: selectedGoods.extensionTriggerSeconds,
+            })
+            message.success('规则已保存')
+            setEditOpen(false)
+            await refreshGoods()
+          } catch (error) {
+            const nextMessage =
+              error instanceof Error ? error.message : '保存规则失败，请稍后重试'
+            message.error(nextMessage)
+          }
+        }}
       />
       <RuleConfigDrawer open={rulePanelOpen} onClose={() => setRulePanelOpen(false)} />
       <RuleModal open={ruleModalOpen} onClose={() => setRuleModalOpen(false)} />
       <ExceptionCancelModal
         open={cancelOpen}
-        goodsName={selectedGoods?.name ?? ''}
+        goodsName={selectedGoods?.title ?? ''}
         onClose={() => setCancelOpen(false)}
-        onConfirm={() => {
-          setCancelOpen(false)
-          setResultStatus('异常取消')
-          setResultOpen(true)
+        onConfirm={async () => {
+          if (!selectedGoods?.sessionId) {
+            return
+          }
+
+          try {
+            await cancelSession(selectedGoods.sessionId)
+            setCancelOpen(false)
+            setResultStatus('异常取消')
+            setResultOpen(true)
+            await refreshGoods()
+          } catch (error) {
+            const nextMessage =
+              error instanceof Error ? error.message : '取消竞拍失败，请稍后重试'
+            message.error(nextMessage)
+          }
         }}
       />
       <AuctionResultModal

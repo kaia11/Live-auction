@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { USE_MOCK } from './config'
+import { API_BASE_URL } from './config'
 
 export interface ApiEnvelope<T> {
   code: number
@@ -8,9 +8,7 @@ export interface ApiEnvelope<T> {
   serverTime: string
 }
 
-const TOKEN_STORAGE_KEY = 'live-auction-token'
-
-export { USE_MOCK }
+const TOKEN_STORAGE_KEY = 'live-auction-anchor-token'
 
 export const getAccessToken = () => {
   if (typeof window === 'undefined') {
@@ -37,7 +35,7 @@ export const clearAccessToken = () => {
 }
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080',
+  baseURL: API_BASE_URL,
   timeout: 10000,
 })
 
@@ -51,3 +49,4 @@ apiClient.interceptors.request.use((config) => {
 })
 
 export const unwrapResponse = <T>(response: { data: ApiEnvelope<T> }) => response.data.data
+

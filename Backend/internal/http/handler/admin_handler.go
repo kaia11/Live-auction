@@ -6,12 +6,14 @@ import (
 	nethttp "net/http"
 
 	api "auction-live/backend/internal/api"
+	"auction-live/backend/internal/domain"
 	"auction-live/backend/internal/service"
 	"auction-live/backend/internal/ws"
 )
 
 type AdminHandler struct {
 	adminService *service.AdminService
+	userService  *service.UserService
 	hub          *ws.Hub
 }
 
@@ -43,11 +45,33 @@ type updateItemRequest struct {
 	ExtensionTriggerSeconds *int    `json:"extensionTriggerSeconds"`
 }
 
-func NewAdminHandler(adminService *service.AdminService, hub *ws.Hub) *AdminHandler {
-	return &AdminHandler{adminService: adminService, hub: hub}
+func NewAdminHandler(adminService *service.AdminService, userService *service.UserService, hub *ws.Hub) *AdminHandler {
+	return &AdminHandler{adminService: adminService, userService: userService, hub: hub}
+}
+
+func (h *AdminHandler) ensureAdminAccess(w nethttp.ResponseWriter, r *nethttp.Request) bool {
+	_, err := h.userService.RequireAnyRole(r.Header.Get("Authorization"), domain.UserRoleAnchor, domain.UserRoleAdmin)
+	if err == nil {
+		return true
+	}
+
+	switch {
+	case errors.Is(err, service.ErrUnauthorizedToken):
+		api.Error(w, nethttp.StatusUnauthorized, api.CodeUnauthorized, err.Error())
+	case errors.Is(err, service.ErrForbiddenRole):
+		api.Error(w, nethttp.StatusForbidden, api.CodeForbidden, err.Error())
+	default:
+		api.Error(w, nethttp.StatusUnauthorized, api.CodeUnauthorized, err.Error())
+	}
+
+	return false
 }
 
 func (h *AdminHandler) CreateItem(w nethttp.ResponseWriter, r *nethttp.Request) {
+	if !h.ensureAdminAccess(w, r) {
+		return
+	}
+
 	roomID := r.PathValue("roomId")
 	if roomID == "" {
 		api.BadRequest(w, "roomId is required")
@@ -86,6 +110,10 @@ func (h *AdminHandler) CreateItem(w nethttp.ResponseWriter, r *nethttp.Request) 
 }
 
 func (h *AdminHandler) UpdateItem(w nethttp.ResponseWriter, r *nethttp.Request) {
+	if !h.ensureAdminAccess(w, r) {
+		return
+	}
+
 	itemID := r.PathValue("itemId")
 	if itemID == "" {
 		api.BadRequest(w, "itemId is required")
@@ -128,6 +156,10 @@ func (h *AdminHandler) UpdateItem(w nethttp.ResponseWriter, r *nethttp.Request) 
 }
 
 func (h *AdminHandler) ReorderQueue(w nethttp.ResponseWriter, r *nethttp.Request) {
+	if !h.ensureAdminAccess(w, r) {
+		return
+	}
+
 	roomID := r.PathValue("roomId")
 	if roomID == "" {
 		api.BadRequest(w, "roomId is required")
@@ -155,6 +187,10 @@ func (h *AdminHandler) ReorderQueue(w nethttp.ResponseWriter, r *nethttp.Request
 }
 
 func (h *AdminHandler) ActivateNextItem(w nethttp.ResponseWriter, r *nethttp.Request) {
+	if !h.ensureAdminAccess(w, r) {
+		return
+	}
+
 	roomID := r.PathValue("roomId")
 	if roomID == "" {
 		api.BadRequest(w, "roomId is required")
@@ -179,6 +215,10 @@ func (h *AdminHandler) ActivateNextItem(w nethttp.ResponseWriter, r *nethttp.Req
 }
 
 func (h *AdminHandler) StartSession(w nethttp.ResponseWriter, r *nethttp.Request) {
+	if !h.ensureAdminAccess(w, r) {
+		return
+	}
+
 	sessionID := r.PathValue("sessionId")
 	if sessionID == "" {
 		api.BadRequest(w, "sessionId is required")
@@ -206,6 +246,10 @@ func (h *AdminHandler) StartSession(w nethttp.ResponseWriter, r *nethttp.Request
 }
 
 func (h *AdminHandler) CancelSession(w nethttp.ResponseWriter, r *nethttp.Request) {
+	if !h.ensureAdminAccess(w, r) {
+		return
+	}
+
 	sessionID := r.PathValue("sessionId")
 	if sessionID == "" {
 		api.BadRequest(w, "sessionId is required")
@@ -233,6 +277,10 @@ func (h *AdminHandler) CancelSession(w nethttp.ResponseWriter, r *nethttp.Reques
 }
 
 func (h *AdminHandler) SettleSession(w nethttp.ResponseWriter, r *nethttp.Request) {
+	if !h.ensureAdminAccess(w, r) {
+		return
+	}
+
 	sessionID := r.PathValue("sessionId")
 	if sessionID == "" {
 		api.BadRequest(w, "sessionId is required")
@@ -270,6 +318,10 @@ func (h *AdminHandler) SettleSession(w nethttp.ResponseWriter, r *nethttp.Reques
 }
 
 func (h *AdminHandler) ListRoomSessions(w nethttp.ResponseWriter, r *nethttp.Request) {
+	if !h.ensureAdminAccess(w, r) {
+		return
+	}
+
 	roomID := r.PathValue("roomId")
 	if roomID == "" {
 		api.BadRequest(w, "roomId is required")
@@ -280,13 +332,25 @@ func (h *AdminHandler) ListRoomSessions(w nethttp.ResponseWriter, r *nethttp.Req
 }
 
 func (h *AdminHandler) ListOrders(w nethttp.ResponseWriter, r *nethttp.Request) {
+	if !h.ensureAdminAccess(w, r) {
+		return
+	}
+
 	api.Success(w, nethttp.StatusOK, h.adminService.ListOrders())
 }
 
 func (h *AdminHandler) GetStatsOverview(w nethttp.ResponseWriter, r *nethttp.Request) {
+	if !h.ensureAdminAccess(w, r) {
+		return
+	}
+
 	api.Success(w, nethttp.StatusOK, h.adminService.GetStatsOverview())
 }
 
 func (h *AdminHandler) GetStatsTimeline(w nethttp.ResponseWriter, r *nethttp.Request) {
+	if !h.ensureAdminAccess(w, r) {
+		return
+	}
+
 	api.Success(w, nethttp.StatusOK, h.adminService.GetStatsTimeline())
 }

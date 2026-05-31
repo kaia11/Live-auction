@@ -1,18 +1,65 @@
-import { Button, Card, Select, Space, Table, Tag } from 'antd'
-import { useMemo, useState } from 'react'
+import { App, Button, Card, Select, Space, Table, Tag } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
 import AdminLayout from '@/layouts/AdminLayout'
-import { mockOrders } from '@/mock/data'
 import { OrderProgressModal } from '@/components/modals/StatusModals'
-import type { OrderItem } from '@/types'
+import { getAdminOrders, updateOrderStatus } from '@/api/admin'
+import type { AdminOrder, OrderAction } from '@/types'
+
+const orderStatusLabelMap: Record<string, string> = {
+  pending_payment: '待支付',
+  paid: '待发货',
+  shipped: '已发货',
+  completed: '已完成',
+  cancelled: '已取消',
+}
 
 function OrdersPage() {
+  const { message } = App.useApp()
   const [status, setStatus] = useState<string>('全部')
-  const [selectedOrder, setSelectedOrder] = useState<OrderItem | null>(null)
+  const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null)
+  const [orders, setOrders] = useState<AdminOrder[]>([])
+  const [loading, setLoading] = useState(false)
 
-  const rows = useMemo(
-    () => mockOrders.filter((item) => status === '全部' || item.status === status),
-    [status],
-  )
+  useEffect(() => {
+    const loadOrders = async () => {
+      setLoading(true)
+      try {
+        const result = await getAdminOrders()
+        setOrders(result)
+      } catch (error) {
+        const nextMessage =
+          error instanceof Error ? error.message : '订单数据加载失败，请稍后重试'
+        message.error(nextMessage)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadOrders()
+  }, [message])
+
+  const rows = useMemo(() => {
+    return orders.filter(
+      (item) => status === '全部' || orderStatusLabelMap[item.status] === status,
+    )
+  }, [orders, status])
+
+  const runOrderAction = async (orderId: string, action: OrderAction) => {
+    try {
+      await updateOrderStatus(orderId, action)
+      message.success('订单状态已更新')
+      const result = await getAdminOrders()
+      setOrders(result)
+      if (selectedOrder?.orderId === orderId) {
+        const nextSelected = result.find((item) => item.orderId === orderId) ?? null
+        setSelectedOrder(nextSelected)
+      }
+    } catch (error) {
+      const nextMessage =
+        error instanceof Error ? error.message : '订单状态更新失败，请稍后重试'
+      message.error(nextMessage)
+    }
+  }
 
   return (
     <AdminLayout activePath="/orders" title="订单管理">
@@ -22,35 +69,46 @@ function OrdersPage() {
             value={status}
             onChange={setStatus}
             style={{ width: 180 }}
-            options={['全部', '待发货', '已发货', '已完成'].map((item) => ({
+            options={['全部', '待支付', '待发货', '已发货', '已完成', '已取消'].map((item) => ({
               label: item,
               value: item,
             }))}
           />
         </div>
         <Table
-          rowKey="id"
+          rowKey="orderId"
           dataSource={rows}
+          loading={loading}
           pagination={false}
           columns={[
-            { title: '订单号', dataIndex: 'id' },
-            { title: '拍品', dataIndex: 'goodsName' },
-            { title: '买家', dataIndex: 'buyerName' },
+            { title: '订单号', dataIndex: 'orderId' },
+            { title: '拍品ID', dataIndex: 'itemId' },
+            { title: '买家ID', dataIndex: 'buyerUserId' },
             { title: '成交金额', dataIndex: 'amount', render: (v: number) => `¥${v}` },
             {
               title: '订单状态',
               dataIndex: 'status',
-              render: (v: OrderItem['status']) => (
-                <Tag color={v === '已完成' ? 'success' : v === '已发货' ? 'processing' : 'gold'}>
-                  {v}
+              render: (v: AdminOrder['status']) => (
+                <Tag
+                  color={
+                    v === 'completed'
+                      ? 'success'
+                      : v === 'shipped'
+                        ? 'processing'
+                        : v === 'cancelled'
+                          ? 'error'
+                          : 'gold'
+                  }
+                >
+                  {orderStatusLabelMap[v]}
                 </Tag>
               ),
             },
-            { title: '物流单号', dataIndex: 'logisticsNo', render: (v?: string) => v ?? '--' },
-            { title: '下单时间', dataIndex: 'createdAt' },
+            { title: '物流单号', render: () => '--' },
+            { title: '下单时间', dataIndex: 'createTime' },
             {
               title: '操作',
-              render: (_, row: OrderItem) => (
+              render: (_, row: AdminOrder) => (
                 <Space>
                   <Button
                     size="small"
@@ -69,9 +127,35 @@ function OrdersPage() {
 
       <OrderProgressModal
         open={Boolean(selectedOrder)}
-        orderId={selectedOrder?.id ?? ''}
-        status={selectedOrder?.status ?? ''}
-        logisticsNo={selectedOrder?.logisticsNo}
+        orderId={selectedOrder?.orderId ?? ''}
+        status={selectedOrder ? orderStatusLabelMap[selectedOrder.status] : ''}
+        logisticsNo={undefined}
+        actions={
+          selectedOrder ? (
+            <Space wrap>
+              {selectedOrder.status === 'pending_payment' ? (
+                <Button onClick={() => void runOrderAction(selectedOrder.orderId, 'mark_paid')}>
+                  标记已支付
+                </Button>
+              ) : null}
+              {selectedOrder.status === 'paid' ? (
+                <Button type="primary" onClick={() => void runOrderAction(selectedOrder.orderId, 'ship')}>
+                  发货
+                </Button>
+              ) : null}
+              {selectedOrder.status === 'shipped' ? (
+                <Button onClick={() => void runOrderAction(selectedOrder.orderId, 'complete')}>
+                  完成订单
+                </Button>
+              ) : null}
+              {['pending_payment', 'paid'].includes(selectedOrder.status) ? (
+                <Button danger onClick={() => void runOrderAction(selectedOrder.orderId, 'cancel')}>
+                  取消订单
+                </Button>
+              ) : null}
+            </Space>
+          ) : null
+        }
         onClose={() => setSelectedOrder(null)}
       />
     </AdminLayout>

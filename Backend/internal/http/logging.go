@@ -1,7 +1,9 @@
 package http
 
 import (
+	"bufio"
 	"net/http"
+	"net"
 	"time"
 
 	"auction-live/backend/internal/logger"
@@ -15,6 +17,14 @@ type statusRecorder struct {
 func (r *statusRecorder) WriteHeader(statusCode int) {
 	r.statusCode = statusCode
 	r.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (r *statusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hijacker, ok := r.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, http.ErrNotSupported
+	}
+	return hijacker.Hijack()
 }
 
 func WithRequestLogging(next http.Handler) http.Handler {

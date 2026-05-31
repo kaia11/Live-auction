@@ -1,4 +1,11 @@
-import { apiClient, unwrapResponse } from './client'
+import { apiClient, getAccessToken, unwrapResponse, USE_MOCK } from './client'
+import {
+  mockCreateRoomComment,
+  mockGetCurrentSession,
+  mockGetRoomEvents,
+  mockGetRoomItems,
+  mockGetRooms,
+} from './mock'
 
 export interface BackendRoom {
   id: string
@@ -59,26 +66,47 @@ export interface BackendCommentPayload {
 }
 
 export const getRooms = async () => {
+  if (USE_MOCK) {
+    return mockGetRooms()
+  }
+
   const response = await apiClient.get('/rooms')
   return unwrapResponse<BackendRoom[]>(response)
 }
 
 export const getRoomItems = async (roomId: string) => {
+  if (USE_MOCK) {
+    return mockGetRoomItems(roomId)
+  }
+
   const response = await apiClient.get(`/rooms/${roomId}/items`)
   return unwrapResponse<BackendAuctionItem[]>(response)
 }
 
 export const getCurrentSession = async (roomId: string) => {
+  if (USE_MOCK) {
+    return mockGetCurrentSession(roomId)
+  }
+
   const response = await apiClient.get(`/rooms/${roomId}/current-session`)
   return unwrapResponse<BackendAuctionSession>(response)
 }
 
-export const getRoomEvents = async (roomId: string) => {
+export const getRoomEvents = async (roomId: string, sinceVersion = 0) => {
+  if (USE_MOCK) {
+    return mockGetRoomEvents(roomId, sinceVersion)
+  }
+
   const response = await apiClient.get(`/rooms/${roomId}/events`)
-  return unwrapResponse<BackendRoomEvent[]>(response)
+  const result = unwrapResponse<{ roomId: string; sinceVersion: number; latestVersion: number; events: BackendRoomEvent[] }>(response)
+  return result.events
 }
 
 export const createRoomComment = async (roomId: string, content: string) => {
+  if (USE_MOCK) {
+    return mockCreateRoomComment(roomId, content, getAccessToken())
+  }
+
   const response = await apiClient.post(`/rooms/${roomId}/comments`, { content })
   return unwrapResponse<BackendCommentPayload>(response)
 }

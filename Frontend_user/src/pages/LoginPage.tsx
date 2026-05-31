@@ -21,7 +21,7 @@ const LoginPage: React.FC = () => {
     if (success) {
       navigate('/rooms')
     } else {
-      Toast.show('登录失败，请稍后重试')
+      Toast.show('仅观众账号可登录用户端')
     }
   }
 

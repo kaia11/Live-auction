@@ -104,6 +104,7 @@ interface OrderProgressModalProps {
   orderId: string
   status: string
   logisticsNo?: string
+  actions?: React.ReactNode
   onClose: () => void
 }
 
@@ -112,6 +113,7 @@ export function OrderProgressModal({
   orderId,
   status,
   logisticsNo,
+  actions,
   onClose,
 }: OrderProgressModalProps) {
   return (
@@ -129,6 +131,7 @@ export function OrderProgressModal({
         <Descriptions.Item label="当前状态">{status}</Descriptions.Item>
         <Descriptions.Item label="物流单号">{logisticsNo ?? '待生成'}</Descriptions.Item>
       </Descriptions>
+      {actions ? <div className="modal-footer-center">{actions}</div> : null}
     </Modal>
   )
 }

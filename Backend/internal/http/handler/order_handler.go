@@ -6,6 +6,7 @@ import (
 	nethttp "net/http"
 
 	api "auction-live/backend/internal/api"
+	"auction-live/backend/internal/domain"
 	"auction-live/backend/internal/service"
 	"auction-live/backend/internal/statemachine"
 	"auction-live/backend/internal/ws"
@@ -25,6 +26,24 @@ func NewOrderHandler(orderService *service.OrderService, userService *service.Us
 	return &OrderHandler{orderService: orderService, userService: userService, hub: hub}
 }
 
+func (h *OrderHandler) ensureAdminAccess(w nethttp.ResponseWriter, r *nethttp.Request) bool {
+	_, err := h.userService.RequireAnyRole(r.Header.Get("Authorization"), domain.UserRoleAnchor, domain.UserRoleAdmin)
+	if err == nil {
+		return true
+	}
+
+	switch {
+	case errors.Is(err, service.ErrUnauthorizedToken):
+		api.Error(w, nethttp.StatusUnauthorized, api.CodeUnauthorized, err.Error())
+	case errors.Is(err, service.ErrForbiddenRole):
+		api.Error(w, nethttp.StatusForbidden, api.CodeForbidden, err.Error())
+	default:
+		api.Error(w, nethttp.StatusUnauthorized, api.CodeUnauthorized, err.Error())
+	}
+
+	return false
+}
+
 func (h *OrderHandler) ListMyOrders(w nethttp.ResponseWriter, r *nethttp.Request) {
 	userID, err := h.userService.GetCurrentUserID(r.Header.Get("Authorization"))
 	if err != nil {
@@ -36,6 +55,10 @@ func (h *OrderHandler) ListMyOrders(w nethttp.ResponseWriter, r *nethttp.Request
 }
 
 func (h *OrderHandler) UpdateOrderStatus(w nethttp.ResponseWriter, r *nethttp.Request) {
+	if !h.ensureAdminAccess(w, r) {
+		return
+	}
+
 	orderID := r.PathValue("orderId")
 	if orderID == "" {
 		api.BadRequest(w, "orderId is required")

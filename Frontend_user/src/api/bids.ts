@@ -1,5 +1,6 @@
-import { apiClient, unwrapResponse } from './client'
+import { apiClient, getAccessToken, unwrapResponse, USE_MOCK } from './client'
 import { BidHistory } from '@/types'
+import { mockCreateBid, mockGetMyBidHistories } from './mock'
 
 export interface CreateBidPayload {
   roomId: string
@@ -28,11 +29,19 @@ export interface BackendBidResult {
 export interface BackendBidHistory extends BidHistory {}
 
 export const createBid = async (payload: CreateBidPayload) => {
+  if (USE_MOCK) {
+    return mockCreateBid(payload)
+  }
+
   const response = await apiClient.post('/bids', payload)
   return unwrapResponse<BackendBidResult>(response)
 }
 
 export const getMyBidHistories = async () => {
+  if (USE_MOCK) {
+    return mockGetMyBidHistories(getAccessToken())
+  }
+
   const response = await apiClient.get('/users/me/bids')
   return unwrapResponse<BackendBidHistory[]>(response)
 }

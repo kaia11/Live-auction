@@ -7,14 +7,15 @@ import (
 )
 
 type Handlers struct {
-	Auth    *handler.AuthHandler
-	Health  *handler.HealthHandler
-	Rooms   *handler.RoomHandler
-	Items   *handler.ItemHandler
-	Orders  *handler.OrderHandler
-	Session *handler.SessionHandler
-	Bids    *handler.BidHandler
-	Admin   *handler.AdminHandler
+	Auth      *handler.AuthHandler
+	Health    *handler.HealthHandler
+	Rooms     *handler.RoomHandler
+	Items     *handler.ItemHandler
+	Orders    *handler.OrderHandler
+	Session   *handler.SessionHandler
+	Bids      *handler.BidHandler
+	Admin     *handler.AdminHandler
+	WebSocket *handler.WebSocketHandler
 }
 
 func NewRouter(handlers Handlers) http.Handler {
@@ -31,6 +32,7 @@ func NewRouter(handlers Handlers) http.Handler {
 	mux.HandleFunc("GET /rooms/{roomId}/current-session", handlers.Session.GetCurrentSession)
 	mux.HandleFunc("GET /rooms/{roomId}/events", handlers.Session.GetRoomEvents)
 	mux.HandleFunc("POST /rooms/{roomId}/comments", handlers.Session.CreateRoomComment)
+	mux.HandleFunc("GET /ws", handlers.WebSocket.ServeRoomStream)
 	mux.HandleFunc("GET /sessions/{sessionId}/ranking", handlers.Session.GetRanking)
 	mux.HandleFunc("GET /sessions/{sessionId}/my-status", handlers.Session.GetMyStatus)
 	mux.HandleFunc("GET /users/me/bids", handlers.Bids.ListMyBids)

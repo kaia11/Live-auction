@@ -1,20 +1,68 @@
-import { Button, Card, Col, Divider, Row, Table, Tag } from 'antd'
-import { useMemo, useState } from 'react'
+import { App, Button, Card, Col, Divider, Row, Table, Tag } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AdminLayout from '@/layouts/AdminLayout'
 import StatCard from '@/components/common/StatCard'
-import { dashboardStats, mockGoods } from '@/mock/data'
+import { getOverview, getRoomItems, getTimeline } from '@/api/admin'
+import { getMerchantRoomImage } from '@/assets/localImages'
+import type { AuctionItem, DashboardOverview, DashboardTimelineEvent } from '@/types'
+import { useAdminStore } from '@/stores/useAdminStore'
 
 function DashboardPage() {
+  const { message } = App.useApp()
+  const navigate = useNavigate()
   const [activeMetric, setActiveMetric] = useState<'traffic' | 'price'>('traffic')
+  const [overview, setOverview] = useState<DashboardOverview | null>(null)
+  const [items, setItems] = useState<AuctionItem[]>([])
+  const [timeline, setTimeline] = useState<DashboardTimelineEvent[]>([])
+  const currentRoomId = useAdminStore((state) => state.currentRoomId)
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const [overviewResult, timelineResult] = await Promise.all([getOverview(), getTimeline()])
+        setOverview(overviewResult)
+        setTimeline(timelineResult)
+        if (currentRoomId) {
+          const itemResult = await getRoomItems(currentRoomId)
+          setItems(itemResult)
+        } else {
+          setItems([])
+        }
+      } catch (error) {
+        const nextMessage =
+          error instanceof Error ? error.message : '总览数据加载失败，请稍后重试'
+        message.error(nextMessage)
+      }
+    }
+
+    void loadDashboard()
+  }, [currentRoomId, message])
 
   const chartRows = useMemo(
     () =>
-      mockGoods.map((item) => ({
-        key: item.id,
-        name: item.name,
-        data: activeMetric === 'traffic' ? item.traffic.join(' / ') : item.priceTrack.join(' / '),
+      timeline.slice(0, 6).map((item) => ({
+        key: `${item.sessionId}-${item.time}`,
+        name: item.itemId,
+        data:
+          activeMetric === 'traffic'
+            ? `${item.event} / ${item.userId}`
+            : `¥ ${item.price} / ${item.time}`,
       })),
-    [activeMetric],
+    [activeMetric, timeline],
+  )
+
+  const itemRows = useMemo(
+    () =>
+      items.map((item) => ({
+        key: item.id,
+        id: item.id,
+        name: item.title,
+        status: item.queueStatus,
+        currentPrice: item.startPrice,
+        incrementStep: item.incrementStep,
+      })),
+    [items],
   )
 
   return (
@@ -22,23 +70,23 @@ function DashboardPage() {
       activePath="/dashboard"
       title="运营总览"
       actions={
-        <Button type="primary" href="#/publish">
+        <Button type="primary" onClick={() => navigate('/publish')}>
           + 添加商品
         </Button>
       }
     >
       <Row gutter={16}>
         <Col span={6}>
-          <StatCard label="在拍中拍品" value={`${dashboardStats.inProgress}`} tone="normal" />
+          <StatCard label="直播间数" value={`${overview?.totalRooms ?? 0}`} tone="normal" />
         </Col>
         <Col span={6}>
-          <StatCard label="已成交拍品" value={`${dashboardStats.sold}`} tone="success" />
+          <StatCard label="总场次数" value={`${overview?.totalSessions ?? 0}`} tone="normal" />
         </Col>
         <Col span={6}>
-          <StatCard label="流拍拍品" value={`${dashboardStats.unsold}`} tone="warning" />
+          <StatCard label="已成交场次" value={`${overview?.soldSessions ?? 0}`} tone="success" />
         </Col>
         <Col span={6}>
-          <StatCard label="成交总额" value={`¥ ${dashboardStats.totalAmount.toLocaleString()}`} />
+          <StatCard label="已取消场次" value={`${overview?.cancelledSessions ?? 0}`} tone="warning" />
         </Col>
       </Row>
 
@@ -46,31 +94,28 @@ function DashboardPage() {
         <Col span={16}>
           <Card title="商品状态分布看板" className="jewel-card">
             <p className="subtle-line">
-              在线人数：{dashboardStats.onlineCount} | 今日出价次数：{dashboardStats.bidsToday}
+              当前直播间：{currentRoomId || '未选择'} | 价格字段基于房间内拍品快照
             </p>
+            <div className="dashboard-mock-preview">
+              <img src={getMerchantRoomImage(currentRoomId)} alt="mock live preview" />
+              <span>当前直播画面使用商家端本地 mock 图片占位</span>
+            </div>
             <div className="goods-status-legend">
-              <Tag color="processing">竞拍中</Tag>
-              <Tag color="success">已成交</Tag>
+              <Tag color="processing">active</Tag>
+              <Tag color="success">finished</Tag>
               <Tag color="default">待上架</Tag>
-              <Tag color="warning">已流拍</Tag>
+              <Tag color="error">cancelled</Tag>
             </div>
             <Table
               size="small"
               pagination={false}
-              dataSource={mockGoods.map((item) => ({
-                key: item.id,
-                id: item.id,
-                name: item.name,
-                status: item.status,
-                currentPrice: item.currentPrice,
-                bidCount: item.bidCount,
-              }))}
+              dataSource={itemRows}
               columns={[
                 { title: '拍品ID', dataIndex: 'id' },
                 { title: '拍品', dataIndex: 'name' },
                 { title: '状态', dataIndex: 'status' },
                 { title: '当前价', dataIndex: 'currentPrice', render: (v) => `¥ ${v}` },
-                { title: '出价次数', dataIndex: 'bidCount' },
+                { title: '加价幅度', dataIndex: 'incrementStep', render: (v) => `¥ ${v}` },
               ]}
             />
           </Card>

@@ -39,6 +39,7 @@ func newMemoryStore() *memoryStore {
 			"user-002":   {ID: "user-002", Nickname: "小满", Avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80", Role: domain.UserRoleViewer},
 			"user-003":   {ID: "user-003", Nickname: "阿青", Avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80", Role: domain.UserRoleViewer},
 			"anchor-001": {ID: "anchor-001", Nickname: "主播小玉", Avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80", Role: domain.UserRoleAnchor},
+			"admin-001":  {ID: "admin-001", Nickname: "运营管理员", Avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&q=80", Role: domain.UserRoleAdmin},
 		},
 		rooms: map[string]model.LiveRoom{
 			"room-001": {

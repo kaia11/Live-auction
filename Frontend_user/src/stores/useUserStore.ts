@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { User } from '@/types'
 import { clearSession, getCurrentUser, login as loginRequest } from '@/api/auth'
 
+const isViewerRole = (role?: string) => role === 'viewer'
+
 interface UserState {
   user: User | null
   isHydrated: boolean
@@ -20,11 +22,18 @@ export const useUserStore = create<UserState>((set) => ({
   login: async (phone, password) => {
     try {
       const result = await loginRequest({ phone, password })
+      if (!isViewerRole(result.user.role)) {
+        clearSession()
+        set({ user: null, isHydrated: true })
+        return false
+      }
+
       set({
         user: {
           id: result.user.id,
           nickname: result.user.nickname,
           avatar: result.user.avatar,
+          role: result.user.role,
           isLoggedIn: true,
         },
         isHydrated: true,
@@ -40,11 +49,18 @@ export const useUserStore = create<UserState>((set) => ({
   hydrateUser: async () => {
     try {
       const currentUser = await getCurrentUser()
+      if (!isViewerRole(currentUser.role)) {
+        clearSession()
+        set({ user: null, isHydrated: true })
+        return
+      }
+
       set({
         user: {
           id: currentUser.id,
           nickname: currentUser.nickname,
           avatar: currentUser.avatar,
+          role: currentUser.role,
           isLoggedIn: true,
         },
         isHydrated: true,

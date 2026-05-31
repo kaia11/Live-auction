@@ -1,6 +1,9 @@
-import { Layout, Menu } from 'antd'
+import { Button, Layout, Menu, Select, Space, Tag } from 'antd'
 import type { MenuProps } from 'antd'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAdminStore } from '@/stores/useAdminStore'
+import { useAuthStore } from '@/stores/useAuthStore'
 
 const menuItems: MenuProps['items'] = [
   { key: '/dashboard', label: '总览' },
@@ -18,6 +21,17 @@ interface AdminLayoutProps {
 
 function AdminLayout({ activePath, title, actions, children }: AdminLayoutProps) {
   const navigate = useNavigate()
+  const { rooms, currentRoomId, setCurrentRoomId } = useAdminStore()
+  const { user, logout } = useAuthStore()
+
+  const roomOptions = useMemo(
+    () =>
+      rooms.map((room) => ({
+        label: room.title,
+        value: room.id,
+      })),
+    [rooms],
+  )
 
   return (
     <Layout className="pc-admin-shell">
@@ -34,7 +48,27 @@ function AdminLayout({ activePath, title, actions, children }: AdminLayoutProps)
       <Layout className="pc-admin-main">
         <Layout.Header className="pc-admin-header">
           <h1>{title}</h1>
-          <div>{actions}</div>
+          <Space size={12}>
+            {roomOptions.length > 0 ? (
+              <Select
+                value={currentRoomId || undefined}
+                style={{ width: 260 }}
+                placeholder="请选择直播间"
+                options={roomOptions}
+                onChange={setCurrentRoomId}
+              />
+            ) : null}
+            {user ? <Tag color="blue">{user.nickname}</Tag> : null}
+            {actions}
+            <Button
+              onClick={() => {
+                logout()
+                navigate('/login')
+              }}
+            >
+              退出登录
+            </Button>
+          </Space>
         </Layout.Header>
         <Layout.Content className="pc-admin-content">{children}</Layout.Content>
       </Layout>

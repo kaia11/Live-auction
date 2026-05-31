@@ -119,9 +119,9 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
   },
 
   pollRoomEvents: async (roomId) => {
-    const events = await getRoomEvents(roomId)
-    const latestVersion = events.length > 0 ? events[events.length - 1].version : 0
     const { lastEventVersion, loadRoomRuntime, loadBidHistories } = useLiveRoomStore.getState()
+    const events = await getRoomEvents(roomId, lastEventVersion)
+    const latestVersion = events.length > 0 ? events[events.length - 1].version : lastEventVersion
 
     if (latestVersion <= lastEventVersion) {
       return
@@ -129,7 +129,7 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
 
     set({
       lastEventVersion: latestVersion,
-      comments: extractComments(events),
+      comments: mergeComments(useLiveRoomStore.getState().comments, extractComments(events)),
     })
 
     await Promise.all([
@@ -208,3 +208,21 @@ const extractComments = (events: Awaited<ReturnType<typeof getRoomEvents>>): Liv
   events
     .filter((event) => event.event === 'room_comment_received')
     .map((event) => event.payload as BackendCommentPayload)
+
+const mergeComments = (prev: LiveComment[], next: LiveComment[]) => {
+  if (next.length === 0) {
+    return prev
+  }
+
+  const seen = new Set(prev.map((comment) => `${comment.userId}:${comment.content}`))
+  const merged = [...prev]
+  for (const comment of next) {
+    const key = `${comment.userId}:${comment.content}`
+    if (seen.has(key)) {
+      continue
+    }
+    seen.add(key)
+    merged.push(comment)
+  }
+  return merged
+}

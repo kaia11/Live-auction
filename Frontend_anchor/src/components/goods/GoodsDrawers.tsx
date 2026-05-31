@@ -1,15 +1,16 @@
 import { Button, Descriptions, Drawer, Form, InputNumber, Space, Tag } from 'antd'
-import type { AuctionGoods } from '@/types'
+import type { GoodsRow } from '@/types'
 
 interface GoodsEditDrawerProps {
   open: boolean
-  goods?: AuctionGoods
+  goods?: GoodsRow
   onClose: () => void
   onSave: (values: {
     startPrice: number
-    increment: number
+    incrementStep: number
     ceilingPrice?: number
-    durationSec: number
+    durationSeconds: number
+    extensionSeconds: number
   }) => void
 }
 
@@ -26,9 +27,9 @@ export function GoodsEditDrawer({ open, goods, onClose, onSave }: GoodsEditDrawe
       {goods ? (
         <>
           <Descriptions bordered column={1} size="small">
-            <Descriptions.Item label="拍品名">{goods.name}</Descriptions.Item>
+            <Descriptions.Item label="拍品名">{goods.title}</Descriptions.Item>
             <Descriptions.Item label="状态">
-              <Tag>{goods.status}</Tag>
+              <Tag>{goods.displayStatus}</Tag>
             </Descriptions.Item>
           </Descriptions>
           <Form
@@ -36,23 +37,27 @@ export function GoodsEditDrawer({ open, goods, onClose, onSave }: GoodsEditDrawe
             className="drawer-form"
             initialValues={{
               startPrice: goods.startPrice,
-              increment: goods.increment,
+              incrementStep: goods.incrementStep,
               ceilingPrice: goods.ceilingPrice,
-              durationSec: goods.durationSec,
+              durationSeconds: goods.durationSeconds,
+              extensionSeconds: goods.extensionSeconds,
             }}
             onFinish={(values) => onSave(values)}
           >
             <Form.Item label="起拍价" name="startPrice" rules={[{ required: true }]}>
               <InputNumber min={0} style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item label="加价幅度" name="increment" rules={[{ required: true }]}>
+            <Form.Item label="加价幅度" name="incrementStep" rules={[{ required: true }]}>
               <InputNumber min={1} style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item label="封顶价（可空）" name="ceilingPrice">
               <InputNumber min={0} style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item label="竞拍总时长（秒）" name="durationSec" rules={[{ required: true }]}>
+            <Form.Item label="竞拍总时长（秒）" name="durationSeconds" rules={[{ required: true }]}>
               <InputNumber min={60} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item label="延时秒数" name="extensionSeconds" rules={[{ required: true }]}>
+              <InputNumber min={5} style={{ width: '100%' }} />
             </Form.Item>
             <Space>
               <Button onClick={onClose}>取消</Button>

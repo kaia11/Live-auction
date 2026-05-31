@@ -1,10 +1,4 @@
-import { apiClient, clearAccessToken, getAccessToken, setAccessToken, unwrapResponse, USE_MOCK } from './client'
-import { mockGetCurrentUser, mockLogin } from './mock'
-
-export interface LoginPayload {
-  phone: string
-  password: string
-}
+import { apiClient, clearAccessToken, setAccessToken, unwrapResponse } from './client'
 
 export interface AuthUser {
   id: string
@@ -14,18 +8,17 @@ export interface AuthUser {
   role?: string
 }
 
+export interface LoginPayload {
+  phone: string
+  password: string
+}
+
 export interface LoginResponse {
   token: string
   user: AuthUser
 }
 
 export const login = async (payload: LoginPayload) => {
-  if (USE_MOCK) {
-    const result = await mockLogin(payload)
-    setAccessToken(result.token)
-    return result
-  }
-
   const response = await apiClient.post('/auth/login', payload)
   const result = unwrapResponse<LoginResponse>(response)
   setAccessToken(result.token)
@@ -33,10 +26,6 @@ export const login = async (payload: LoginPayload) => {
 }
 
 export const getCurrentUser = async () => {
-  if (USE_MOCK) {
-    return mockGetCurrentUser(getAccessToken())
-  }
-
   const response = await apiClient.get('/users/me')
   return unwrapResponse<AuthUser>(response)
 }
@@ -44,3 +33,4 @@ export const getCurrentUser = async () => {
 export const clearSession = () => {
   clearAccessToken()
 }
+

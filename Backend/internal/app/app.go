@@ -33,14 +33,15 @@ func New(cfg config.Config) *App {
 	scheduler := service.NewSettlementScheduler(service.SharedStore(), hub, time.Second)
 
 	handlers := httpx.Handlers{
-		Auth:    handler.NewAuthHandler(userService),
-		Health:  handler.NewHealthHandler(cfg),
-		Rooms:   handler.NewRoomHandler(roomService, liveSnapshotService, userService),
-		Items:   handler.NewItemHandler(itemService),
-		Orders:  handler.NewOrderHandler(orderService, userService, hub),
-		Session: handler.NewSessionHandler(sessionService, userService, hub),
-		Bids:    handler.NewBidHandler(bidService, userService, hub),
-		Admin:   handler.NewAdminHandler(adminService, hub),
+		Auth:      handler.NewAuthHandler(userService),
+		Health:    handler.NewHealthHandler(cfg),
+		Rooms:     handler.NewRoomHandler(roomService, liveSnapshotService, userService),
+		Items:     handler.NewItemHandler(itemService),
+		Orders:    handler.NewOrderHandler(orderService, userService, hub),
+		Session:   handler.NewSessionHandler(sessionService, userService, hub),
+		Bids:      handler.NewBidHandler(bidService, userService, hub),
+		Admin:     handler.NewAdminHandler(adminService, userService, hub),
+		WebSocket: handler.NewWebSocketHandler(userService, roomService, hub),
 	}
 
 	router := httpx.NewRouter(handlers)
