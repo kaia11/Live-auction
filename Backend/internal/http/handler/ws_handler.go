@@ -9,6 +9,7 @@ import (
 
 	api "auction-live/backend/internal/api"
 	"auction-live/backend/internal/logger"
+	"auction-live/backend/internal/monitoring"
 	"auction-live/backend/internal/service"
 	"auction-live/backend/internal/ws"
 )
@@ -17,13 +18,15 @@ type WebSocketHandler struct {
 	userService *service.UserService
 	roomService *service.RoomService
 	hub         *ws.Hub
+	metrics     *monitoring.Metrics
 }
 
-func NewWebSocketHandler(userService *service.UserService, roomService *service.RoomService, hub *ws.Hub) *WebSocketHandler {
+func NewWebSocketHandler(userService *service.UserService, roomService *service.RoomService, hub *ws.Hub, metrics *monitoring.Metrics) *WebSocketHandler {
 	return &WebSocketHandler{
 		userService: userService,
 		roomService: roomService,
 		hub:         hub,
+		metrics:     metrics,
 	}
 }
 
@@ -59,7 +62,15 @@ func (h *WebSocketHandler) ServeRoomStream(w nethttp.ResponseWriter, r *nethttp.
 
 	client := ws.NewClient(roomID, 64)
 	unregister := h.hub.Register(roomID, client)
+	if h.metrics != nil {
+		h.metrics.RecordWSConnect()
+	}
 	defer unregister()
+	defer func() {
+		if h.metrics != nil {
+			h.metrics.RecordWSDisconnect()
+		}
+	}()
 	defer client.Close()
 
 	logger.Info("websocket connected room_id=%s", roomID)

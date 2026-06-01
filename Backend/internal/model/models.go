@@ -127,3 +127,24 @@ type AuctionOrder struct {
 	Status      string `json:"status"`
 	CreateTime  string `json:"createTime"`
 }
+
+type RoomComment struct {
+	ID         int64  `json:"id"`
+	RoomID     string `json:"roomId"`
+	UserID     string `json:"userId"`
+	Nickname   string `json:"nickname"`
+	Content    string `json:"content"`
+	CreateTime string `json:"createTime"`
+}
+
+type OperationLog struct {
+	ID         int64  `json:"id"`
+	Module     string `json:"module"`
+	Action     string `json:"action"`
+	OperatorID string `json:"operatorId"`
+	RoomID     string `json:"roomId"`
+	TargetType string `json:"targetType"`
+	TargetID   string `json:"targetId"`
+	Content    string `json:"content"`
+	CreateTime string `json:"createTime"`
+}

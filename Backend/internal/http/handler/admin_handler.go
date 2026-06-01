@@ -13,6 +13,7 @@ import (
 
 type AdminHandler struct {
 	adminService *service.AdminService
+	auditService *service.AuditService
 	userService  *service.UserService
 	hub          *ws.Hub
 }
@@ -45,8 +46,8 @@ type updateItemRequest struct {
 	ExtensionTriggerSeconds *int    `json:"extensionTriggerSeconds"`
 }
 
-func NewAdminHandler(adminService *service.AdminService, userService *service.UserService, hub *ws.Hub) *AdminHandler {
-	return &AdminHandler{adminService: adminService, userService: userService, hub: hub}
+func NewAdminHandler(adminService *service.AdminService, auditService *service.AuditService, userService *service.UserService, hub *ws.Hub) *AdminHandler {
+	return &AdminHandler{adminService: adminService, auditService: auditService, userService: userService, hub: hub}
 }
 
 func (h *AdminHandler) ensureAdminAccess(w nethttp.ResponseWriter, r *nethttp.Request) bool {
@@ -71,6 +72,7 @@ func (h *AdminHandler) CreateItem(w nethttp.ResponseWriter, r *nethttp.Request) 
 	if !h.ensureAdminAccess(w, r) {
 		return
 	}
+	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
 
 	roomID := r.PathValue("roomId")
 	if roomID == "" {
@@ -106,6 +108,7 @@ func (h *AdminHandler) CreateItem(w nethttp.ResponseWriter, r *nethttp.Request) 
 	}
 
 	h.hub.Publish(roomID, ws.EventRoomItemQueueUpdated, meta)
+	_ = h.auditService.CreateLog("item", "create", operatorID, roomID, "item", item.ID, item.Title)
 	api.Created(w, item)
 }
 
@@ -113,6 +116,7 @@ func (h *AdminHandler) UpdateItem(w nethttp.ResponseWriter, r *nethttp.Request) 
 	if !h.ensureAdminAccess(w, r) {
 		return
 	}
+	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
 
 	itemID := r.PathValue("itemId")
 	if itemID == "" {
@@ -152,6 +156,7 @@ func (h *AdminHandler) UpdateItem(w nethttp.ResponseWriter, r *nethttp.Request) 
 		"queueStatus": item.QueueStatus,
 		"title":       item.Title,
 	})
+	_ = h.auditService.CreateLog("item", "update", operatorID, item.RoomID, "item", item.ID, item.Title)
 	api.Success(w, nethttp.StatusOK, item)
 }
 
@@ -159,6 +164,7 @@ func (h *AdminHandler) ReorderQueue(w nethttp.ResponseWriter, r *nethttp.Request
 	if !h.ensureAdminAccess(w, r) {
 		return
 	}
+	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
 
 	roomID := r.PathValue("roomId")
 	if roomID == "" {
@@ -184,12 +190,14 @@ func (h *AdminHandler) ReorderQueue(w nethttp.ResponseWriter, r *nethttp.Request
 
 	api.Success(w, nethttp.StatusOK, result)
 	h.hub.Publish(roomID, ws.EventRoomItemQueueUpdated, result)
+	_ = h.auditService.CreateLog("queue", "reorder", operatorID, roomID, "room", roomID, "reorder room queue")
 }
 
 func (h *AdminHandler) ActivateNextItem(w nethttp.ResponseWriter, r *nethttp.Request) {
 	if !h.ensureAdminAccess(w, r) {
 		return
 	}
+	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
 
 	roomID := r.PathValue("roomId")
 	if roomID == "" {
@@ -212,12 +220,14 @@ func (h *AdminHandler) ActivateNextItem(w nethttp.ResponseWriter, r *nethttp.Req
 
 	api.Success(w, nethttp.StatusOK, result)
 	h.hub.Publish(roomID, ws.EventAuctionSessionUpcoming, result)
+	_ = h.auditService.CreateLog("queue", "activate_next", operatorID, roomID, "room", roomID, "activate next item")
 }
 
 func (h *AdminHandler) StartSession(w nethttp.ResponseWriter, r *nethttp.Request) {
 	if !h.ensureAdminAccess(w, r) {
 		return
 	}
+	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
 
 	sessionID := r.PathValue("sessionId")
 	if sessionID == "" {
@@ -242,6 +252,7 @@ func (h *AdminHandler) StartSession(w nethttp.ResponseWriter, r *nethttp.Request
 	if roomID != "" {
 		h.hub.Publish(roomID, ws.EventAuctionSessionActivated, result)
 	}
+	_ = h.auditService.CreateLog("session", "start", operatorID, roomID, "session", sessionID, "start session")
 	api.Success(w, nethttp.StatusOK, result)
 }
 
@@ -249,6 +260,7 @@ func (h *AdminHandler) CancelSession(w nethttp.ResponseWriter, r *nethttp.Reques
 	if !h.ensureAdminAccess(w, r) {
 		return
 	}
+	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
 
 	sessionID := r.PathValue("sessionId")
 	if sessionID == "" {
@@ -273,6 +285,7 @@ func (h *AdminHandler) CancelSession(w nethttp.ResponseWriter, r *nethttp.Reques
 	if roomID != "" {
 		h.hub.Publish(roomID, ws.EventAuctionSessionEnded, result)
 	}
+	_ = h.auditService.CreateLog("session", "cancel", operatorID, roomID, "session", sessionID, "cancel session")
 	api.Success(w, nethttp.StatusOK, result)
 }
 
@@ -280,6 +293,7 @@ func (h *AdminHandler) SettleSession(w nethttp.ResponseWriter, r *nethttp.Reques
 	if !h.ensureAdminAccess(w, r) {
 		return
 	}
+	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
 
 	sessionID := r.PathValue("sessionId")
 	if sessionID == "" {
@@ -314,6 +328,7 @@ func (h *AdminHandler) SettleSession(w nethttp.ResponseWriter, r *nethttp.Reques
 		}
 	}
 
+	_ = h.auditService.CreateLog("session", "settle", operatorID, result.RoomID, "session", sessionID, "settle session")
 	api.Success(w, nethttp.StatusOK, result)
 }
 

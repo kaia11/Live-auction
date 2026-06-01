@@ -6,11 +6,19 @@ import (
 
 	"auction-live/backend/internal/domain"
 	"auction-live/backend/internal/model"
+	"auction-live/backend/internal/realtime"
+	"auction-live/backend/internal/repository"
 	"auction-live/backend/internal/statemachine"
 )
 
 type AuctionEngine struct {
-	store *memoryStore
+	store       *memoryStore
+	runtime     *realtime.Runtime
+	roomRepo    repository.RoomRepository
+	itemRepo    repository.ItemRepository
+	sessionRepo repository.SessionRepository
+	resultRepo  repository.ResultRepository
+	orderRepo   repository.OrderRepository
 }
 
 type SessionSettlement struct {
@@ -26,8 +34,16 @@ type SessionSettlement struct {
 	Order         *model.AuctionOrder `json:"order,omitempty"`
 }
 
-func NewAuctionEngine(store *memoryStore) *AuctionEngine {
-	return &AuctionEngine{store: store}
+func NewAuctionEngine(store *memoryStore, runtime *realtime.Runtime, roomRepo repository.RoomRepository, itemRepo repository.ItemRepository, sessionRepo repository.SessionRepository, resultRepo repository.ResultRepository, orderRepo repository.OrderRepository) *AuctionEngine {
+	return &AuctionEngine{
+		store:       store,
+		runtime:     runtime,
+		roomRepo:    roomRepo,
+		itemRepo:    itemRepo,
+		sessionRepo: sessionRepo,
+		resultRepo:  resultRepo,
+		orderRepo:   orderRepo,
+	}
 }
 
 func (e *AuctionEngine) StartSessionLocked(sessionID string) (map[string]any, error) {
@@ -66,6 +82,18 @@ func (e *AuctionEngine) StartSessionLocked(sessionID string) (map[string]any, er
 	room := e.store.rooms[session.RoomID]
 	room.CurrentSessionID = sessionID
 	e.store.rooms[session.RoomID] = room
+	if err := e.persistRoomItemSession(room, item, session); err != nil {
+		return nil, err
+	}
+
+	if err := saveSessionState(e.runtime, session, item); err != nil {
+		return nil, err
+	}
+	if e.runtime != nil {
+		if err := e.runtime.SetRoomCurrentSession(session.RoomID, sessionID); err != nil {
+			return nil, err
+		}
+	}
 
 	return map[string]any{
 		"roomId":      session.RoomID,
@@ -106,6 +134,13 @@ func (e *AuctionEngine) CancelSessionLocked(sessionID string) (map[string]any, e
 
 	item.QueueStatus = nextQueueStatus
 	e.store.items[item.ID] = item
+	if err := e.persistItemSession(item, session); err != nil {
+		return nil, err
+	}
+
+	if err := saveSessionState(e.runtime, session, item); err != nil {
+		return nil, err
+	}
 
 	return map[string]any{
 		"roomId":      session.RoomID,
@@ -202,6 +237,13 @@ func (e *AuctionEngine) settleSessionWithEventLocked(session model.AuctionSessio
 
 	item.QueueStatus = nextQueueStatus
 	e.store.items[item.ID] = item
+	if err := e.persistItemSession(item, session); err != nil {
+		return SessionSettlement{}, err
+	}
+
+	if err := saveSessionState(e.runtime, session, item); err != nil {
+		return SessionSettlement{}, err
+	}
 
 	outcome := SessionSettlement{
 		RoomID:       session.RoomID,
@@ -216,6 +258,23 @@ func (e *AuctionEngine) settleSessionWithEventLocked(session model.AuctionSessio
 	if session.Status == domain.SessionStateEndedSold && session.LeaderUserID != "" {
 		order := e.ensureOrderLocked(session)
 		outcome.Order = &order
+	}
+
+	if e.resultRepo != nil {
+		resultStatus := "unsold"
+		if session.Status == domain.SessionStateEndedSold {
+			resultStatus = "sold"
+		} else if session.Status == domain.SessionStateCancelled {
+			resultStatus = "cancelled"
+		}
+		_ = e.resultRepo.CreateResult(model.AuctionResult{
+			SessionID:        session.ID,
+			ItemID:           session.ItemID,
+			ResultStatus:     resultStatus,
+			WinnerUserID:     session.LeaderUserID,
+			FinalPrice:       session.CurrentPrice,
+			ParticipantCount: session.ParticipantCount,
+		})
 	}
 
 	nextSessionID, nextItemID, err := e.prepareNextSessionLocked(session.RoomID)
@@ -262,6 +321,18 @@ func (e *AuctionEngine) prepareNextSessionLocked(roomID string) (string, string,
 	room := e.store.rooms[roomID]
 	room.CurrentSessionID = nextSessionID
 	e.store.rooms[roomID] = room
+	if err := e.persistRoomItemSession(room, nextItem, nextSession); err != nil {
+		return "", "", err
+	}
+
+	if err := saveSessionState(e.runtime, nextSession, nextItem); err != nil {
+		return "", "", err
+	}
+	if e.runtime != nil {
+		if err := e.runtime.SetRoomCurrentSession(roomID, nextSessionID); err != nil {
+			return "", "", err
+		}
+	}
 
 	return nextSessionID, nextItemID, nil
 }
@@ -300,5 +371,41 @@ func (e *AuctionEngine) ensureOrderLocked(session model.AuctionSession) model.Au
 	e.store.ordersBySession[session.ID] = order
 	e.store.ordersByID[order.ID] = order
 	e.store.orders = append(e.store.orders, order)
+	if e.orderRepo != nil {
+		_ = e.orderRepo.CreateOrder(order)
+	}
 	return order
+}
+
+func (e *AuctionEngine) persistRoomItemSession(room model.LiveRoom, item model.AuctionItem, session model.AuctionSession) error {
+	if e.roomRepo != nil {
+		if err := e.roomRepo.SaveRoom(room); err != nil {
+			return err
+		}
+	}
+	if e.itemRepo != nil {
+		if err := e.itemRepo.SaveItem(item); err != nil {
+			return err
+		}
+	}
+	if e.sessionRepo != nil {
+		if err := e.sessionRepo.SaveSession(session); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (e *AuctionEngine) persistItemSession(item model.AuctionItem, session model.AuctionSession) error {
+	if e.itemRepo != nil {
+		if err := e.itemRepo.SaveItem(item); err != nil {
+			return err
+		}
+	}
+	if e.sessionRepo != nil {
+		if err := e.sessionRepo.SaveSession(session); err != nil {
+			return err
+		}
+	}
+	return nil
 }

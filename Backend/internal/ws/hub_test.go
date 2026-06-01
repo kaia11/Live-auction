@@ -3,7 +3,7 @@ package ws
 import "testing"
 
 func TestHubBroadcastsToRoomClientsOnly(t *testing.T) {
-	hub := NewHub()
+	hub := NewHub(nil)
 
 	roomA := NewClient("room-a", 1)
 	roomB := NewClient("room-b", 1)

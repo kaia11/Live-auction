@@ -1,0 +1,15 @@
+.git
+.github
+node_modules
+bin
+coverage
+*.log
+*.tmp
+*.bak
+README.md
+接口测试.md
+接口权限矩阵.md
+Go模块接口清单草稿.md
+prisma
+scripts
+deploy

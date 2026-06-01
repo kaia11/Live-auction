@@ -2,11 +2,12 @@ package http
 
 import (
 	"bufio"
-	"net/http"
 	"net"
+	"net/http"
 	"time"
 
 	"auction-live/backend/internal/logger"
+	"auction-live/backend/internal/monitoring"
 )
 
 type statusRecorder struct {
@@ -27,7 +28,7 @@ func (r *statusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return hijacker.Hijack()
 }
 
-func WithRequestLogging(next http.Handler) http.Handler {
+func WithRequestLogging(next http.Handler, metrics *monitoring.Metrics) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		recorder := &statusRecorder{
@@ -36,13 +37,17 @@ func WithRequestLogging(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(recorder, r)
+		durationMS := time.Since(start).Milliseconds()
+		if metrics != nil {
+			metrics.RecordHTTPRequest(durationMS)
+		}
 
 		logger.Info(
 			"http request method=%s path=%s status=%d duration_ms=%d remote=%s",
 			r.Method,
 			r.URL.Path,
 			recorder.statusCode,
-			time.Since(start).Milliseconds(),
+			durationMS,
 			r.RemoteAddr,
 		)
 	})

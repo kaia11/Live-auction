@@ -1,0 +1,320 @@
+openapi: 3.0.3
+info:
+  title: Live Auction Backend API
+  version: 1.0.0
+  description: |
+    当前后端原型的正式接口文档。
+    鉴权方式为 Bearer Token，登录成功后获取 JWT 风格签名 token。
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: Auth
+  - name: Room
+  - name: Session
+  - name: Bid
+  - name: User
+  - name: Admin
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiEnvelope:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data: {}
+    LoginRequest:
+      type: object
+      required: [phone, password]
+      properties:
+        phone:
+          type: string
+        password:
+          type: string
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserProfile'
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        nickname:
+          type: string
+        avatar:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [viewer, anchor, admin]
+    LiveRoom:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        coverImage:
+          type: string
+        videoUrl:
+          type: string
+        status:
+          type: string
+        anchorUserId:
+          type: string
+        anchorName:
+          type: string
+        onlineCount:
+          type: integer
+        thumbnail:
+          type: string
+        currentSessionId:
+          type: string
+    AuctionItem:
+      type: object
+      properties:
+        id:
+          type: string
+        roomId:
+          type: string
+        title:
+          type: string
+        coverImage:
+          type: string
+        description:
+          type: string
+        startPrice:
+          type: integer
+          format: int64
+        incrementStep:
+          type: integer
+          format: int64
+        ceilingPrice:
+          type: integer
+          format: int64
+          nullable: true
+        durationSeconds:
+          type: integer
+        extensionSeconds:
+          type: integer
+        extensionTriggerSeconds:
+          type: integer
+        queueStatus:
+          type: string
+    AuctionSession:
+      type: object
+      properties:
+        id:
+          type: string
+        roomId:
+          type: string
+        itemId:
+          type: string
+        status:
+          type: string
+        currentPrice:
+          type: integer
+          format: int64
+        leaderUserId:
+          type: string
+        endTime:
+          type: string
+        participantCount:
+          type: integer
+        incrementStep:
+          type: integer
+          format: int64
+        extensionSeconds:
+          type: integer
+        extensionTriggerSeconds:
+          type: integer
+        supportsAutoProxy:
+          type: boolean
+    BidRequest:
+      type: object
+      required: [roomId, sessionId, itemId, bidPrice, requestId]
+      properties:
+        roomId:
+          type: string
+        sessionId:
+          type: string
+        itemId:
+          type: string
+        userId:
+          type: string
+          description: 可传但不会被后端信任，最终以后端 token 用户为准
+        bidPrice:
+          type: integer
+          format: int64
+        requestId:
+          type: string
+    BidResult:
+      type: object
+      properties:
+        roomId:
+          type: string
+        sessionId:
+          type: string
+        itemId:
+          type: string
+        userId:
+          type: string
+        acceptedBidPrice:
+          type: integer
+          format: int64
+        requestId:
+          type: string
+        currentPrice:
+          type: integer
+          format: int64
+        isLeading:
+          type: boolean
+        extensionApplied:
+          type: boolean
+        ceilingReached:
+          type: boolean
+        nextMinimumBid:
+          type: integer
+          format: int64
+    OrderStatusRequest:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [mark_paid, ship, complete, cancel]
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: 登录并获取 token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+  /users/me:
+    get:
+      tags: [User]
+      summary: 获取当前用户
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 当前用户信息
+  /rooms:
+    get:
+      tags: [Room]
+      summary: 获取房间列表
+      responses:
+        '200':
+          description: 房间列表
+  /rooms/{roomId}/live-snapshot:
+    get:
+      tags: [Room]
+      summary: 获取直播间快照
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 快照结果
+  /sessions/{sessionId}/my-status:
+    get:
+      tags: [Session]
+      summary: 获取当前用户在场次中的状态
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 我的状态
+  /bids:
+    post:
+      tags: [Bid]
+      summary: 创建出价
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+      responses:
+        '200':
+          description: 出价成功
+  /admin/rooms/{roomId}/items:
+    post:
+      tags: [Admin]
+      summary: 创建拍品
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: 创建成功
+  /admin/sessions/{sessionId}/start:
+    post:
+      tags: [Admin]
+      summary: 开始场次
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 开始成功
+  /admin/orders/{orderId}/status:
+    post:
+      tags: [Admin]
+      summary: 更新订单状态
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStatusRequest'
+      responses:
+        '200':
+          description: 更新成功

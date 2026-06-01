@@ -15,31 +15,49 @@ type Message struct {
 	ServerTime string `json:"serverTime"`
 }
 
+type EventStore interface {
+	PublishMessage(roomID string, event string, payload any) (Message, error)
+	List(roomID string, sinceVersion int64, limit int) []Message
+	LatestVersion(roomID string) int64
+}
+
 type Hub struct {
 	mu        sync.RWMutex
 	buffer    []Message
 	clients   map[string]map[int64]*Client
 	clientSeq int64
+	store     EventStore
 }
 
-func NewHub() *Hub {
+func NewHub(store EventStore) *Hub {
 	return &Hub{
 		buffer:  make([]Message, 0),
 		clients: make(map[string]map[int64]*Client),
+		store:   store,
 	}
 }
 
 func (h *Hub) Publish(roomID string, event string, payload any) {
 	h.mu.Lock()
-	version := int64(len(h.buffer) + 1)
-	message := Message{
-		RoomID:     roomID,
-		Event:      event,
-		Payload:    payload,
-		Version:    version,
-		ServerTime: time.Now().Format(time.RFC3339),
+	var message Message
+	if h.store != nil {
+		published, err := h.store.PublishMessage(roomID, event, payload)
+		if err == nil {
+			message = published
+		}
 	}
-	h.buffer = append(h.buffer, message)
+
+	if message.Version == 0 {
+		version := int64(len(h.buffer) + 1)
+		message = Message{
+			RoomID:     roomID,
+			Event:      event,
+			Payload:    payload,
+			Version:    version,
+			ServerTime: time.Now().Format(time.RFC3339),
+		}
+		h.buffer = append(h.buffer, message)
+	}
 
 	roomClients := make([]*Client, 0)
 	for _, client := range h.clients[roomID] {
@@ -53,6 +71,10 @@ func (h *Hub) Publish(roomID string, event string, payload any) {
 }
 
 func (h *Hub) List(roomID string, sinceVersion int64, limit int) []Message {
+	if h.store != nil {
+		return h.store.List(roomID, sinceVersion, limit)
+	}
+
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
@@ -75,6 +97,10 @@ func (h *Hub) List(roomID string, sinceVersion int64, limit int) []Message {
 }
 
 func (h *Hub) LatestVersion(roomID string) int64 {
+	if h.store != nil {
+		return h.store.LatestVersion(roomID)
+	}
+
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 

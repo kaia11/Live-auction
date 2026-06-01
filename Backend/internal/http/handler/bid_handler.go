@@ -7,6 +7,7 @@ import (
 
 	api "auction-live/backend/internal/api"
 	"auction-live/backend/internal/logger"
+	"auction-live/backend/internal/monitoring"
 	"auction-live/backend/internal/service"
 	"auction-live/backend/internal/ws"
 )
@@ -15,6 +16,7 @@ type BidHandler struct {
 	bidService  *service.BidService
 	userService *service.UserService
 	hub         *ws.Hub
+	metrics     *monitoring.Metrics
 }
 
 type createBidRequest struct {
@@ -26,23 +28,51 @@ type createBidRequest struct {
 	RequestID string `json:"requestId"`
 }
 
-func NewBidHandler(bidService *service.BidService, userService *service.UserService, hub *ws.Hub) *BidHandler {
-	return &BidHandler{bidService: bidService, userService: userService, hub: hub}
+func NewBidHandler(bidService *service.BidService, userService *service.UserService, hub *ws.Hub, metrics *monitoring.Metrics) *BidHandler {
+	return &BidHandler{bidService: bidService, userService: userService, hub: hub, metrics: metrics}
 }
 
 func (h *BidHandler) CreateBid(w nethttp.ResponseWriter, r *nethttp.Request) {
+	if h.metrics != nil {
+		h.metrics.RecordBidAttempt()
+	}
+	userID, err := h.userService.GetCurrentUserID(r.Header.Get("Authorization"))
+	if err != nil {
+		if h.metrics != nil {
+			h.metrics.RecordBidFailure("unauthorized")
+		}
+		api.Error(w, nethttp.StatusUnauthorized, api.CodeUnauthorized, err.Error())
+		return
+	}
+
 	var req createBidRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		if h.metrics != nil {
+			h.metrics.RecordBidFailure("invalid_body")
+		}
 		api.BadRequest(w, "invalid request body")
 		return
 	}
 
-	if req.RoomID == "" || req.SessionID == "" || req.ItemID == "" || req.UserID == "" || req.RequestID == "" {
-		api.BadRequest(w, "roomId, sessionId, itemId, userId and requestId are required")
+	if req.RoomID == "" || req.SessionID == "" || req.ItemID == "" || req.RequestID == "" {
+		if h.metrics != nil {
+			h.metrics.RecordBidFailure("missing_params")
+		}
+		api.BadRequest(w, "roomId, sessionId, itemId and requestId are required")
+		return
+	}
+	if req.UserID != "" && req.UserID != userID {
+		if h.metrics != nil {
+			h.metrics.RecordBidFailure("user_mismatch")
+		}
+		api.Error(w, nethttp.StatusForbidden, api.CodeForbidden, "request userId does not match token user")
 		return
 	}
 
 	if req.BidPrice < 0 {
+		if h.metrics != nil {
+			h.metrics.RecordBidFailure("negative_price")
+		}
 		api.Error(w, nethttp.StatusBadRequest, api.CodeInvalidBidPrice, "bidPrice must not be negative")
 		return
 	}
@@ -51,28 +81,52 @@ func (h *BidHandler) CreateBid(w nethttp.ResponseWriter, r *nethttp.Request) {
 		RoomID:    req.RoomID,
 		SessionID: req.SessionID,
 		ItemID:    req.ItemID,
-		UserID:    req.UserID,
+		UserID:    userID,
 		BidPrice:  req.BidPrice,
 		RequestID: req.RequestID,
 	})
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrRoomNotFound):
+			if h.metrics != nil {
+				h.metrics.RecordBidFailure("room_not_found")
+			}
 			api.Error(w, nethttp.StatusNotFound, api.CodeRoomNotFound, err.Error())
 		case errors.Is(err, service.ErrSessionNotFound):
+			if h.metrics != nil {
+				h.metrics.RecordBidFailure("session_not_found")
+			}
 			api.Error(w, nethttp.StatusNotFound, api.CodeSessionNotFound, err.Error())
 		case errors.Is(err, service.ErrItemNotFound):
+			if h.metrics != nil {
+				h.metrics.RecordBidFailure("item_not_found")
+			}
 			api.Error(w, nethttp.StatusNotFound, api.CodeItemNotFound, err.Error())
 		case errors.Is(err, service.ErrSessionNotBidding):
+			if h.metrics != nil {
+				h.metrics.RecordBidFailure("session_not_bidding")
+			}
 			api.Conflict(w, api.CodeSessionNotBidding, err.Error())
 		case errors.Is(err, service.ErrDuplicateBidRequest):
+			if h.metrics != nil {
+				h.metrics.RecordBidFailure("duplicate_request")
+			}
 			api.Conflict(w, api.CodeDuplicateBidRequest, err.Error())
 		case errors.Is(err, service.ErrInvalidBidPrice), errors.Is(err, service.ErrBidOwnershipMismatch), errors.Is(err, service.ErrUserNotFound):
+			if h.metrics != nil {
+				h.metrics.RecordBidFailure("invalid_bid")
+			}
 			api.Error(w, nethttp.StatusBadRequest, api.CodeInvalidBidPrice, err.Error())
 		default:
+			if h.metrics != nil {
+				h.metrics.RecordBidFailure("internal_error")
+			}
 			api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to create bid")
 		}
 		return
+	}
+	if h.metrics != nil {
+		h.metrics.RecordBidSuccess()
 	}
 
 	h.hub.Publish(req.RoomID, ws.EventAuctionPriceUpdated, result)
@@ -94,7 +148,7 @@ func (h *BidHandler) CreateBid(w nethttp.ResponseWriter, r *nethttp.Request) {
 		req.RoomID,
 		req.SessionID,
 		req.ItemID,
-		req.UserID,
+		userID,
 		result.AcceptedBidPrice,
 		req.RequestID,
 	)

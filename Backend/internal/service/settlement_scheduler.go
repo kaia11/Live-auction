@@ -5,6 +5,9 @@ import (
 
 	"auction-live/backend/internal/domain"
 	"auction-live/backend/internal/logger"
+	"auction-live/backend/internal/monitoring"
+	"auction-live/backend/internal/realtime"
+	"auction-live/backend/internal/repository"
 	"auction-live/backend/internal/ws"
 )
 
@@ -12,15 +15,19 @@ type SettlementScheduler struct {
 	store    *memoryStore
 	engine   *AuctionEngine
 	hub      *ws.Hub
+	runtime  *realtime.Runtime
+	metrics  *monitoring.Metrics
 	interval time.Duration
 	stopCh   chan struct{}
 }
 
-func NewSettlementScheduler(store *memoryStore, hub *ws.Hub, interval time.Duration) *SettlementScheduler {
+func NewSettlementScheduler(store *memoryStore, hub *ws.Hub, runtime *realtime.Runtime, roomRepo repository.RoomRepository, itemRepo repository.ItemRepository, sessionRepo repository.SessionRepository, resultRepo repository.ResultRepository, orderRepo repository.OrderRepository, metrics *monitoring.Metrics, interval time.Duration) *SettlementScheduler {
 	return &SettlementScheduler{
 		store:    store,
-		engine:   NewAuctionEngine(store),
+		engine:   NewAuctionEngine(store, runtime, roomRepo, itemRepo, sessionRepo, resultRepo, orderRepo),
 		hub:      hub,
+		runtime:  runtime,
+		metrics:  metrics,
 		interval: interval,
 		stopCh:   make(chan struct{}),
 	}
@@ -69,11 +76,18 @@ func (s *SettlementScheduler) ScanOnce() []SessionSettlement {
 		if err != nil || endTime.After(now) {
 			continue
 		}
+		delayMS := now.Sub(endTime).Milliseconds()
 
 		outcome, err := s.engine.SettleSessionLocked(session.ID)
 		if err != nil {
 			logger.Error("scheduler settle failed session_id=%s error=%v", session.ID, err)
+			if s.metrics != nil {
+				s.metrics.RecordError("settlement_exception")
+			}
 			continue
+		}
+		if s.metrics != nil {
+			s.metrics.RecordSettlement(delayMS)
 		}
 
 		logger.Info("scheduler settled session session_id=%s room_id=%s status=%s", outcome.SessionID, outcome.RoomID, outcome.Status)

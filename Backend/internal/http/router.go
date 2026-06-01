@@ -9,6 +9,7 @@ import (
 type Handlers struct {
 	Auth      *handler.AuthHandler
 	Health    *handler.HealthHandler
+	Metrics   *handler.MetricsHandler
 	Rooms     *handler.RoomHandler
 	Items     *handler.ItemHandler
 	Orders    *handler.OrderHandler
@@ -24,6 +25,7 @@ func NewRouter(handlers Handlers) http.Handler {
 	mux.HandleFunc("POST /auth/login", handlers.Auth.Login)
 	mux.HandleFunc("GET /users/me", handlers.Auth.GetCurrentUser)
 	mux.HandleFunc("GET /health", handlers.Health.GetHealth)
+	mux.HandleFunc("GET /metrics", handlers.Metrics.GetMetrics)
 	mux.HandleFunc("GET /rooms", handlers.Rooms.ListRooms)
 	mux.HandleFunc("GET /rooms/{roomId}", handlers.Rooms.GetRoomDetail)
 	mux.HandleFunc("GET /rooms/{roomId}/live-snapshot", handlers.Rooms.GetLiveSnapshot)

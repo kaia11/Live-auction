@@ -1,16 +1,27 @@
 package service
 
-import "auction-live/backend/internal/model"
+import (
+	"auction-live/backend/internal/model"
+	"auction-live/backend/internal/repository"
+)
 
 type ItemService struct {
 	store *memoryStore
+	repo  repository.ItemRepository
 }
 
-func NewItemService() *ItemService {
-	return &ItemService{store: sharedStore}
+func NewItemService(repo repository.ItemRepository) *ItemService {
+	return &ItemService{store: sharedStore, repo: repo}
 }
 
 func (s *ItemService) ListRoomItems(roomID string) []model.AuctionItem {
+	if s.repo != nil {
+		items, err := s.repo.ListRoomItems(roomID)
+		if err == nil && len(items) > 0 {
+			return items
+		}
+	}
+
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 
@@ -24,6 +35,13 @@ func (s *ItemService) ListRoomItems(roomID string) []model.AuctionItem {
 }
 
 func (s *ItemService) GetItemDetail(roomID string, itemID string) model.AuctionItem {
+	if s.repo != nil {
+		item, err := s.repo.GetItemDetail(roomID, itemID)
+		if err == nil && item != nil && item.ID != "" {
+			return *item
+		}
+	}
+
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 

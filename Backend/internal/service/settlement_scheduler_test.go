@@ -12,7 +12,7 @@ import (
 func TestSettlementSchedulerScanOnceSettlesExpiredSession(t *testing.T) {
 	store := newMemoryStore()
 	store.sessions["session-001"] = forceSessionEndTime(store.sessions["session-001"], time.Now().Add(-time.Minute).Format(time.RFC3339))
-	scheduler := NewSettlementScheduler(store, ws.NewHub(), time.Second)
+	scheduler := NewSettlementScheduler(store, ws.NewHub(nil), nil, nil, nil, nil, nil, nil, nil, time.Second)
 
 	outcomes := scheduler.ScanOnce()
 	if len(outcomes) != 1 {

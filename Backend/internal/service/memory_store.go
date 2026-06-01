@@ -150,3 +150,111 @@ func newMemoryStore() *memoryStore {
 func nextBidID(count int) string {
 	return fmt.Sprintf("bid-%03d", count+1)
 }
+
+func (s *memoryStore) ListRooms() []model.LiveRoom {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	rooms := make([]model.LiveRoom, 0, len(s.rooms))
+	for _, room := range s.rooms {
+		rooms = append(rooms, room)
+	}
+	return rooms
+}
+
+func (s *memoryStore) GetRoomDetail(roomID string) model.LiveRoom {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.rooms[roomID]
+}
+
+func (s *memoryStore) ListRoomItems(roomID string) []model.AuctionItem {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	itemIDs := s.roomItems[roomID]
+	items := make([]model.AuctionItem, 0, len(itemIDs))
+	for _, itemID := range itemIDs {
+		items = append(items, s.items[itemID])
+	}
+	return items
+}
+
+func (s *memoryStore) GetItemDetail(roomID string, itemID string) model.AuctionItem {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	item := s.items[itemID]
+	if item.RoomID != roomID {
+		return model.AuctionItem{}
+	}
+	return item
+}
+
+func (s *memoryStore) GetCurrentSession(roomID string) model.AuctionSession {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	room := s.rooms[roomID]
+	return s.sessions[room.CurrentSessionID]
+}
+
+func (s *memoryStore) ListRoomSessions(roomID string) []model.AuctionSession {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	sessions := make([]model.AuctionSession, 0)
+	for _, session := range s.sessions {
+		if session.RoomID == roomID {
+			sessions = append(sessions, session)
+		}
+	}
+	return sessions
+}
+
+func (s *memoryStore) ListUserOrders(userID string) []model.AuctionOrder {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	orders := make([]model.AuctionOrder, 0)
+	for _, order := range s.orders {
+		if order.BuyerUserID == userID {
+			orders = append(orders, order)
+		}
+	}
+	return orders
+}
+
+func (s *memoryStore) ListUserBids(userID string) []model.Bid {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	bids := make([]model.Bid, 0)
+	for _, bid := range s.bids {
+		if bid.UserID == userID {
+			bids = append(bids, bid)
+		}
+	}
+	return bids
+}
+
+func (s *memoryStore) ListSessionBids(sessionID string) []model.Bid {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	bids := make([]model.Bid, 0)
+	for _, bid := range s.bids {
+		if bid.SessionID == sessionID {
+			bids = append(bids, bid)
+		}
+	}
+	return bids
+}
+
+func (s *memoryStore) GetUserByID(userID string) model.User {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.users[userID]
+}

@@ -5,15 +5,26 @@ import (
 
 	"auction-live/backend/internal/domain"
 	"auction-live/backend/internal/model"
+	"auction-live/backend/internal/realtime"
+	"auction-live/backend/internal/repository"
 )
 
 type AdminService struct {
-	store  *memoryStore
-	engine *AuctionEngine
+	store       *memoryStore
+	engine      *AuctionEngine
+	runtime     *realtime.Runtime
+	itemRepo    repository.ItemRepository
+	sessionRepo repository.SessionRepository
 }
 
-func NewAdminService() *AdminService {
-	return &AdminService{store: sharedStore, engine: NewAuctionEngine(sharedStore)}
+func NewAdminService(runtime *realtime.Runtime, roomRepo repository.RoomRepository, itemRepo repository.ItemRepository, sessionRepo repository.SessionRepository, resultRepo repository.ResultRepository, orderRepo repository.OrderRepository) *AdminService {
+	return &AdminService{
+		store:       sharedStore,
+		engine:      NewAuctionEngine(sharedStore, runtime, roomRepo, itemRepo, sessionRepo, resultRepo, orderRepo),
+		runtime:     runtime,
+		itemRepo:    itemRepo,
+		sessionRepo: sessionRepo,
+	}
 }
 
 type CreateItemInput struct {
@@ -71,7 +82,7 @@ func (s *AdminService) CreateItem(roomID string, input CreateItemInput) (model.A
 	}
 	s.store.items[itemID] = item
 	s.store.roomItems[roomID] = append(s.store.roomItems[roomID], itemID)
-	s.store.sessions[sessionID] = model.AuctionSession{
+	session := model.AuctionSession{
 		ID:                sessionID,
 		RoomID:            roomID,
 		ItemID:            itemID,
@@ -85,6 +96,25 @@ func (s *AdminService) CreateItem(roomID string, input CreateItemInput) (model.A
 		ExtensionTrigger:  input.ExtensionTriggerSeconds,
 		CeilingPrice:      input.CeilingPrice,
 		SupportsAutoProxy: true,
+	}
+	s.store.sessions[sessionID] = session
+	if s.itemRepo != nil {
+		if err := s.itemRepo.SaveItem(item); err != nil {
+			return model.AuctionItem{}, nil, err
+		}
+		if err := s.itemRepo.ReplaceRoomQueue(roomID, s.store.roomItems[roomID]); err != nil {
+			return model.AuctionItem{}, nil, err
+		}
+	}
+	if s.sessionRepo != nil {
+		if err := s.sessionRepo.SaveSession(session); err != nil {
+			return model.AuctionItem{}, nil, err
+		}
+	}
+	if s.runtime != nil {
+		if err := saveSessionState(s.runtime, session, item); err != nil {
+			return model.AuctionItem{}, nil, err
+		}
 	}
 
 	meta := map[string]any{
@@ -138,6 +168,11 @@ func (s *AdminService) UpdateItem(itemID string, input UpdateItemInput) (model.A
 	}
 
 	s.store.items[itemID] = item
+	if s.itemRepo != nil {
+		if err := s.itemRepo.SaveItem(item); err != nil {
+			return model.AuctionItem{}, err
+		}
+	}
 	for sessionID, session := range s.store.sessions {
 		if session.ItemID == itemID && session.Status == domain.SessionStatePending {
 			session.CurrentPrice = item.StartPrice
@@ -146,6 +181,16 @@ func (s *AdminService) UpdateItem(itemID string, input UpdateItemInput) (model.A
 			session.ExtensionTrigger = item.ExtensionTriggerSeconds
 			session.CeilingPrice = item.CeilingPrice
 			s.store.sessions[sessionID] = session
+			if s.sessionRepo != nil {
+				if err := s.sessionRepo.SaveSession(session); err != nil {
+					return model.AuctionItem{}, err
+				}
+			}
+			if s.runtime != nil {
+				if err := saveSessionState(s.runtime, session, item); err != nil {
+					return model.AuctionItem{}, err
+				}
+			}
 		}
 	}
 
@@ -201,6 +246,11 @@ func (s *AdminService) ReorderQueue(roomID string, itemIDs []string) (map[string
 	}
 
 	s.store.roomItems[roomID] = itemIDs
+	if s.itemRepo != nil {
+		if err := s.itemRepo.ReplaceRoomQueue(roomID, itemIDs); err != nil {
+			return nil, err
+		}
+	}
 	return map[string]any{
 		"roomId": roomID,
 		"items":  itemIDs,

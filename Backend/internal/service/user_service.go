@@ -5,9 +5,8 @@ import (
 
 	"auction-live/backend/internal/domain"
 	"auction-live/backend/internal/model"
+	"auction-live/backend/internal/repository"
 )
-
-const mockTokenPrefix = "mock-token:"
 
 type UserProfile struct {
 	ID       string `json:"id"`
@@ -23,11 +22,13 @@ type LoginResult struct {
 }
 
 type UserService struct {
-	store *memoryStore
+	store        *memoryStore
+	tokenService *TokenService
+	repo         repository.UserRepository
 }
 
-func NewUserService() *UserService {
-	return &UserService{store: sharedStore}
+func NewUserService(tokenService *TokenService, repo repository.UserRepository) *UserService {
+	return &UserService{store: sharedStore, tokenService: tokenService, repo: repo}
 }
 
 func (s *UserService) Login(phone string, password string) (LoginResult, error) {
@@ -35,17 +36,19 @@ func (s *UserService) Login(phone string, password string) (LoginResult, error) 
 		return LoginResult{}, ErrInvalidCredentials
 	}
 
-	s.store.mu.RLock()
-	defer s.store.mu.RUnlock()
-
 	userID := resolveLoginUserID(phone)
-	user, ok := s.store.users[userID]
-	if !ok {
+	user, err := s.loadUser(userID)
+	if err != nil {
 		return LoginResult{}, ErrUserNotFound
 	}
 
+	token, err := s.tokenService.Sign(user.ID, user.Role)
+	if err != nil {
+		return LoginResult{}, err
+	}
+
 	return LoginResult{
-		Token: buildMockToken(user.ID),
+		Token: token,
 		User:  buildUserProfile(user, phone),
 	}, nil
 }
@@ -56,11 +59,8 @@ func (s *UserService) GetCurrentUser(authorization string) (UserProfile, error) 
 		return UserProfile{}, err
 	}
 
-	s.store.mu.RLock()
-	defer s.store.mu.RUnlock()
-
-	user, ok := s.store.users[userID]
-	if !ok {
+	user, err := s.loadUser(userID)
+	if err != nil {
 		return UserProfile{}, ErrUserNotFound
 	}
 
@@ -68,7 +68,11 @@ func (s *UserService) GetCurrentUser(authorization string) (UserProfile, error) 
 }
 
 func (s *UserService) GetCurrentUserID(authorization string) (string, error) {
-	return parseMockToken(authorization)
+	claims, err := s.tokenService.Parse(authorization)
+	if err != nil {
+		return "", err
+	}
+	return claims.Sub, nil
 }
 
 func (s *UserService) RequireAnyRole(authorization string, allowedRoles ...string) (UserProfile, error) {
@@ -87,34 +91,12 @@ func (s *UserService) RequireAnyRole(authorization string, allowedRoles ...strin
 }
 
 func (s *UserService) TryGetCurrentUserID(authorization string) (string, bool) {
-	userID, err := parseMockToken(authorization)
+	userID, err := s.GetCurrentUserID(authorization)
 	if err != nil {
 		return "", false
 	}
 
 	return userID, true
-}
-
-func buildMockToken(userID string) string {
-	return mockTokenPrefix + userID
-}
-
-func parseMockToken(authorization string) (string, error) {
-	token := strings.TrimSpace(authorization)
-	if strings.HasPrefix(strings.ToLower(token), "bearer ") {
-		token = strings.TrimSpace(token[7:])
-	}
-
-	if !strings.HasPrefix(token, mockTokenPrefix) {
-		return "", ErrUnauthorizedToken
-	}
-
-	userID := strings.TrimPrefix(token, mockTokenPrefix)
-	if userID == "" {
-		return "", ErrUnauthorizedToken
-	}
-
-	return userID, nil
 }
 
 func buildUserProfile(user model.User, phone string) UserProfile {
@@ -125,6 +107,24 @@ func buildUserProfile(user model.User, phone string) UserProfile {
 		Phone:    phone,
 		Role:     user.Role,
 	}
+}
+
+func (s *UserService) loadUser(userID string) (model.User, error) {
+	if s.repo != nil {
+		user, err := s.repo.GetByID(userID)
+		if err == nil && user != nil && user.ID != "" {
+			return *user, nil
+		}
+	}
+
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	user, ok := s.store.users[userID]
+	if !ok {
+		return model.User{}, ErrUserNotFound
+	}
+	return user, nil
 }
 
 func resolveLoginUserID(phone string) string {

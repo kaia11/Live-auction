@@ -15,6 +15,7 @@ import (
 
 type SessionHandler struct {
 	sessionService *service.SessionService
+	commentService *service.CommentService
 	userService    *service.UserService
 	hub            *ws.Hub
 }
@@ -23,8 +24,8 @@ type createRoomCommentRequest struct {
 	Content string `json:"content"`
 }
 
-func NewSessionHandler(sessionService *service.SessionService, userService *service.UserService, hub *ws.Hub) *SessionHandler {
-	return &SessionHandler{sessionService: sessionService, userService: userService, hub: hub}
+func NewSessionHandler(sessionService *service.SessionService, commentService *service.CommentService, userService *service.UserService, hub *ws.Hub) *SessionHandler {
+	return &SessionHandler{sessionService: sessionService, commentService: commentService, userService: userService, hub: hub}
 }
 
 func (h *SessionHandler) GetCurrentSession(w nethttp.ResponseWriter, r *nethttp.Request) {
@@ -129,11 +130,12 @@ func (h *SessionHandler) CreateRoomComment(w nethttp.ResponseWriter, r *nethttp.
 		return
 	}
 
-	comment := ws.CommentPayload{
-		UserID:   user.ID,
-		Nickname: user.Nickname,
-		Content:  content,
+	saved, err := h.commentService.CreateRoomComment(roomID, user.ID, user.Nickname, content)
+	if err != nil {
+		api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to persist room comment")
+		return
 	}
+	comment := ws.CommentPayload{UserID: saved.UserID, Nickname: saved.Nickname, Content: saved.Content}
 
 	h.hub.Publish(roomID, ws.EventRoomCommentReceived, comment)
 	logger.Info("room comment created room_id=%s user_id=%s nickname=%s", roomID, user.ID, user.Nickname)

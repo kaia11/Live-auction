@@ -120,8 +120,9 @@ WS_ALLOWED_ORIGIN=*
 
 说明：
 
-- 当前版本主要依赖内存态数据运行
-- `MySQL / Redis` 配置已预留，后续切换持久化时直接接入
+- 当前版本启动时依赖 `Redis`
+- 如果配置了 `MYSQL_DSN` 且 MySQL 可连通，查询和关键业务写入会优先走 MySQL
+- 鉴权使用 `Authorization: Bearer <token>`，密钥由 `JWT_SECRET` 控制
 
 ## 接口调试建议
 
@@ -159,13 +160,38 @@ GET   /admin/stats/timeline
 
 - 当前是“后端原型版”，重点是验证业务规则和联调流程
 - 当前不是正式高并发版本
-- 当前不是数据库持久化版本
-- 当前的实时能力先以事件流原型呈现，后续升级为真正的 `WebSocket`
+- 当前已经具备 `Redis + MySQL + WebSocket + JWT` 的第一版主链路
+- 当前仍然缺少压测、监控、CI 等生产闭环能力
+
+## 接口文档
+
+- 正式接口文档：`Backend/openapi.yaml`
+- 权限矩阵：`Backend/接口权限矩阵.md`
+
+## 观测与压测
+
+- 指标端点：`GET /metrics`
+- Prometheus：`docker compose up -d prometheus`
+- 基础压测脚本：
+  - `Backend/scripts/load_bid_test.sh`
+  - `Backend/scripts/load_bid_test.ps1`
+
+## 演示数据重置
+
+- WSL / Linux:
+
+```bash
+sh ./Backend/scripts/reset_demo_data.sh
+```
+
+- Windows PowerShell（调用 WSL 内脚本）:
+
+```powershell
+.\Backend\scripts\reset_demo_data.ps1
+```
 
 ## 后续计划
 
-1. 接入 `MySQL`
-2. 接入 `Redis`
-3. 接入正式 `WebSocket`
-4. 补高并发原子更新方案
-5. 补鉴权、日志、压测和部署能力
+1. 补集成测试与压测
+2. 补监控、告警和部署闭环
+3. 继续增强高并发生产化能力

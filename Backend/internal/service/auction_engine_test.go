@@ -9,7 +9,7 @@ import (
 
 func TestAuctionEngineSettleSessionCreatesOrderAndPreparesNext(t *testing.T) {
 	store := newMemoryStore()
-	engine := NewAuctionEngine(store)
+	engine := NewAuctionEngine(store, nil, nil, nil, nil, nil, nil)
 
 	outcome, err := engine.SettleSessionLocked("session-001")
 	if err != nil {
@@ -36,7 +36,7 @@ func TestAuctionEngineSettleSessionCreatesOrderAndPreparesNext(t *testing.T) {
 func TestAuctionEngineSettleSessionNoBidEndsPassed(t *testing.T) {
 	store := newMemoryStore()
 	store.sessions["session-001"] = withLeader(store.sessions["session-001"], "")
-	engine := NewAuctionEngine(store)
+	engine := NewAuctionEngine(store, nil, nil, nil, nil, nil, nil)
 
 	outcome, err := engine.SettleSessionLocked("session-001")
 	if err != nil {

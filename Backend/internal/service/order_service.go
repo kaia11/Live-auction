@@ -2,18 +2,27 @@ package service
 
 import (
 	"auction-live/backend/internal/model"
+	"auction-live/backend/internal/repository"
 	"auction-live/backend/internal/statemachine"
 )
 
 type OrderService struct {
 	store *memoryStore
+	repo  repository.OrderRepository
 }
 
-func NewOrderService() *OrderService {
-	return &OrderService{store: sharedStore}
+func NewOrderService(repo repository.OrderRepository) *OrderService {
+	return &OrderService{store: sharedStore, repo: repo}
 }
 
 func (s *OrderService) ListMyOrders(userID string) []model.AuctionOrder {
+	if s.repo != nil {
+		orders, err := s.repo.ListUserOrders(userID)
+		if err == nil && len(orders) > 0 {
+			return orders
+		}
+	}
+
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 
@@ -49,6 +58,9 @@ func (s *OrderService) UpdateOrderStatus(orderID string, event statemachine.Orde
 			s.store.orders[i] = order
 			break
 		}
+	}
+	if s.repo != nil {
+		_ = s.repo.UpdateOrder(order)
 	}
 
 	return order, nil

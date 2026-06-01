@@ -14,6 +14,7 @@ import (
 
 type OrderHandler struct {
 	orderService *service.OrderService
+	auditService *service.AuditService
 	userService  *service.UserService
 	hub          *ws.Hub
 }
@@ -22,8 +23,8 @@ type updateOrderStatusRequest struct {
 	Action string `json:"action"`
 }
 
-func NewOrderHandler(orderService *service.OrderService, userService *service.UserService, hub *ws.Hub) *OrderHandler {
-	return &OrderHandler{orderService: orderService, userService: userService, hub: hub}
+func NewOrderHandler(orderService *service.OrderService, auditService *service.AuditService, userService *service.UserService, hub *ws.Hub) *OrderHandler {
+	return &OrderHandler{orderService: orderService, auditService: auditService, userService: userService, hub: hub}
 }
 
 func (h *OrderHandler) ensureAdminAccess(w nethttp.ResponseWriter, r *nethttp.Request) bool {
@@ -58,6 +59,7 @@ func (h *OrderHandler) UpdateOrderStatus(w nethttp.ResponseWriter, r *nethttp.Re
 	if !h.ensureAdminAccess(w, r) {
 		return
 	}
+	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
 
 	orderID := r.PathValue("orderId")
 	if orderID == "" {
@@ -91,6 +93,7 @@ func (h *OrderHandler) UpdateOrderStatus(w nethttp.ResponseWriter, r *nethttp.Re
 	}
 
 	h.hub.Publish(order.RoomID, ws.EventAuctionOrderUpdated, order)
+	_ = h.auditService.CreateLog("order", "update_status", operatorID, order.RoomID, "order", order.ID, req.Action)
 	api.Success(w, nethttp.StatusOK, order)
 }
 
