@@ -85,7 +85,9 @@ func (c *Client) Incr(key string) (int64, error) {
 }
 
 func (c *Client) HSet(key string, fields map[string]string) error {
-	args := []string{"HSET", key}
+	// Redis 3.x does not support multi-field HSET.
+	// Use HMSET for backward compatibility with local Windows Redis builds.
+	args := []string{"HMSET", key}
 	for field, value := range fields {
 		args = append(args, field, value)
 	}

@@ -79,7 +79,7 @@ if not ceilingReached and endTimeUnix > 0 then
   end
 end
 
-redis.call("HSET", KEYS[1],
+redis.call("HMSET", KEYS[1],
   "current_price", acceptedBidPrice,
   "leader_user_id", ARGV[2],
   "end_time_unix", endTimeUnix
@@ -88,7 +88,7 @@ redis.call("SADD", KEYS[3], ARGV[2])
 redis.call("ZADD", KEYS[2], acceptedBidPrice, ARGV[2])
 
 local participantCount = redis.call("SCARD", KEYS[3])
-redis.call("HSET", KEYS[1], "participant_count", participantCount)
+redis.call("HMSET", KEYS[1], "participant_count", participantCount)
 
 local rank = redis.call("ZREVRANK", KEYS[2], ARGV[2])
 local response = {
