@@ -17,9 +17,11 @@ func NewHealthHandler(cfg config.Config) *HealthHandler {
 
 func (h *HealthHandler) GetHealth(w nethttp.ResponseWriter, r *nethttp.Request) {
 	api.Success(w, nethttp.StatusOK, map[string]any{
-		"ok":          true,
-		"service":     "auction-live-backend",
-		"environment": h.cfg.AppEnv,
-		"port":        h.cfg.AppPort,
+		"ok":                       true,
+		"service":                  "auction-live-backend",
+		"environment":              h.cfg.AppEnv,
+		"port":                     h.cfg.AppPort,
+		"persistentLedgerRequired": h.cfg.RequirePersistentLedger,
+		"mysqlConfigured":          h.cfg.MySQLDSN != "",
 	})
 }

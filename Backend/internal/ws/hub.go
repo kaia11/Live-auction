@@ -22,18 +22,22 @@ type EventStore interface {
 }
 
 type Hub struct {
-	mu        sync.RWMutex
-	buffer    []Message
-	clients   map[string]map[int64]*Client
-	clientSeq int64
-	store     EventStore
+	mu           sync.RWMutex
+	buffer       []Message
+	clients      map[string]map[int64]*Client
+	clientSeq    int64
+	store        EventStore
+	roomCursor   map[string]int64
+	roomSyncStop map[string]chan struct{}
 }
 
 func NewHub(store EventStore) *Hub {
 	return &Hub{
-		buffer:  make([]Message, 0),
-		clients: make(map[string]map[int64]*Client),
-		store:   store,
+		buffer:       make([]Message, 0),
+		clients:      make(map[string]map[int64]*Client),
+		store:        store,
+		roomCursor:   make(map[string]int64),
+		roomSyncStop: make(map[string]chan struct{}),
 	}
 }
 
@@ -44,6 +48,7 @@ func (h *Hub) Publish(roomID string, event string, payload any) {
 		published, err := h.store.PublishMessage(roomID, event, payload)
 		if err == nil {
 			message = published
+			h.roomCursor[roomID] = message.Version
 		}
 	}
 
@@ -120,10 +125,16 @@ func (h *Hub) Register(roomID string, client *Client) func() {
 
 	h.mu.Lock()
 	client.id = id
+	if _, ok := h.roomCursor[roomID]; !ok && h.store != nil {
+		h.roomCursor[roomID] = h.store.LatestVersion(roomID)
+	}
 	if _, ok := h.clients[roomID]; !ok {
 		h.clients[roomID] = make(map[int64]*Client)
 	}
 	h.clients[roomID][id] = client
+	if len(h.clients[roomID]) == 1 {
+		h.ensureRoomSyncLocked(roomID)
+	}
 	h.mu.Unlock()
 
 	return func() {
@@ -138,6 +149,70 @@ func (h *Hub) Register(roomID string, client *Client) func() {
 		delete(clients, id)
 		if len(clients) == 0 {
 			delete(h.clients, roomID)
+			if stopCh, ok := h.roomSyncStop[roomID]; ok {
+				close(stopCh)
+				delete(h.roomSyncStop, roomID)
+			}
+		}
+	}
+}
+
+func (h *Hub) ensureRoomSyncLocked(roomID string) {
+	if h.store == nil {
+		return
+	}
+	if _, exists := h.roomSyncStop[roomID]; exists {
+		return
+	}
+
+	stopCh := make(chan struct{})
+	h.roomSyncStop[roomID] = stopCh
+	go h.syncRoomLoop(roomID, stopCh)
+}
+
+func (h *Hub) syncRoomLoop(roomID string, stopCh <-chan struct{}) {
+	ticker := time.NewTicker(300 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			h.pullRoomMessages(roomID)
+		case <-stopCh:
+			return
+		}
+	}
+}
+
+func (h *Hub) pullRoomMessages(roomID string) {
+	if h.store == nil {
+		return
+	}
+
+	h.mu.RLock()
+	sinceVersion := h.roomCursor[roomID]
+	h.mu.RUnlock()
+
+	messages := h.store.List(roomID, sinceVersion, 100)
+	if len(messages) == 0 {
+		return
+	}
+
+	h.mu.Lock()
+	roomClients := make([]*Client, 0, len(h.clients[roomID]))
+	for _, client := range h.clients[roomID] {
+		roomClients = append(roomClients, client)
+	}
+	for _, message := range messages {
+		if message.Version > h.roomCursor[roomID] {
+			h.roomCursor[roomID] = message.Version
+		}
+	}
+	h.mu.Unlock()
+
+	for _, message := range messages {
+		for _, client := range roomClients {
+			client.Send(message)
 		}
 	}
 }

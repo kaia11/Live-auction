@@ -12,6 +12,7 @@ services:
       APP_ENV: production
       APP_PORT: "8080"
       MYSQL_DSN: root:password@tcp(mysql:3306)/auction_live?charset=utf8mb4&parseTime=True&loc=Local
+      REQUIRE_PERSISTENT_LEDGER: "true"
       REDIS_ADDR: redis:6379
       JWT_SECRET: replace_me
       WS_ALLOWED_ORIGIN: "*"

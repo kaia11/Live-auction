@@ -18,6 +18,7 @@ COPY --from=builder /app/server /app/server
 
 ENV APP_ENV=production
 ENV APP_PORT=8080
+ENV REQUIRE_PERSISTENT_LEDGER=true
 ENV WS_ALLOWED_ORIGIN=*
 
 EXPOSE 8080

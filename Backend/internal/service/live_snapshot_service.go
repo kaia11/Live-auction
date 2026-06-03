@@ -68,9 +68,10 @@ func (s *LiveSnapshotService) GetRoomSnapshot(roomID string, userID string) (Liv
 		items = append(items, s.store.items[itemID])
 	}
 
-	rankings := buildRankings(s.store.bids, s.store.users, currentSession.ID)
+	users := s.loadUsers()
+	rankings := buildRankings(s.store.bids, users, currentSession.ID)
 	if s.runtime != nil {
-		if fromRedis, err := s.runtime.GetTopRanking(currentSession.ID, 3, s.store.users); err == nil && len(fromRedis) > 0 {
+		if fromRedis, err := s.runtime.GetTopRanking(currentSession.ID, 3, users); err == nil && len(fromRedis) > 0 {
 			rankings = fromRedis
 		}
 	}
@@ -83,7 +84,7 @@ func (s *LiveSnapshotService) GetRoomSnapshot(roomID string, userID string) (Liv
 	if userID != "" {
 		status := buildSessionUserStatus(currentSession, rankings, userID)
 		if s.runtime != nil {
-			if entry, ok, err := s.runtime.GetUserRankingEntry(currentSession.ID, userID, s.store.users); err == nil && ok {
+			if entry, ok, err := s.runtime.GetUserRankingEntry(currentSession.ID, userID, users); err == nil && ok {
 				status.MyHighestBid = entry.HighestBid
 				status.MyRank = entry.Rank
 				status.IsLeading = entry.Rank == 1
@@ -135,7 +136,8 @@ func (s *LiveSnapshotService) getRepositorySnapshot(roomID string, userID string
 		}
 	}
 
-	rankings := s.loadRankingEntries(currentSession.ID)
+	users := s.loadUsers()
+	rankings := s.loadRankingEntries(currentSession.ID, users)
 	top3 := rankings
 	if len(top3) > 3 {
 		top3 = top3[:3]
@@ -145,7 +147,7 @@ func (s *LiveSnapshotService) getRepositorySnapshot(roomID string, userID string
 	if userID != "" {
 		status := buildSessionUserStatus(sessionValue, rankings, userID)
 		if s.runtime != nil {
-			if entry, ok, runtimeErr := s.runtime.GetUserRankingEntry(currentSession.ID, userID, s.store.users); runtimeErr == nil && ok {
+			if entry, ok, runtimeErr := s.runtime.GetUserRankingEntry(currentSession.ID, userID, users); runtimeErr == nil && ok {
 				status.MyHighestBid = entry.HighestBid
 				status.MyRank = entry.Rank
 				status.IsLeading = entry.Rank == 1
@@ -165,39 +167,35 @@ func (s *LiveSnapshotService) getRepositorySnapshot(roomID string, userID string
 	}, true, nil
 }
 
-func (s *LiveSnapshotService) loadRankingEntries(sessionID string) []model.RankingEntry {
+func (s *LiveSnapshotService) loadRankingEntries(sessionID string, users map[string]model.User) []model.RankingEntry {
 	if s.runtime != nil {
-		if fromRedis, err := s.runtime.GetTopRanking(sessionID, 3, s.store.users); err == nil && len(fromRedis) > 0 {
+		if fromRedis, err := s.runtime.GetTopRanking(sessionID, 3, users); err == nil && len(fromRedis) > 0 {
 			return fromRedis
 		}
 	}
 	if s.bidRepo == nil {
 		s.store.mu.RLock()
 		defer s.store.mu.RUnlock()
-		return buildRankings(s.store.bids, s.store.users, sessionID)
+		return buildRankings(s.store.bids, users, sessionID)
 	}
 	bids, err := s.bidRepo.ListSessionBids(sessionID)
 	if err != nil || len(bids) == 0 {
 		s.store.mu.RLock()
 		defer s.store.mu.RUnlock()
-		return buildRankings(s.store.bids, s.store.users, sessionID)
+		return buildRankings(s.store.bids, users, sessionID)
 	}
 
+	hydrateUsers(users, s.userRepo, bids)
+	return buildRankings(bids, users, sessionID)
+}
+
+func (s *LiveSnapshotService) loadUsers() map[string]model.User {
 	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
 	users := make(map[string]model.User, len(s.store.users))
 	for id, user := range s.store.users {
 		users[id] = user
 	}
-	s.store.mu.RUnlock()
-	if s.userRepo != nil {
-		for _, bid := range bids {
-			if _, ok := users[bid.UserID]; ok {
-				continue
-			}
-			if user, userErr := s.userRepo.GetByID(bid.UserID); userErr == nil && user != nil && user.ID != "" {
-				users[user.ID] = *user
-			}
-		}
-	}
-	return buildRankings(bids, users, sessionID)
+	return users
 }

@@ -40,7 +40,7 @@ func TestSessionServiceGetCurrentSessionPrefersRepository(t *testing.T) {
 		IncrementStep: 8,
 	}
 
-	service := NewSessionService(nil, stubSessionRepository{current: repoSession})
+	service := NewSessionService(nil, stubSessionRepository{current: repoSession}, nil, nil)
 
 	got := service.GetCurrentSession("room-001")
 	if got.ID != repoSession.ID {
@@ -57,7 +57,7 @@ func TestSessionServiceGetCurrentSessionFallsBackToMemory(t *testing.T) {
 	expected := store.sessions[store.rooms["room-001"].CurrentSessionID]
 	store.mu.RUnlock()
 
-	service := NewSessionService(nil, stubSessionRepository{err: errors.New("mysql offline")})
+	service := NewSessionService(nil, stubSessionRepository{err: errors.New("mysql offline")}, nil, nil)
 
 	got := service.GetCurrentSession("room-001")
 	if got.ID != expected.ID {

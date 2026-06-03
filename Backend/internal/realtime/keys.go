@@ -38,3 +38,8 @@ func RoomEventVersionKey(roomID string) string {
 func RoomEventStreamKey(roomID string) string {
 	return fmt.Sprintf("%s:room:%s:event_stream", keyPrefix, roomID)
 }
+
+// SessionSettlementLeaseKey stores the short-lived lock for settling one session.
+func SessionSettlementLeaseKey(sessionID string) string {
+	return fmt.Sprintf("%s:session:%s:settlement_lease", keyPrefix, sessionID)
+}

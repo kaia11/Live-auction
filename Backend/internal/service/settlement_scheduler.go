@@ -19,9 +19,14 @@ type SettlementScheduler struct {
 	metrics  *monitoring.Metrics
 	interval time.Duration
 	stopCh   chan struct{}
+	leaseID  string
 }
 
 func NewSettlementScheduler(store *memoryStore, hub *ws.Hub, runtime *realtime.Runtime, roomRepo repository.RoomRepository, itemRepo repository.ItemRepository, sessionRepo repository.SessionRepository, resultRepo repository.ResultRepository, orderRepo repository.OrderRepository, metrics *monitoring.Metrics, interval time.Duration) *SettlementScheduler {
+	leaseID := "local-scheduler"
+	if runtime != nil {
+		leaseID = runtime.NewLeaseOwner("settlement")
+	}
 	return &SettlementScheduler{
 		store:    store,
 		engine:   NewAuctionEngine(store, runtime, roomRepo, itemRepo, sessionRepo, resultRepo, orderRepo),
@@ -30,6 +35,7 @@ func NewSettlementScheduler(store *memoryStore, hub *ws.Hub, runtime *realtime.R
 		metrics:  metrics,
 		interval: interval,
 		stopCh:   make(chan struct{}),
+		leaseID:  leaseID,
 	}
 }
 
@@ -62,12 +68,17 @@ func (s *SettlementScheduler) Stop() {
 }
 
 func (s *SettlementScheduler) ScanOnce() []SessionSettlement {
-	s.store.mu.Lock()
-	defer s.store.mu.Unlock()
-
+	sessions := s.snapshotSessions()
 	now := time.Now()
 	outcomes := make([]SessionSettlement, 0)
-	for _, session := range s.store.sessions {
+	for _, localSession := range sessions {
+		session := localSession
+		if s.runtime != nil {
+			if state, ok, err := s.runtime.LoadSessionState(session.ID); err == nil && ok {
+				session = overlaySessionState(session, state)
+			}
+		}
+
 		if session.Status != domain.SessionStateBidding || session.EndTime == "" {
 			continue
 		}
@@ -76,9 +87,13 @@ func (s *SettlementScheduler) ScanOnce() []SessionSettlement {
 		if err != nil || endTime.After(now) {
 			continue
 		}
+
+		if !s.tryClaimSettlement(session.ID) {
+			continue
+		}
 		delayMS := now.Sub(endTime).Milliseconds()
 
-		outcome, err := s.engine.SettleSessionLocked(session.ID)
+		outcome, err := s.settleSession(session)
 		if err != nil {
 			logger.Error("scheduler settle failed session_id=%s error=%v", session.ID, err)
 			if s.metrics != nil {
@@ -95,6 +110,52 @@ func (s *SettlementScheduler) ScanOnce() []SessionSettlement {
 	}
 
 	return outcomes
+}
+
+func (s *SettlementScheduler) snapshotSessions() []model.AuctionSession {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	sessions := make([]model.AuctionSession, 0, len(s.store.sessions))
+	for _, session := range s.store.sessions {
+		sessions = append(sessions, session)
+	}
+	return sessions
+}
+
+func (s *SettlementScheduler) tryClaimSettlement(sessionID string) bool {
+	if s.runtime == nil {
+		return true
+	}
+	ok, err := s.runtime.TryAcquireSettlementLease(sessionID, s.leaseID, 5*time.Second)
+	if err != nil {
+		logger.Error("scheduler lease failed session_id=%s error=%v", sessionID, err)
+		if s.metrics != nil {
+			s.metrics.RecordError("settlement_lease_error")
+		}
+		return false
+	}
+	return ok
+}
+
+func (s *SettlementScheduler) settleSession(session model.AuctionSession) (SessionSettlement, error) {
+	s.store.mu.Lock()
+	defer s.store.mu.Unlock()
+
+	if current, ok := s.store.sessions[session.ID]; ok {
+		current.Status = session.Status
+		current.CurrentPrice = session.CurrentPrice
+		current.LeaderUserID = session.LeaderUserID
+		current.EndTime = session.EndTime
+		current.ParticipantCount = session.ParticipantCount
+		current.IncrementStep = session.IncrementStep
+		current.ExtensionSeconds = session.ExtensionSeconds
+		current.ExtensionTrigger = session.ExtensionTrigger
+		current.CeilingPrice = session.CeilingPrice
+		s.store.sessions[session.ID] = current
+	}
+
+	return s.engine.SettleSessionLocked(session.ID)
 }
 
 func (s *SettlementScheduler) publishOutcome(outcome SessionSettlement) {

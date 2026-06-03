@@ -2,6 +2,7 @@ package realtime
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -10,9 +11,9 @@ import (
 )
 
 type Runtime struct {
-	client            *Client
-	eventWindowSize   int
-	dedupTTLSeconds   int
+	client          *Client
+	eventWindowSize int
+	dedupTTLSeconds int
 }
 
 func NewRuntime(client *Client) *Runtime {
@@ -94,19 +95,19 @@ func (r *Runtime) LatestVersion(roomID string) int64 {
 }
 
 type SessionState struct {
-	SessionID              string
-	RoomID                 string
-	ItemID                 string
-	Status                 string
-	CurrentPrice           int64
-	LeaderUserID           string
-	ParticipantCount       int
-	StartPrice             int64
-	IncrementStep          int64
-	ExtensionSeconds       int
+	SessionID               string
+	RoomID                  string
+	ItemID                  string
+	Status                  string
+	CurrentPrice            int64
+	LeaderUserID            string
+	ParticipantCount        int
+	StartPrice              int64
+	IncrementStep           int64
+	ExtensionSeconds        int
 	ExtensionTriggerSeconds int
-	CeilingPrice           *int64
-	EndTimeUnix            int64
+	CeilingPrice            *int64
+	EndTimeUnix             int64
 }
 
 func (r *Runtime) SaveSessionState(state SessionState) error {
@@ -144,10 +145,10 @@ func (r *Runtime) LoadSessionState(sessionID string) (SessionState, bool, error)
 	}
 
 	state := SessionState{
-		SessionID: sessionID,
-		RoomID:    values["room_id"],
-		ItemID:    values["item_id"],
-		Status:    values["status"],
+		SessionID:    sessionID,
+		RoomID:       values["room_id"],
+		ItemID:       values["item_id"],
+		Status:       values["status"],
 		LeaderUserID: values["leader_user_id"],
 	}
 	state.CurrentPrice, _ = strconv.ParseInt(values["current_price"], 10, 64)
@@ -174,6 +175,17 @@ func (r *Runtime) SetRoomCurrentSession(roomID, sessionID string) error {
 
 func (r *Runtime) GetRoomCurrentSession(roomID string) (string, bool, error) {
 	return r.client.Get(RoomCurrentSessionKey(roomID))
+}
+
+func (r *Runtime) TryAcquireSettlementLease(sessionID string, owner string, ttl time.Duration) (bool, error) {
+	if ttl <= 0 {
+		ttl = 5 * time.Second
+	}
+	seconds := int(ttl / time.Second)
+	if seconds <= 0 {
+		seconds = 1
+	}
+	return r.client.SetNXEX(SessionSettlementLeaseKey(sessionID), seconds, owner)
 }
 
 func (r *Runtime) ReplaceRanking(sessionID string, entries []model.RankingEntry) error {
@@ -284,4 +296,8 @@ func (r *Runtime) RunAtomicBid(input AtomicBidInput) (AtomicBidResult, error) {
 	}
 
 	return result, nil
+}
+
+func (r *Runtime) NewLeaseOwner(prefix string) string {
+	return fmt.Sprintf("%s-%d", prefix, time.Now().UnixNano())
 }

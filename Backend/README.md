@@ -2,15 +2,16 @@
 
 这是直播竞拍系统的 Go 后端原型。
 
-当前仓库的目标是先把后端主链路、竞拍规则和商家端基础管理能力跑通，再逐步接入 `MySQL`、`Redis` 和真实 `WebSocket`。
+当前仓库的目标是跑通后端主链路、竞拍规则和商家端基础管理能力，并以 `MySQL + Redis + WebSocket` 作为正式架构基线。
 
 ## 当前技术栈
 
 - 语言：`Go 1.25.3`
 - HTTP：标准库 `net/http`
 - 架构：`handler -> service -> repository`
-- 当前数据层：内存态原型
-- 后续数据层：`MySQL + Redis`
+- 正式账本：`MySQL`
+- 实时共享状态：`Redis`
+- 本机内存：缓存、连接和演示态回退
 
 ## 当前已实现
 
@@ -111,6 +112,7 @@ D:\Tools\Go\go\bin\go.exe run ./cmd/server
 APP_ENV=development
 APP_PORT=8080
 MYSQL_DSN=root:password@tcp(127.0.0.1:3306)/auction_live?charset=utf8mb4&parseTime=True&loc=Local
+REQUIRE_PERSISTENT_LEDGER=true
 REDIS_ADDR=127.0.0.1:6379
 REDIS_PASSWORD=
 REDIS_DB=0
@@ -121,7 +123,8 @@ WS_ALLOWED_ORIGIN=*
 说明：
 
 - 当前版本启动时依赖 `Redis`
-- 如果配置了 `MYSQL_DSN` 且 MySQL 可连通，查询和关键业务写入会优先走 MySQL
+- 默认要求 `MySQL` 可用，`bid/session/result/order` 以 MySQL 作为正式账本
+- 如需临时回退到纯演示模式，可设置 `REQUIRE_PERSISTENT_LEDGER=false`
 - 鉴权使用 `Authorization: Bearer <token>`，密钥由 `JWT_SECRET` 控制
 
 ## 接口调试建议
@@ -158,10 +161,11 @@ GET   /admin/stats/timeline
 
 ## 当前版本说明
 
-- 当前是“后端原型版”，重点是验证业务规则和联调流程
-- 当前不是正式高并发版本
-- 当前已经具备 `Redis + MySQL + WebSocket + JWT` 的第一版主链路
-- 当前仍然缺少压测、监控、CI 等生产闭环能力
+- 当前已经具备 `Redis + MySQL + WebSocket + JWT` 的第一版共享状态主链路
+- `bid/session/result/order` 默认走 MySQL 正式账本
+- 结算链路已增加 Redis 场次级租约，减少多实例重复结算
+- WebSocket 广播已支持基于 Redis 事件流的跨实例同步
+- 仍然建议继续补充更完整的压测、告警和部署自动化
 
 ## 接口文档
 
@@ -175,6 +179,7 @@ GET   /admin/stats/timeline
 - 基础压测脚本：
   - `Backend/scripts/load_bid_test.sh`
   - `Backend/scripts/load_bid_test.ps1`
+- 答辩与压测说明：`Backend/答辩与压测说明.md`
 
 ## 演示数据重置
 

@@ -38,30 +38,17 @@ func NewBidService(runtime *realtime.Runtime, repo repository.BidRepository, ses
 }
 
 func (s *BidService) CreateBid(input CreateBidInput) (model.BidResult, *SessionSettlement, error) {
-	s.store.mu.Lock()
-	defer s.store.mu.Unlock()
-
-	if _, ok := s.store.users[input.UserID]; !ok {
-		return model.BidResult{}, nil, ErrUserNotFound
-	}
-
-	room, ok := s.store.rooms[input.RoomID]
-	if !ok {
-		return model.BidResult{}, nil, ErrRoomNotFound
-	}
-
-	session, ok := s.store.sessions[input.SessionID]
-	if !ok {
-		return model.BidResult{}, nil, ErrSessionNotFound
-	}
-
-	item, ok := s.store.items[input.ItemID]
-	if !ok {
-		return model.BidResult{}, nil, ErrItemNotFound
+	room, session, item, err := s.loadBidContext(input)
+	if err != nil {
+		return model.BidResult{}, nil, err
 	}
 
 	if room.CurrentSessionID != session.ID || session.RoomID != room.ID || session.ItemID != item.ID || item.RoomID != room.ID {
 		return model.BidResult{}, nil, ErrBidOwnershipMismatch
+	}
+
+	if s.runtime == nil {
+		return s.createBidWithMemoryLock(input, session, item)
 	}
 
 	var (
@@ -71,111 +58,61 @@ func (s *BidService) CreateBid(input CreateBidInput) (model.BidResult, *SessionS
 		nextMinimumBid   int64
 	)
 
-	if s.runtime != nil {
-		runtimeResult, err := s.runtime.RunAtomicBid(realtime.AtomicBidInput{
-			SessionID: input.SessionID,
-			UserID:    input.UserID,
-			BidPrice:  input.BidPrice,
-			RequestID: input.RequestID,
-			NowUnix:   time.Now().Unix(),
-		})
-		if err != nil {
-			return model.BidResult{}, nil, err
-		}
-		if runtimeResult.Code == "duplicate_request" {
-			if cached, exists := s.store.processedRequests[input.RequestID]; exists {
-				return cached, nil, ErrDuplicateBidRequest
-			}
-			return model.BidResult{}, nil, ErrDuplicateBidRequest
-		}
-		if !runtimeResult.OK {
-			switch runtimeResult.Code {
-			case "session_not_bidding":
-				return model.BidResult{}, nil, ErrSessionNotBidding
-			default:
-				return model.BidResult{}, nil, ErrInvalidBidPrice
-			}
-		}
-
-		acceptedBidPrice = runtimeResult.AcceptedBidPrice
-		ceilingReached = runtimeResult.CeilingReached
-		extensionApplied = runtimeResult.ExtensionApplied
-		nextMinimumBid = runtimeResult.NextMinimumBid
-		session.CurrentPrice = runtimeResult.CurrentPrice
-		session.LeaderUserID = input.UserID
-		session.ParticipantCount = runtimeResult.ParticipantCount
-		if runtimeResult.EndTimeUnix > 0 {
-			session.EndTime = time.Unix(runtimeResult.EndTimeUnix, 0).Format(time.RFC3339)
-		}
-	} else {
-		if session.Status != domain.SessionStateBidding {
-			return model.BidResult{}, nil, ErrSessionNotBidding
-		}
-
-		if cached, exists := s.store.processedRequests[input.RequestID]; exists {
+	runtimeResult, err := s.runtime.RunAtomicBid(realtime.AtomicBidInput{
+		SessionID: input.SessionID,
+		UserID:    input.UserID,
+		BidPrice:  input.BidPrice,
+		RequestID: input.RequestID,
+		NowUnix:   time.Now().Unix(),
+	})
+	if err != nil {
+		return model.BidResult{}, nil, err
+	}
+	if runtimeResult.Code == "duplicate_request" {
+		if cached, exists := s.loadProcessedRequest(input.RequestID); exists {
 			return cached, nil, ErrDuplicateBidRequest
 		}
-
-		nextMinimumBid = session.CurrentPrice + session.IncrementStep
-		if session.CurrentPrice == 0 && input.BidPrice < item.StartPrice {
+		return model.BidResult{}, nil, ErrDuplicateBidRequest
+	}
+	if !runtimeResult.OK {
+		switch runtimeResult.Code {
+		case "session_not_bidding":
+			return model.BidResult{}, nil, ErrSessionNotBidding
+		default:
 			return model.BidResult{}, nil, ErrInvalidBidPrice
 		}
+	}
 
-		if input.BidPrice < nextMinimumBid {
-			return model.BidResult{}, nil, ErrInvalidBidPrice
-		}
-
-		if session.IncrementStep > 0 {
-			delta := input.BidPrice - session.CurrentPrice
-			if delta%session.IncrementStep != 0 {
-				return model.BidResult{}, nil, ErrInvalidBidPrice
-			}
-		}
-
-		acceptedBidPrice = input.BidPrice
-		if session.CeilingPrice != nil && input.BidPrice >= *session.CeilingPrice {
-			acceptedBidPrice = *session.CeilingPrice
-			ceilingReached = true
-		}
-
-		session.CurrentPrice = acceptedBidPrice
-		session.LeaderUserID = input.UserID
-		session.ParticipantCount = currentParticipantsCount(s.store.bids, session.ID, input.UserID)
-
-		if !ceilingReached {
-			endTime, err := time.Parse(time.RFC3339, session.EndTime)
-			if err == nil {
-				if endTime.Sub(time.Now()) <= time.Duration(session.ExtensionTrigger)*time.Second {
-					session.EndTime = endTime.Add(time.Duration(session.ExtensionSeconds) * time.Second).Format(time.RFC3339)
-					extensionApplied = true
-				}
-			}
-		}
-
-		nextMinimumBid = acceptedBidPrice + session.IncrementStep
+	acceptedBidPrice = runtimeResult.AcceptedBidPrice
+	ceilingReached = runtimeResult.CeilingReached
+	extensionApplied = runtimeResult.ExtensionApplied
+	nextMinimumBid = runtimeResult.NextMinimumBid
+	session.CurrentPrice = runtimeResult.CurrentPrice
+	session.LeaderUserID = input.UserID
+	session.ParticipantCount = runtimeResult.ParticipantCount
+	if runtimeResult.EndTimeUnix > 0 {
+		session.EndTime = time.Unix(runtimeResult.EndTimeUnix, 0).Format(time.RFC3339)
 	}
 
 	bid := model.Bid{
-		ID:         nextBidID(len(s.store.bids)),
+		ID:         nextBidID(s.loadBidCount()),
 		SessionID:  input.SessionID,
 		RoomID:     input.RoomID,
 		ItemID:     input.ItemID,
 		UserID:     input.UserID,
 		BidPrice:   acceptedBidPrice,
 		RequestID:  input.RequestID,
+		RankAfter:  1,
 		Status:     domain.BidStatusAccepted,
 		CreateTime: time.Now().Format(time.RFC3339),
 	}
-	s.store.bids = append(s.store.bids, bid)
-
-	rankings := buildRankings(s.store.bids, s.store.users, input.SessionID)
-	for _, entry := range rankings {
-		if entry.UserID == input.UserID {
+	if s.runtime != nil {
+		entry, ok, rankErr := s.runtime.GetUserRankingEntry(input.SessionID, input.UserID, s.loadUsers())
+		if rankErr == nil && ok {
 			bid.RankAfter = entry.Rank
-			break
 		}
 	}
-	s.store.bids[len(s.store.bids)-1] = bid
+
 	if s.repo != nil {
 		if err := s.repo.CreateBid(bid); err != nil {
 			return model.BidResult{}, nil, err
@@ -188,16 +125,6 @@ func (s *BidService) CreateBid(input CreateBidInput) (model.BidResult, *SessionS
 	}
 
 	var settlement *SessionSettlement
-	if ceilingReached {
-		outcome, err := s.engine.ReachCeilingLocked(session.ID)
-		if err != nil {
-			return model.BidResult{}, nil, err
-		}
-		settlement = &outcome
-	} else {
-		s.store.sessions[session.ID] = session
-	}
-
 	result := model.BidResult{
 		RoomID:            input.RoomID,
 		SessionID:         input.SessionID,
@@ -212,18 +139,184 @@ func (s *BidService) CreateBid(input CreateBidInput) (model.BidResult, *SessionS
 		NextMinimumBid:    nextMinimumBid,
 		VibrateSignalHint: "overtake",
 	}
-	s.store.processedRequests[input.RequestID] = result
 
-	if s.runtime != nil && !ceilingReached {
-		if err := saveSessionState(s.runtime, session, item); err != nil {
+	s.store.mu.Lock()
+	s.store.bids = append(s.store.bids, bid)
+	s.store.sessions[session.ID] = session
+	s.store.processedRequests[input.RequestID] = result
+	if ceilingReached {
+		outcome, err := s.engine.ReachCeilingLocked(session.ID)
+		if err != nil {
+			s.store.mu.Unlock()
 			return model.BidResult{}, nil, err
 		}
-		if err := syncRanking(s.runtime, s.store, session.ID); err != nil {
+		settlement = &outcome
+	}
+	s.store.mu.Unlock()
+
+	return result, settlement, nil
+}
+
+func (s *BidService) createBidWithMemoryLock(input CreateBidInput, session model.AuctionSession, item model.AuctionItem) (model.BidResult, *SessionSettlement, error) {
+	s.store.mu.Lock()
+	defer s.store.mu.Unlock()
+
+	if session.Status != domain.SessionStateBidding {
+		return model.BidResult{}, nil, ErrSessionNotBidding
+	}
+
+	if cached, exists := s.store.processedRequests[input.RequestID]; exists {
+		return cached, nil, ErrDuplicateBidRequest
+	}
+
+	nextMinimumBid := session.CurrentPrice + session.IncrementStep
+	if session.CurrentPrice == 0 && input.BidPrice < item.StartPrice {
+		return model.BidResult{}, nil, ErrInvalidBidPrice
+	}
+
+	if input.BidPrice < nextMinimumBid {
+		return model.BidResult{}, nil, ErrInvalidBidPrice
+	}
+
+	if session.IncrementStep > 0 {
+		delta := input.BidPrice - session.CurrentPrice
+		if delta%session.IncrementStep != 0 {
+			return model.BidResult{}, nil, ErrInvalidBidPrice
+		}
+	}
+
+	acceptedBidPrice := input.BidPrice
+	ceilingReached := false
+	if session.CeilingPrice != nil && input.BidPrice >= *session.CeilingPrice {
+		acceptedBidPrice = *session.CeilingPrice
+		ceilingReached = true
+	}
+
+	session.CurrentPrice = acceptedBidPrice
+	session.LeaderUserID = input.UserID
+	session.ParticipantCount = currentParticipantsCount(s.store.bids, session.ID, input.UserID)
+
+	extensionApplied := false
+	if !ceilingReached {
+		endTime, err := time.Parse(time.RFC3339, session.EndTime)
+		if err == nil && endTime.Sub(time.Now()) <= time.Duration(session.ExtensionTrigger)*time.Second {
+			session.EndTime = endTime.Add(time.Duration(session.ExtensionSeconds) * time.Second).Format(time.RFC3339)
+			extensionApplied = true
+		}
+	}
+
+	bid := model.Bid{
+		ID:         nextBidID(len(s.store.bids)),
+		SessionID:  input.SessionID,
+		RoomID:     input.RoomID,
+		ItemID:     input.ItemID,
+		UserID:     input.UserID,
+		BidPrice:   acceptedBidPrice,
+		RequestID:  input.RequestID,
+		Status:     domain.BidStatusAccepted,
+		CreateTime: time.Now().Format(time.RFC3339),
+	}
+
+	rankings := buildRankings(append(append([]model.Bid(nil), s.store.bids...), bid), s.store.users, input.SessionID)
+	for _, entry := range rankings {
+		if entry.UserID == input.UserID {
+			bid.RankAfter = entry.Rank
+			break
+		}
+	}
+
+	if s.repo != nil {
+		if err := s.repo.CreateBid(bid); err != nil {
+			return model.BidResult{}, nil, err
+		}
+	}
+	if s.sessionRepo != nil {
+		if err := s.sessionRepo.SaveSession(session); err != nil {
 			return model.BidResult{}, nil, err
 		}
 	}
 
+	s.store.bids = append(s.store.bids, bid)
+	s.store.sessions[session.ID] = session
+
+	var settlement *SessionSettlement
+	if ceilingReached {
+		outcome, err := s.engine.ReachCeilingLocked(session.ID)
+		if err != nil {
+			return model.BidResult{}, nil, err
+		}
+		settlement = &outcome
+	}
+
+	result := model.BidResult{
+		RoomID:            input.RoomID,
+		SessionID:         input.SessionID,
+		ItemID:            input.ItemID,
+		UserID:            input.UserID,
+		AcceptedBidPrice:  acceptedBidPrice,
+		RequestID:         input.RequestID,
+		CurrentPrice:      acceptedBidPrice,
+		IsLeading:         true,
+		ExtensionApplied:  extensionApplied,
+		CeilingReached:    ceilingReached,
+		NextMinimumBid:    acceptedBidPrice + session.IncrementStep,
+		VibrateSignalHint: "overtake",
+	}
+	s.store.processedRequests[input.RequestID] = result
+
 	return result, settlement, nil
+}
+
+func (s *BidService) loadBidContext(input CreateBidInput) (model.LiveRoom, model.AuctionSession, model.AuctionItem, error) {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	if _, ok := s.store.users[input.UserID]; !ok {
+		return model.LiveRoom{}, model.AuctionSession{}, model.AuctionItem{}, ErrUserNotFound
+	}
+
+	room, ok := s.store.rooms[input.RoomID]
+	if !ok {
+		return model.LiveRoom{}, model.AuctionSession{}, model.AuctionItem{}, ErrRoomNotFound
+	}
+
+	session, ok := s.store.sessions[input.SessionID]
+	if !ok {
+		return model.LiveRoom{}, model.AuctionSession{}, model.AuctionItem{}, ErrSessionNotFound
+	}
+
+	item, ok := s.store.items[input.ItemID]
+	if !ok {
+		return model.LiveRoom{}, model.AuctionSession{}, model.AuctionItem{}, ErrItemNotFound
+	}
+
+	return room, session, item, nil
+}
+
+func (s *BidService) loadProcessedRequest(requestID string) (model.BidResult, bool) {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	result, ok := s.store.processedRequests[requestID]
+	return result, ok
+}
+
+func (s *BidService) loadUsers() map[string]model.User {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	users := make(map[string]model.User, len(s.store.users))
+	for id, user := range s.store.users {
+		users[id] = user
+	}
+	return users
+}
+
+func (s *BidService) loadBidCount() int {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	return len(s.store.bids)
 }
 
 func (s *BidService) ListMyBids(userID string) []model.Bid {

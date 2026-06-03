@@ -64,6 +64,21 @@ func (c *Client) SetEX(key string, seconds int, value string) error {
 	return err
 }
 
+func (c *Client) SetNXEX(key string, seconds int, value string) (bool, error) {
+	reply, err := c.do("SET", key, value, "EX", strconv.Itoa(seconds), "NX")
+	if err != nil {
+		return false, err
+	}
+	if reply == nil {
+		return false, nil
+	}
+	text, ok := reply.(string)
+	if !ok {
+		return false, fmt.Errorf("unexpected SET NX response type %T", reply)
+	}
+	return strings.EqualFold(text, "OK"), nil
+}
+
 func (c *Client) Exists(key string) (bool, error) {
 	reply, err := c.do("EXISTS", key)
 	if err != nil {

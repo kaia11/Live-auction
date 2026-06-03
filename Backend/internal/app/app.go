@@ -53,7 +53,8 @@ func New(cfg config.Config) *App {
 	resultRepo := repository.ResultRepository(repository.NewMemoryResultRepository())
 	commentRepo := repository.CommentRepository(repository.NewMemoryCommentRepository())
 	logRepo := repository.OperationLogRepository(repository.NewMemoryOperationLogRepository())
-	if db, err := persistence.OpenMySQL(cfg.MySQLDSN); err == nil {
+	db, err := persistence.OpenMySQL(cfg.MySQLDSN)
+	if err == nil {
 		userRepo = repository.NewMySQLUserRepository(db)
 		roomRepo = repository.NewMySQLRoomRepository(db)
 		itemRepo = repository.NewMySQLItemRepository(db)
@@ -64,6 +65,9 @@ func New(cfg config.Config) *App {
 		commentRepo = repository.NewMySQLCommentRepository(db)
 		logRepo = repository.NewMySQLOperationLogRepository(db)
 	} else {
+		if cfg.RequirePersistentLedger {
+			panic(fmt.Errorf("mysql persistent ledger required: %w", err))
+		}
 		logger.Error("mysql init skipped error=%v", err)
 	}
 
@@ -71,7 +75,7 @@ func New(cfg config.Config) *App {
 	roomService := service.NewRoomService(roomRepo)
 	liveSnapshotService := service.NewLiveSnapshotService(hub, runtime, roomRepo, itemRepo, sessionRepo, bidRepo, userRepo)
 	itemService := service.NewItemService(itemRepo)
-	sessionService := service.NewSessionService(runtime, sessionRepo)
+	sessionService := service.NewSessionService(runtime, sessionRepo, bidRepo, userRepo)
 	commentService := service.NewCommentService(commentRepo)
 	auditService := service.NewAuditService(logRepo)
 	bidService := service.NewBidService(runtime, bidRepo, sessionRepo, resultRepo, orderRepo)
