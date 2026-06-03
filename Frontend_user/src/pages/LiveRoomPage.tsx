@@ -2,7 +2,12 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Toast } from 'antd-mobile'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
+import { useLiveRoomUIStore } from '../stores/useLiveRoomUIStore'
 import { useAppStore } from '../stores/useAppStore'
+import { useRoomsQuery } from '../hooks/queries/useRoomsQuery'
+import { useRoomRuntimeQuery } from '../hooks/queries/useRoomRuntimeQuery'
+import { useBidHistoriesQuery } from '../hooks/queries/useBidHistoriesQuery'
+import { useRoomCommentsQuery } from '../hooks/queries/useRoomCommentsQuery'
 import CurrentAuctionCard from '../components/CurrentAuctionCard'
 import AuctionItemDrawer from '../components/AuctionItemDrawer'
 import BidActionPanel from '../components/BidActionPanel'
@@ -22,6 +27,14 @@ const LiveRoomPage: React.FC = () => {
     currentItemId,
     comments,
     onlineCount,
+    syncRooms,
+    syncRuntimeSnapshot,
+    syncBidHistories,
+    syncCommentsSnapshot,
+    pollRoomEvents,
+    submitComment,
+  } = useLiveRoomStore()
+  const {
     isCurrentAuctionCardClosed,
     showAuctionItemDrawer,
     showBidPanel,
@@ -30,33 +43,65 @@ const LiveRoomPage: React.FC = () => {
     showOvertakenModal,
     showAuctionEndPanel,
     showDelayBanner,
-    loadRooms,
-    loadRoomRuntime,
-    loadBidHistories,
-    loadRoomComments,
-    pollRoomEvents,
-    submitComment,
     toggleAuctionItemDrawer,
+    toggleRuleModal,
     setCurrentAuctionCardClosed,
-  } = useLiveRoomStore()
+  } = useLiveRoomUIStore()
   const { setLastVisitedRoomId, setCurrentTab, currentTab } = useAppStore()
   const [commentDraft, setCommentDraft] = useState('')
+
+  const roomsQuery = useRoomsQuery()
+  const roomRuntimeQuery = useRoomRuntimeQuery(roomId)
+  const bidHistoriesQuery = useBidHistoriesQuery()
+  const roomCommentsQuery = useRoomCommentsQuery(roomId)
+
+  useEffect(() => {
+    if (roomsQuery.data) {
+      syncRooms(roomsQuery.data)
+    }
+  }, [roomsQuery.data, syncRooms])
+
+  useEffect(() => {
+    if (!roomId || !roomRuntimeQuery.data) {
+      return
+    }
+
+    syncRuntimeSnapshot({
+      currentRoomId: roomId,
+      items: roomRuntimeQuery.data.items,
+      currentItemId: roomRuntimeQuery.data.currentItemId,
+      currentSessionId: roomRuntimeQuery.data.currentSessionId,
+      top3Ranking: roomRuntimeQuery.data.top3Ranking,
+      myBidStatus: roomRuntimeQuery.data.myBidStatus,
+      currentCountdown: roomRuntimeQuery.data.currentCountdown,
+      onlineCount: roomRuntimeQuery.data.onlineCount,
+    })
+  }, [roomId, roomRuntimeQuery.data, syncRuntimeSnapshot])
+
+  useEffect(() => {
+    if (bidHistoriesQuery.data) {
+      syncBidHistories(bidHistoriesQuery.data)
+    }
+  }, [bidHistoriesQuery.data, syncBidHistories])
+
+  useEffect(() => {
+    if (!roomCommentsQuery.data) {
+      return
+    }
+
+    syncCommentsSnapshot(
+      roomCommentsQuery.data.comments,
+      roomCommentsQuery.data.lastEventVersion,
+    )
+  }, [roomCommentsQuery.data, syncCommentsSnapshot])
 
   useEffect(() => {
     if (!roomId) {
       return
     }
 
-    const hydrateRoom = async () => {
-      await loadRooms()
-      await loadRoomRuntime(roomId)
-      await loadBidHistories()
-      await loadRoomComments(roomId)
-      setLastVisitedRoomId(roomId)
-    }
-
-    void hydrateRoom()
-  }, [roomId, loadRooms, loadRoomRuntime, loadBidHistories, loadRoomComments, setLastVisitedRoomId])
+    setLastVisitedRoomId(roomId)
+  }, [roomId, setLastVisitedRoomId])
 
   useEffect(() => {
     if (!roomId) {
@@ -72,7 +117,7 @@ const LiveRoomPage: React.FC = () => {
     }
   }, [roomId, pollRoomEvents])
 
-  const currentItem = items.find(i => i.id === currentItemId)
+  const currentItem = items.find((item) => item.id === currentItemId)
   const currentRoom = rooms.find((room) => room.id === roomId)
 
   const goToRooms = () => {
@@ -98,6 +143,7 @@ const LiveRoomPage: React.FC = () => {
     if (success) {
       setCommentDraft('')
       Toast.show('弹幕已发送')
+      await roomCommentsQuery.refetch()
     }
   }
 
@@ -168,10 +214,12 @@ const LiveRoomPage: React.FC = () => {
         </div>
         <div className="func-buttons-row">
           <button className="func-btn send-btn" onClick={() => void handleSubmitComment()}>发送</button>
-          <span className="func-btn" onClick={() => {
-            const store = useLiveRoomStore.getState()
-            store.toggleRuleModal()
-          }}>规则</span>
+          <span
+            className="func-btn"
+            onClick={toggleRuleModal}
+          >
+            规则
+          </span>
           <span className="func-btn" onClick={toggleAuctionItemDrawer}>拍品列表</span>
           <span className="func-btn">智能出价</span>
         </div>

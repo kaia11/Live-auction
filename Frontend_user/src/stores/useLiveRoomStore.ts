@@ -1,34 +1,23 @@
 import { create } from 'zustand'
-import { LiveRoom, AuctionItem, RankingItem, MyBidStatus, BidHistory, LiveComment } from '@/types'
-import { BackendCommentPayload, getCurrentSession, getRoomEvents, getRoomItems, getRooms, createRoomComment } from '@/api/rooms'
+import { LiveRoom, AuctionItem, BidHistory, LiveComment } from '@/types'
+import { BackendCommentPayload, createRoomComment, getCurrentSession, getRoomEvents, getRoomItems, getRooms } from '@/api/rooms'
 import { createBid, getMyBidHistories } from '@/api/bids'
 import { getMyBidStatus, getSessionRanking } from '@/api/sessions'
 import { mapAuctionRuntime, mapBackendRoom, mapBidHistories } from '@/adapters/auction'
 import { useUserStore } from './useUserStore'
+import { useLiveRoomUIStore, LiveRoomUIStateValues } from './useLiveRoomUIStore'
+import { useLiveRuntimeStore, LiveRuntimeSnapshot } from './useLiveRuntimeStore'
 
-interface LiveRoomState {
+interface LiveRoomState extends LiveRoomUIStateValues, LiveRuntimeSnapshot {
   rooms: LiveRoom[]
-  currentRoomId: string | null
   items: AuctionItem[]
-  currentItemId: string | null
-  currentSessionId: string | null
-  lastEventVersion: number
-  comments: LiveComment[]
-  top3Ranking: RankingItem[]
-  myBidStatus: MyBidStatus
   bidHistories: BidHistory[]
-  onlineCount: number
-  currentCountdown: number
-  isCurrentAuctionCardClosed: boolean
-  showAuctionItemDrawer: boolean
-  showBidPanel: boolean
-  showRuleModal: boolean
-  showBidSuccessModal: boolean
-  showOvertakenModal: boolean
-  showAuctionEndPanel: boolean
-  showDelayBanner: boolean
   setCurrentRoomId: (roomId: string) => void
   setCurrentItemId: (itemId: string) => void
+  syncRooms: (rooms: LiveRoom[]) => void
+  syncRuntimeSnapshot: (snapshot: Partial<LiveRuntimeSnapshot> & { items?: AuctionItem[] }) => void
+  syncBidHistories: (bidHistories: BidHistory[]) => void
+  syncCommentsSnapshot: (comments: LiveComment[], lastEventVersion: number) => void
   loadRooms: () => Promise<void>
   loadRoomRuntime: (roomId: string) => Promise<void>
   loadBidHistories: () => Promise<void>
@@ -43,19 +32,7 @@ interface LiveRoomState {
   submitComment: (content: string) => Promise<boolean>
 }
 
-export const useLiveRoomStore = create<LiveRoomState>((set) => ({
-  rooms: [],
-  currentRoomId: null,
-  items: [],
-  currentItemId: null,
-  currentSessionId: null,
-  lastEventVersion: 0,
-  comments: [],
-  top3Ranking: [],
-  myBidStatus: { myHighestPrice: 0, myRank: 0, isLeading: false },
-  bidHistories: [],
-  onlineCount: 0,
-  currentCountdown: 0,
+const initialUIState: LiveRoomUIStateValues = {
   isCurrentAuctionCardClosed: false,
   showAuctionItemDrawer: false,
   showBidPanel: false,
@@ -64,16 +41,79 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
   showOvertakenModal: false,
   showAuctionEndPanel: false,
   showDelayBanner: false,
+}
 
-  setCurrentRoomId: (roomId) => set({ currentRoomId: roomId }),
+const initialRuntimeState: LiveRuntimeSnapshot = {
+  currentRoomId: null,
+  currentItemId: null,
+  currentSessionId: null,
+  lastEventVersion: 0,
+  comments: [],
+  top3Ranking: [],
+  myBidStatus: { myHighestPrice: 0, myRank: 0, isLeading: false },
+  onlineCount: 0,
+  currentCountdown: 0,
+}
 
-  setCurrentItemId: (itemId) => set({ currentItemId: itemId }),
+const syncUIState = (patch: Partial<LiveRoomUIStateValues>) => {
+  useLiveRoomUIStore.getState().setUIState(patch)
+}
+
+const syncRuntimeState = (patch: Partial<LiveRuntimeSnapshot>) => {
+  useLiveRuntimeStore.getState().syncRuntimeSnapshot(patch)
+}
+
+export const useLiveRoomStore = create<LiveRoomState>((set) => ({
+  rooms: [],
+  items: [],
+  bidHistories: [],
+  ...initialUIState,
+  ...initialRuntimeState,
+
+  setCurrentRoomId: (roomId) => {
+    useLiveRuntimeStore.getState().setCurrentRoomId(roomId)
+    set({ currentRoomId: roomId })
+  },
+
+  setCurrentItemId: (itemId) => {
+    useLiveRuntimeStore.getState().setCurrentItemId(itemId)
+    set({ currentItemId: itemId })
+  },
+
+  syncRooms: (rooms) => set({ rooms }),
+
+  syncRuntimeSnapshot: (snapshot) => {
+    const runtimePatch: Partial<LiveRuntimeSnapshot> = {}
+
+    if (snapshot.currentRoomId !== undefined) runtimePatch.currentRoomId = snapshot.currentRoomId
+    if (snapshot.currentItemId !== undefined) runtimePatch.currentItemId = snapshot.currentItemId
+    if (snapshot.currentSessionId !== undefined) runtimePatch.currentSessionId = snapshot.currentSessionId
+    if (snapshot.lastEventVersion !== undefined) runtimePatch.lastEventVersion = snapshot.lastEventVersion
+    if (snapshot.comments !== undefined) runtimePatch.comments = snapshot.comments
+    if (snapshot.top3Ranking !== undefined) runtimePatch.top3Ranking = snapshot.top3Ranking
+    if (snapshot.myBidStatus !== undefined) runtimePatch.myBidStatus = snapshot.myBidStatus
+    if (snapshot.onlineCount !== undefined) runtimePatch.onlineCount = snapshot.onlineCount
+    if (snapshot.currentCountdown !== undefined) runtimePatch.currentCountdown = snapshot.currentCountdown
+
+    syncRuntimeState(runtimePatch)
+
+    set((state) => ({
+      ...state,
+      ...runtimePatch,
+      items: snapshot.items ?? state.items,
+    }))
+  },
+
+  syncBidHistories: (bidHistories) => set({ bidHistories }),
+
+  syncCommentsSnapshot: (comments, lastEventVersion) => {
+    syncRuntimeState({ comments, lastEventVersion })
+    set({ comments, lastEventVersion })
+  },
 
   loadRooms: async () => {
-    const rooms = await getRooms()
-    set({
-      rooms: rooms.map(mapBackendRoom),
-    })
+    const rooms = (await getRooms()).map(mapBackendRoom)
+    set({ rooms })
   },
 
   loadRoomRuntime: async (roomId) => {
@@ -89,33 +129,36 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
 
     const currentRoom = getMappedRoomById(roomId, useLiveRoomStore.getState().rooms)
     const runtime = mapAuctionRuntime(items, session, ranking, myStatus)
-
-    set({
+    const runtimePatch = {
       currentRoomId: roomId,
-      items: runtime.items,
       currentItemId: runtime.currentItemId,
       currentSessionId: runtime.currentSessionId,
-      lastEventVersion: useLiveRoomStore.getState().lastEventVersion,
       top3Ranking: runtime.top3Ranking,
       myBidStatus: runtime.myBidStatus,
       onlineCount: currentRoom?.onlineCount ?? session.participantCount,
       currentCountdown: runtime.currentCountdown,
-    })
+    }
+
+    syncRuntimeState(runtimePatch)
+    set((state) => ({
+      ...state,
+      items: runtime.items,
+      ...runtimePatch,
+    }))
   },
 
   loadBidHistories: async () => {
-    const histories = await getMyBidHistories()
-    set({
-      bidHistories: mapBidHistories(histories),
-    })
+    const bidHistories = mapBidHistories(await getMyBidHistories())
+    set({ bidHistories })
   },
 
   loadRoomComments: async (roomId) => {
     const events = await getRoomEvents(roomId)
-    set({
-      comments: extractComments(events),
-      lastEventVersion: events.length > 0 ? events[events.length - 1].version : 0,
-    })
+    const comments = extractComments(events)
+    const lastEventVersion = events.length > 0 ? events[events.length - 1].version : 0
+
+    syncRuntimeState({ comments, lastEventVersion })
+    set({ comments, lastEventVersion })
   },
 
   pollRoomEvents: async (roomId) => {
@@ -127,9 +170,15 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
       return
     }
 
+    const comments = mergeComments(useLiveRoomStore.getState().comments, extractComments(events))
+    syncRuntimeState({
+      comments,
+      lastEventVersion: latestVersion,
+    })
+
     set({
       lastEventVersion: latestVersion,
-      comments: mergeComments(useLiveRoomStore.getState().comments, extractComments(events)),
+      comments,
     })
 
     await Promise.all([
@@ -138,23 +187,52 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
     ])
   },
 
-  toggleAuctionItemDrawer: () => set(state => ({ showAuctionItemDrawer: !state.showAuctionItemDrawer })),
+  toggleAuctionItemDrawer: () =>
+    set((state) => {
+      const nextValue = !state.showAuctionItemDrawer
+      syncUIState({ showAuctionItemDrawer: nextValue })
+      return { showAuctionItemDrawer: nextValue }
+    }),
 
-  toggleBidPanel: () => set(state => ({ showBidPanel: !state.showBidPanel })),
+  toggleBidPanel: () =>
+    set((state) => {
+      const nextValue = !state.showBidPanel
+      syncUIState({ showBidPanel: nextValue })
+      return { showBidPanel: nextValue }
+    }),
 
-  toggleRuleModal: () => set(state => ({ showRuleModal: !state.showRuleModal })),
+  toggleRuleModal: () =>
+    set((state) => {
+      const nextValue = !state.showRuleModal
+      syncUIState({ showRuleModal: nextValue })
+      return { showRuleModal: nextValue }
+    }),
 
-  closeAllModals: () => set({
-    showAuctionItemDrawer: false,
-    showBidPanel: false,
-    showRuleModal: false,
-    showBidSuccessModal: false,
-    showOvertakenModal: false,
-    showAuctionEndPanel: false,
-    showDelayBanner: false,
-  }),
+  closeAllModals: () => {
+    syncUIState({
+      showAuctionItemDrawer: false,
+      showBidPanel: false,
+      showRuleModal: false,
+      showBidSuccessModal: false,
+      showOvertakenModal: false,
+      showAuctionEndPanel: false,
+      showDelayBanner: false,
+    })
+    set({
+      showAuctionItemDrawer: false,
+      showBidPanel: false,
+      showRuleModal: false,
+      showBidSuccessModal: false,
+      showOvertakenModal: false,
+      showAuctionEndPanel: false,
+      showDelayBanner: false,
+    })
+  },
 
-  setCurrentAuctionCardClosed: (closed) => set({ isCurrentAuctionCardClosed: closed }),
+  setCurrentAuctionCardClosed: (closed) => {
+    syncUIState({ isCurrentAuctionCardClosed: closed })
+    set({ isCurrentAuctionCardClosed: closed })
+  },
 
   submitBid: async (price) => {
     const { currentRoomId, currentSessionId, currentItemId, loadRoomRuntime, loadBidHistories } = useLiveRoomStore.getState()
@@ -183,10 +261,13 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
     const events = await getRoomEvents(currentRoomId)
     const latestVersion = events.length > 0 ? events[events.length - 1].version : 0
 
-    set(() => ({
+    syncUIState({ showBidSuccessModal: true })
+    syncRuntimeState({ lastEventVersion: latestVersion })
+
+    set({
       lastEventVersion: latestVersion,
       showBidSuccessModal: true,
-    }))
+    })
     return true
   },
 

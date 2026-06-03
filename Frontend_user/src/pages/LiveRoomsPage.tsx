@@ -3,16 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { SearchBar, Tabs, Card, Image } from 'antd-mobile'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
 import { useAppStore } from '../stores/useAppStore'
+import { useRoomsQuery } from '../hooks/queries/useRoomsQuery'
 import './LiveRoomsPage.scss'
 
 const LiveRoomsPage: React.FC = () => {
   const navigate = useNavigate()
-  const { rooms, loadRooms, setCurrentRoomId } = useLiveRoomStore()
+  const { rooms, syncRooms, setCurrentRoomId } = useLiveRoomStore()
   const { setCurrentTab } = useAppStore()
+  const roomsQuery = useRoomsQuery()
 
   useEffect(() => {
-    void loadRooms()
-  }, [loadRooms])
+    if (roomsQuery.data) {
+      syncRooms(roomsQuery.data)
+    }
+  }, [roomsQuery.data, syncRooms])
 
   const enterRoom = (roomId: string) => {
     setCurrentRoomId(roomId)
