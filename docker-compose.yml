@@ -1,5 +1,3 @@
-name: auction-live
-
 services:
   backend:
     build:
