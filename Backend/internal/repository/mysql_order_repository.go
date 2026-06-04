@@ -23,7 +23,7 @@ func (r *MySQLOrderRepository) CreateOrder(order model.AuctionOrder) error {
 			amount = VALUES(amount),
 			status = VALUES(status),
 			create_time = VALUES(create_time)
-	`, order.ID, order.SessionID, order.RoomID, order.ItemID, order.BuyerUserID, order.Amount, order.Status, order.CreateTime)
+	`, order.ID, order.SessionID, order.RoomID, order.ItemID, order.BuyerUserID, order.Amount, order.Status, nullableTimeValue(order.CreateTime))
 	return err
 }
 
@@ -66,6 +66,6 @@ func (r *MySQLOrderRepository) UpdateOrder(order model.AuctionOrder) error {
 		UPDATE auction_orders
 		SET status = ?, amount = ?, buyer_user_id = ?, room_id = ?, item_id = ?, create_time = ?
 		WHERE id = ?
-	`, order.Status, order.Amount, order.BuyerUserID, order.RoomID, order.ItemID, order.CreateTime, order.ID)
+	`, order.Status, order.Amount, order.BuyerUserID, order.RoomID, order.ItemID, nullableTimeValue(order.CreateTime), order.ID)
 	return err
 }

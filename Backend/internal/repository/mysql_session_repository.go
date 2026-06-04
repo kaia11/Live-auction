@@ -69,7 +69,7 @@ func (r *MySQLSessionRepository) SaveSession(session model.AuctionSession) error
 			extension_trigger_seconds = VALUES(extension_trigger_seconds),
 			ceiling_price = VALUES(ceiling_price),
 			supports_auto_proxy = VALUES(supports_auto_proxy)
-	`, session.ID, session.RoomID, session.ItemID, session.Status, session.CurrentPrice, session.LeaderUserID, nullableEmptyToNull(session.EndTime), session.ParticipantCount, session.IncrementStep, session.ExtensionSeconds, session.ExtensionTrigger, nullableInt64Value(session.CeilingPrice), session.SupportsAutoProxy)
+	`, session.ID, session.RoomID, session.ItemID, session.Status, session.CurrentPrice, session.LeaderUserID, nullableTimeValue(session.EndTime), session.ParticipantCount, session.IncrementStep, session.ExtensionSeconds, session.ExtensionTrigger, nullableInt64Value(session.CeilingPrice), session.SupportsAutoProxy)
 	return err
 }
 

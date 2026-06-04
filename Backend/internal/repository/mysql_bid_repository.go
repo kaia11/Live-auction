@@ -18,7 +18,7 @@ func (r *MySQLBidRepository) CreateBid(bid model.Bid) error {
 	_, err := r.db.Exec(`
 		INSERT INTO bids (id, session_id, room_id, item_id, user_id, bid_price, request_id, rank_after, status, create_time)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, bid.ID, bid.SessionID, bid.RoomID, bid.ItemID, bid.UserID, bid.BidPrice, bid.RequestID, bid.RankAfter, bid.Status, bid.CreateTime)
+	`, bid.ID, bid.SessionID, bid.RoomID, bid.ItemID, bid.UserID, bid.BidPrice, bid.RequestID, bid.RankAfter, bid.Status, nullableTimeValue(bid.CreateTime))
 	return err
 }
 

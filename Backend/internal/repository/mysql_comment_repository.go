@@ -18,6 +18,6 @@ func (r *MySQLCommentRepository) CreateComment(comment model.RoomComment) error 
 	_, err := r.db.Exec(`
 		INSERT INTO room_comments (room_id, user_id, nickname, content, create_time)
 		VALUES (?, ?, ?, ?, ?)
-	`, comment.RoomID, comment.UserID, comment.Nickname, comment.Content, comment.CreateTime)
+	`, comment.RoomID, comment.UserID, comment.Nickname, comment.Content, nullableTimeValue(comment.CreateTime))
 	return err
 }
