@@ -1,6 +1,6 @@
-import React from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Button } from 'antd-mobile'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Button, Loading, Toast } from 'antd-mobile'
+import { AxiosError } from 'axios'
 import { AuctionItem } from '../types'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
 import './CurrentAuctionCard.scss'
@@ -8,14 +8,88 @@ import './CurrentAuctionCard.scss'
 interface Props {
   item: AuctionItem
   onClose: () => void
+  onOpenDetail: () => void
 }
 
-const CurrentAuctionCard: React.FC<Props> = ({ item, onClose }) => {
-  const navigate = useNavigate()
-  const { toggleBidPanel, top3Ranking, myBidStatus, currentCountdown } = useLiveRoomStore()
+const CurrentAuctionCard: React.FC<Props> = ({ item, onClose, onOpenDetail }) => {
+  const { myBidStatus, submitBid } = useLiveRoomStore()
+  const [countdown, setCountdown] = useState(0)
+  const [biddingPrice, setBiddingPrice] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const goToDetail = () => {
-    navigate(`/auction/${item.id}`)
+  const increment = item.minIncrement || 1
+  const basePrice = Math.max(item.currentPrice, item.startPrice)
+  const minAllowedPrice = basePrice + increment
+
+  const countdownTargetMs = useMemo(() => {
+    if (!item.endTime) {
+      return null
+    }
+    const ts = new Date(item.endTime).getTime()
+    return Number.isFinite(ts) ? ts : null
+  }, [item.endTime])
+
+  useEffect(() => {
+    if (!countdownTargetMs) {
+      setCountdown(0)
+      return
+    }
+
+    const tick = () => {
+      const next = Math.max(0, Math.ceil((countdownTargetMs - Date.now()) / 1000))
+      setCountdown(next)
+    }
+
+    tick()
+    const timer = window.setInterval(tick, 1000)
+    return () => window.clearInterval(timer)
+  }, [countdownTargetMs])
+
+  useEffect(() => {
+    setBiddingPrice(minAllowedPrice)
+  }, [minAllowedPrice])
+
+  const handleMinus = () => {
+    setBiddingPrice((prev) => Math.max(minAllowedPrice, prev - increment))
+  }
+
+  const handlePlus = () => {
+    if (item.maxPrice && biddingPrice + increment > item.maxPrice) {
+      Toast.show('已达到封顶价')
+      return
+    }
+    setBiddingPrice((prev) => prev + increment)
+  }
+
+  const handleQuickBid = async () => {
+    if (item.status !== '竞拍中') {
+      Toast.show('当前拍品未开拍，无法出价')
+      return
+    }
+    if (biddingPrice < minAllowedPrice) {
+      Toast.show(`最低可出价 ¥${minAllowedPrice}`)
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await submitBid(biddingPrice)
+      Toast.show('出价成功')
+    } catch (error) {
+      const err = error as AxiosError<{ message?: string }>
+      const message = err.response?.data?.message ?? ''
+      if (message.includes('session is not bidding')) {
+        Toast.show('当前场次未开拍')
+      } else if (message.includes('invalid bid price')) {
+        Toast.show(`出价无效，最低可出 ¥${minAllowedPrice}`)
+      } else if (message.includes('duplicate bid request')) {
+        Toast.show('请求重复，请稍后再试')
+      } else {
+        Toast.show(message || '出价失败，请稍后重试')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -29,31 +103,32 @@ const CurrentAuctionCard: React.FC<Props> = ({ item, onClose }) => {
           <h4 className="item-title">{item.title}</h4>
           <div className="price-countdown-row">
             <span className="current-price">¥{item.currentPrice}</span>
-            <span className="countdown-text">⏱ {currentCountdown}s</span>
+            <span className="countdown-text">
+              {item.status === '竞拍中' ? `⏱ ${countdown}s` : '⏱ 未开拍'}
+            </span>
           </div>
         </div>
         <span className="close-btn" onClick={onClose}>×</span>
       </div>
-
-      <div className="ranking-area">
-        <div className="top3-col">
-          {top3Ranking.slice(0, 3).map((r, idx) => (
-            <div key={idx} className="rank-item">
-              <span className={`rank-tag rank-${idx + 1}`}>{idx + 1}</span>
-              <span className="rank-name">{r.nickname}</span>
-            </div>
-          ))}
-        </div>
-        <div className="my-status-col">
-          <div className="my-rank">我的名次: {myBidStatus.myRank || '未上榜'}</div>
-          <div className="my-price">我的出价: ¥{myBidStatus.myHighestPrice}</div>
-        </div>
+      <div className="my-status-inline">
+        <span>我的名次: {myBidStatus.myRank || '未上榜'}</span>
+        <span>我的出价: ¥{myBidStatus.myHighestPrice}</span>
       </div>
 
       <div className="card-bottom-btns">
-        <Button size="small" className="detail-btn" onClick={goToDetail}>详情</Button>
-        <Button className="bid-btn" color="primary" onClick={toggleBidPanel}>立即出价</Button>
+        <Button size="small" className="detail-btn" onClick={onOpenDetail}>详情</Button>
+        <div className="inline-bid-controls">
+          <button className="inline-adjust-btn" onClick={handleMinus}>-</button>
+          <span className="inline-bid-price">¥{biddingPrice}</span>
+          <button className="inline-adjust-btn" onClick={handlePlus}>+</button>
+        </div>
       </div>
+      <Button className="bid-btn" color="primary" onClick={handleQuickBid} disabled={isSubmitting}>
+        {isSubmitting ? <Loading color="white" /> : '立即出价'}
+      </Button>
+      <p className="inline-bid-hint">
+        当前最低可出 ¥{minAllowedPrice}（步长 ¥{increment}）
+      </p>
     </div>
   )
 }

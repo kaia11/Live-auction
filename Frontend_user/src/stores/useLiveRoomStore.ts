@@ -25,6 +25,7 @@ interface LiveRoomState extends LiveRoomUIStateValues, LiveRuntimeSnapshot {
   pollRoomEvents: (roomId: string) => Promise<void>
   toggleAuctionItemDrawer: () => void
   toggleBidPanel: () => void
+  openBidPanel: (mode?: 'bid' | 'detail') => void
   toggleRuleModal: () => void
   closeAllModals: () => void
   setCurrentAuctionCardClosed: (closed: boolean) => void
@@ -36,6 +37,7 @@ const initialUIState: LiveRoomUIStateValues = {
   isCurrentAuctionCardClosed: false,
   showAuctionItemDrawer: false,
   showBidPanel: false,
+  bidPanelMode: 'bid',
   showRuleModal: false,
   showBidSuccessModal: false,
   showOvertakenModal: false,
@@ -201,6 +203,11 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
       syncUIState({ showBidPanel: nextValue })
       return { showBidPanel: nextValue }
     }),
+
+  openBidPanel: (mode = 'bid') => {
+    syncUIState({ showBidPanel: true, bidPanelMode: mode })
+    set({ showBidPanel: true, bidPanelMode: mode })
+  },
 
   toggleRuleModal: () =>
     set((state) => {

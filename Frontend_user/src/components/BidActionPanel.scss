@@ -1,16 +1,14 @@
 .custom-mask {
   position: absolute;
-  top: 0;
+  top: auto;
   left: 0;
   right: 0;
   bottom: 0;
-  background:
-    radial-gradient(circle at top, rgba(255, 132, 101, 0.14), transparent 22%),
-    rgba(18, 13, 19, 0.82);
+  background: linear-gradient(180deg, rgba(18, 13, 19, 0) 0%, rgba(18, 13, 19, 0.62) 35%, rgba(18, 13, 19, 0.82) 100%);
   z-index: 1000;
   display: flex;
-  align-items: center;
-  padding: 48px 28px 34px 28px;
+  align-items: flex-end;
+  padding: 0 10px 72px 10px;
 }
 
 .bid-panel {
@@ -20,12 +18,55 @@
 .bid-panel-inner {
   background:
     linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,244,239,0.98) 100%);
-  border-radius: 24px;
-  padding: 16px 16px 20px 16px;
+  border-radius: 18px 18px 10px 10px;
+  padding: 12px 12px 14px 12px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  box-shadow: 0 28px 58px rgba(15, 9, 18, 0.34);
+  gap: 10px;
+  box-shadow: 0 18px 34px rgba(15, 9, 18, 0.34);
+  max-height: 72vh;
+  overflow: auto;
+}
+
+.panel-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-tabs {
+  display: inline-flex;
+  background: #f4edf0;
+  border-radius: 999px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.panel-tab {
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.panel-tab.active {
+  background: white;
+  color: var(--brand-plum);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.panel-close-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(58, 32, 54, 0.08);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
 }
 
 .countdown-top {
@@ -150,4 +191,49 @@
   font-weight: 800;
   --border-radius: 18px;
   box-shadow: 0 14px 28px rgba(255, 93, 123, 0.28);
+}
+
+.detail-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--brand-plum);
+}
+
+.detail-desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.detail-cell {
+  background: #f8eff1;
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-cell .k {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.detail-cell .v {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand-plum);
 }

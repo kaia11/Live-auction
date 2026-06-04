@@ -52,9 +52,12 @@
 .back-btn {
   --background-color: transparent;
   background: var(--gradient-brand) !important;
+  --text-color: #ffffff;
+  color: #ffffff !important;
   height: 52px;
   border-radius: 16px;
-  font-size: 17px;
-  font-weight: 800;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
   margin-top: 10px;
 }

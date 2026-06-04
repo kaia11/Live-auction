@@ -19,6 +19,7 @@ import BidSuccessModal from '../components/BidSuccessModal'
 import OvertakenModal from '../components/OvertakenModal'
 import AuctionEndPanel from '../components/AuctionEndPanel'
 import DelayBanner from '../components/DelayBanner'
+import { AuctionItem } from '../types'
 import './LiveRoomPage.scss'
 
 const LiveRoomPage: React.FC = () => {
@@ -30,6 +31,7 @@ const LiveRoomPage: React.FC = () => {
     currentItemId,
     comments,
     onlineCount,
+    top3Ranking,
     syncRooms,
     syncRuntimeSnapshot,
     syncBidHistories,
@@ -38,7 +40,6 @@ const LiveRoomPage: React.FC = () => {
     submitComment,
   } = useLiveRoomStore()
   const {
-    isCurrentAuctionCardClosed,
     showAuctionItemDrawer,
     showBidPanel,
     showRuleModal,
@@ -47,12 +48,50 @@ const LiveRoomPage: React.FC = () => {
     showAuctionEndPanel,
     showDelayBanner,
     toggleAuctionItemDrawer,
+    openBidPanel,
     toggleRuleModal,
     setCurrentAuctionCardClosed,
   } = useLiveRoomUIStore()
   const { setLastVisitedRoomId, setCurrentTab, currentTab } = useAppStore()
   const connectionState = useLiveRuntimeStore((state) => state.connectionState)
   const [commentDraft, setCommentDraft] = useState('')
+  const [isFollowed, setIsFollowed] = useState(false)
+  const [isCardCollapsed, setIsCardCollapsed] = useState(false)
+  const [collapsedItem, setCollapsedItem] = useState<AuctionItem | null>(null)
+  const [collapsedPos, setCollapsedPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 })
+  const [collapsedReady, setCollapsedReady] = useState(false)
+  const pageRef = React.useRef<HTMLDivElement | null>(null)
+  const dragRef = React.useRef({
+    dragging: false,
+    moved: false,
+    startX: 0,
+    startY: 0,
+    startLeft: 0,
+    startTop: 0,
+  })
+
+  const getPageBounds = () => {
+    const el = pageRef.current
+    if (!el) {
+      return { width: window.innerWidth, height: window.innerHeight }
+    }
+    return { width: el.clientWidth, height: el.clientHeight }
+  }
+
+  const clampTopWithinPage = (top: number) => {
+    const { height } = getPageBounds()
+    const maxTop = Math.max(72, height - 136)
+    return Math.min(Math.max(72, top), maxTop)
+  }
+
+  const getSnappedLeft = (left: number) => {
+    const { width } = getPageBounds()
+    const leftEdge = 8
+    const rightEdge = Math.max(8, width - 74)
+    const toLeft = Math.abs(left - leftEdge)
+    const toRight = Math.abs(rightEdge - left)
+    return toLeft <= toRight ? leftEdge : rightEdge
+  }
 
   const roomsQuery = useRoomsQuery()
   const roomRuntimeQuery = useRoomRuntimeQuery(roomId)
@@ -129,6 +168,35 @@ const LiveRoomPage: React.FC = () => {
 
   const currentItem = items.find((item) => item.id === currentItemId)
   const currentRoom = rooms.find((room) => room.id === roomId)
+  // 仅在“当前拍品拍卖卡片”可见时上移弹幕
+  const shouldShiftComments = !isCardCollapsed && !!currentItem
+  const collapsedPreviewItem = collapsedItem ?? currentItem
+
+  useEffect(() => {
+    if (collapsedReady) {
+      return
+    }
+    const { width, height } = getPageBounds()
+    const left = Math.max(8, width - 74)
+    const top = Math.max(72, height - 136)
+    setCollapsedPos({ left, top })
+    setCollapsedReady(true)
+  }, [collapsedReady])
+
+  useEffect(() => {
+    const onResize = () => {
+      const { width } = getPageBounds()
+      setCollapsedPos((prev) => {
+        const maxLeft = Math.max(8, width - 74)
+        return {
+          left: getSnappedLeft(Math.min(Math.max(8, prev.left), maxLeft)),
+          top: clampTopWithinPage(prev.top),
+        }
+      })
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   const goToRooms = () => {
     navigate('/rooms')
@@ -140,7 +208,66 @@ const LiveRoomPage: React.FC = () => {
   }
 
   const handleCloseBidCard = () => {
+    if (currentItem) {
+      setCollapsedItem(currentItem)
+    }
+    setIsCardCollapsed(true)
     setCurrentAuctionCardClosed(true)
+  }
+
+  const handleReopenBidCard = () => {
+    if (dragRef.current.moved) {
+      dragRef.current.moved = false
+      return
+    }
+    setIsCardCollapsed(false)
+    setCurrentAuctionCardClosed(false)
+  }
+
+  useEffect(() => {
+    if (!isCardCollapsed && currentItem) {
+      setCollapsedItem(currentItem)
+    }
+  }, [isCardCollapsed, currentItem])
+
+  const handleCollapsedPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId)
+    dragRef.current = {
+      dragging: true,
+      moved: false,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: collapsedPos.left,
+      startTop: collapsedPos.top,
+    }
+  }
+
+  const handleCollapsedPointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!dragRef.current.dragging) {
+      return
+    }
+    const dx = event.clientX - dragRef.current.startX
+    const dy = event.clientY - dragRef.current.startY
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      dragRef.current.moved = true
+    }
+    const nextLeft = dragRef.current.startLeft + dx
+    const nextTop = dragRef.current.startTop + dy
+    const { width, height } = getPageBounds()
+    const maxLeft = Math.max(8, width - 74)
+    const maxTop = Math.max(72, height - 136)
+    setCollapsedPos({
+      left: Math.min(Math.max(8, nextLeft), maxLeft),
+      top: Math.min(Math.max(72, nextTop), maxTop),
+    })
+  }
+
+  const handleCollapsedPointerUp = () => {
+    setCollapsedPos((prev) => ({
+      left: getSnappedLeft(prev.left),
+      top: clampTopWithinPage(prev.top),
+    }))
+    dragRef.current.dragging = false
   }
 
   const handleSubmitComment = async () => {
@@ -158,7 +285,7 @@ const LiveRoomPage: React.FC = () => {
   }
 
   return (
-    <div className="live-room-page">
+    <div className="live-room-page" ref={pageRef}>
       <div className="live-bg">
         <img
           src={currentRoom?.coverImage ?? 'https://picsum.photos/livebg/1080/1920'}
@@ -180,7 +307,14 @@ const LiveRoomPage: React.FC = () => {
           <span className={`realtime-pill state-${connectionState}`}>
             {USE_MOCK ? 'Mock' : connectionState}
           </span>
-          <Button size="small" color="primary" className="follow-btn">关注</Button>
+          <Button
+            size="small"
+            color="primary"
+            className={`follow-btn ${isFollowed ? 'followed' : 'unfollowed'}`}
+            onClick={() => setIsFollowed((prev) => !prev)}
+          >
+            {isFollowed ? '已关注' : '关注'}
+          </Button>
         </div>
         <div className="top-right-actions">
           <span className="search-action" onClick={goToRooms}>🔍</span>
@@ -188,11 +322,40 @@ const LiveRoomPage: React.FC = () => {
         </div>
       </div>
 
-      {!isCurrentAuctionCardClosed && currentItem && (
+      <div className="top-ranking-panel">
+        {top3Ranking.slice(0, 3).map((entry, index) => (
+          <div key={`${entry.userId}-${index}`} className="top-ranking-item">
+            <img src={entry.avatar} alt={entry.nickname} className="rank-avatar" />
+            <span className="rank-nickname">{entry.nickname}</span>
+            <span className="rank-price">¥{entry.price}</span>
+          </div>
+        ))}
+      </div>
+
+      {!isCardCollapsed && currentItem && (
         <CurrentAuctionCard
           item={currentItem}
           onClose={handleCloseBidCard}
+          onOpenDetail={() => openBidPanel('detail')}
         />
+      )}
+
+      {isCardCollapsed && (
+        <button
+          className="collapsed-current-item"
+          onClick={handleReopenBidCard}
+          onPointerDown={handleCollapsedPointerDown}
+          onPointerMove={handleCollapsedPointerMove}
+          onPointerUp={handleCollapsedPointerUp}
+          style={collapsedReady ? { left: `${collapsedPos.left}px`, top: `${collapsedPos.top}px` } : undefined}
+        >
+          {collapsedPreviewItem?.images?.[0] ? (
+            <img src={collapsedPreviewItem.images[0]} alt={collapsedPreviewItem.title} />
+          ) : (
+            <div className="collapsed-placeholder">拍品</div>
+          )}
+          <span className="collapsed-dot">当前拍品</span>
+        </button>
       )}
 
       <div className="right-side-actions">
@@ -202,7 +365,7 @@ const LiveRoomPage: React.FC = () => {
         <div className="action-btn" onClick={goToProfile}>👤</div>
       </div>
 
-      <div className="comment-stream">
+      <div className={`comment-stream ${shouldShiftComments ? 'with-panel' : ''}`}>
         {comments.slice(-4).map((comment, index) => (
           <div key={`${comment.userId}-${index}-${comment.content}`} className="comment-bubble">
             <span className="comment-name">{comment.nickname}</span>

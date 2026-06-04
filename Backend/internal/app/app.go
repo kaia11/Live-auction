@@ -44,6 +44,7 @@ func New(cfg config.Config) *App {
 
 	tokenService := service.NewTokenService(cfg.JWTSecret)
 	store := service.SharedStore()
+	userRepo := repository.UserRepository(repository.NewMemoryUserRepository(store))
 	roomRepo := repository.RoomRepository(repository.NewMemoryRoomRepository(store))
 	itemRepo := repository.ItemRepository(repository.NewMemoryItemRepository(store))
 	sessionRepo := repository.SessionRepository(repository.NewMemorySessionRepository(store))
@@ -52,20 +53,21 @@ func New(cfg config.Config) *App {
 	resultRepo := repository.ResultRepository(repository.NewMemoryResultRepository())
 	commentRepo := repository.CommentRepository(repository.NewMemoryCommentRepository())
 	logRepo := repository.OperationLogRepository(repository.NewMemoryOperationLogRepository())
-	db, err := persistence.OpenMySQL(cfg.MySQLDSN)
-	if err != nil {
+	if db, err := persistence.OpenMySQL(cfg.MySQLDSN); err == nil {
+		userRepo = repository.NewMySQLUserRepository(db)
+		roomRepo = repository.NewMySQLRoomRepository(db)
+		itemRepo = repository.NewMySQLItemRepository(db)
+		sessionRepo = repository.NewMySQLSessionRepository(db)
+		orderRepo = repository.NewMySQLOrderRepository(db)
+		bidRepo = repository.NewMySQLBidRepository(db)
+		resultRepo = repository.NewMySQLResultRepository(db)
+		commentRepo = repository.NewMySQLCommentRepository(db)
+		logRepo = repository.NewMySQLOperationLogRepository(db)
+	} else if cfg.RequirePersistentLedger {
 		panic(fmt.Errorf("mysql required for user accounts: %w", err))
+	} else {
+		logger.Error("mysql init skipped, fallback to memory mode error=%v", err)
 	}
-
-	userRepo := repository.UserRepository(repository.NewMySQLUserRepository(db))
-	roomRepo = repository.NewMySQLRoomRepository(db)
-	itemRepo = repository.NewMySQLItemRepository(db)
-	sessionRepo = repository.NewMySQLSessionRepository(db)
-	orderRepo = repository.NewMySQLOrderRepository(db)
-	bidRepo = repository.NewMySQLBidRepository(db)
-	resultRepo = repository.NewMySQLResultRepository(db)
-	commentRepo = repository.NewMySQLCommentRepository(db)
-	logRepo = repository.NewMySQLOperationLogRepository(db)
 
 	if err := service.SyncMemoryBootstrap(store, userRepo, roomRepo, itemRepo, sessionRepo, bidRepo); err != nil {
 		panic(fmt.Errorf("memory bootstrap failed: %w", err))

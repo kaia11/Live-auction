@@ -15,8 +15,8 @@ export interface AuctionRuntimeViewModel {
 
 export const mapBackendRoom = (room: BackendRoom): LiveRoom => ({
   id: room.id,
-  title: room.title,
-  anchorName: room.anchorName ?? '直播间主播',
+  title: normalizeText(room.title),
+  anchorName: normalizeText(room.anchorName ?? '直播间主播'),
   coverImage: getRoomCoverImage(room.id),
   status: room.status === 'live' ? 'living' : 'offline',
   onlineCount: room.onlineCount ?? 0,
@@ -35,7 +35,7 @@ export const mapAuctionRuntime = (
   currentCountdown: getCountdownSeconds(session.endTime),
   top3Ranking: ranking.top3.map((entry) => ({
     userId: entry.userId,
-    nickname: entry.nickname,
+    nickname: normalizeText(entry.nickname),
     avatar: entry.avatar,
     price: entry.highestBid,
   })),
@@ -50,7 +50,7 @@ export const mapBidHistories = (histories: BackendBidHistory[]): BidHistory[] =>
   histories.map((history) => ({
     id: history.id,
     itemId: history.itemId,
-    itemTitle: history.itemTitle,
+    itemTitle: normalizeText(history.itemTitle),
     itemImage: getHistoryImage(history.itemId),
     bidPrice: history.bidPrice,
     result: history.result,
@@ -62,8 +62,8 @@ const mapBackendItem = (item: BackendAuctionItem, session: BackendAuctionSession
 
   return {
     id: item.id,
-    title: item.title,
-    description: item.description,
+    title: normalizeText(item.title),
+    description: normalizeText(item.description),
     images: [getItemCoverImage(item.id)],
     startPrice: item.startPrice,
     currentPrice: isCurrentItem ? session.currentPrice : item.startPrice,
@@ -115,4 +115,21 @@ const getCountdownSeconds = (endTime: string) => {
 
   const diffMs = new Date(endTime).getTime() - Date.now()
   return Math.max(0, Math.ceil(diffMs / 1000))
+}
+
+const normalizeText = (value: string) => {
+  if (!value) {
+    return value
+  }
+
+  // Some seeded cloud records may be stored as UTF-8 bytes interpreted as latin1.
+  // If obvious mojibake markers appear, try to decode back into UTF-8.
+  if (!/[\u4e00-\u9fa5]/.test(value) && /[ÃÂÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßà-ÿ]/.test(value)) {
+    try {
+      return decodeURIComponent(escape(value))
+    } catch {
+      return value
+    }
+  }
+  return value
 }
