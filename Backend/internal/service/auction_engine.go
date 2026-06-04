@@ -240,6 +240,9 @@ func (e *AuctionEngine) settleSessionWithEventLocked(session model.AuctionSessio
 
 	nextQueueStatus, err := statemachine.NextQueueState(item.QueueStatus, statemachine.QueueEventFinish)
 	if err != nil {
+		if item.QueueStatus == domain.QueueStateFinished || item.QueueStatus == domain.QueueStateCancelled {
+			return e.reconcileTerminalSessionLocked(session, item)
+		}
 		return SessionSettlement{}, fmt.Errorf(
 			"%w: cannot finish item %s for session %s from queue_status=%s",
 			ErrInvalidQueueOrder,
@@ -259,6 +262,67 @@ func (e *AuctionEngine) settleSessionWithEventLocked(session model.AuctionSessio
 		return SessionSettlement{}, err
 	}
 
+	if err := saveSessionState(e.runtime, session, item); err != nil {
+		return SessionSettlement{}, err
+	}
+
+	outcome := SessionSettlement{
+		RoomID:       session.RoomID,
+		SessionID:    session.ID,
+		ItemID:       session.ItemID,
+		Status:       session.Status,
+		QueueStatus:  item.QueueStatus,
+		CurrentPrice: session.CurrentPrice,
+		WinnerUserID: session.LeaderUserID,
+	}
+
+	if session.Status == domain.SessionStateEndedSold && session.LeaderUserID != "" {
+		order := e.ensureOrderLocked(session)
+		outcome.Order = &order
+	}
+
+	if e.resultRepo != nil {
+		resultStatus := "unsold"
+		if session.Status == domain.SessionStateEndedSold {
+			resultStatus = "sold"
+		} else if session.Status == domain.SessionStateCancelled {
+			resultStatus = "cancelled"
+		}
+		_ = e.resultRepo.CreateResult(model.AuctionResult{
+			SessionID:        session.ID,
+			ItemID:           session.ItemID,
+			ResultStatus:     resultStatus,
+			WinnerUserID:     session.LeaderUserID,
+			FinalPrice:       session.CurrentPrice,
+			ParticipantCount: session.ParticipantCount,
+		})
+	}
+
+	nextSessionID, nextItemID, err := e.prepareNextSessionLocked(session.RoomID)
+	if err == nil {
+		outcome.NextSessionID = nextSessionID
+		outcome.NextItemID = nextItemID
+	} else if err != ErrQueueExhausted {
+		return SessionSettlement{}, err
+	}
+
+	return outcome, nil
+}
+
+func (e *AuctionEngine) reconcileTerminalSessionLocked(session model.AuctionSession, item model.AuctionItem) (SessionSettlement, error) {
+	if item.QueueStatus == domain.QueueStateCancelled {
+		session.Status = domain.SessionStateCancelled
+	} else if session.LeaderUserID != "" {
+		session.Status = domain.SessionStateEndedSold
+	} else {
+		session.Status = domain.SessionStateEndedPassed
+	}
+	session.EndTime = time.Now().Format(time.RFC3339)
+	e.store.sessions[session.ID] = session
+
+	if err := e.persistItemSession(item, session); err != nil {
+		return SessionSettlement{}, err
+	}
 	if err := saveSessionState(e.runtime, session, item); err != nil {
 		return SessionSettlement{}, err
 	}
