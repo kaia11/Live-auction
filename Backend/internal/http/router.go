@@ -23,6 +23,7 @@ func NewRouter(handlers Handlers) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("POST /auth/login", handlers.Auth.Login)
+	mux.HandleFunc("POST /auth/register", handlers.Auth.Register)
 	mux.HandleFunc("GET /users/me", handlers.Auth.GetCurrentUser)
 	mux.HandleFunc("GET /health", handlers.Health.GetHealth)
 	mux.HandleFunc("GET /metrics", handlers.Metrics.GetMetrics)

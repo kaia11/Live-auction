@@ -6,11 +6,14 @@ USE auction_live;
 
 CREATE TABLE IF NOT EXISTS users (
   id VARCHAR(64) PRIMARY KEY,
+  username VARCHAR(64) NOT NULL,
+  password VARCHAR(128) NOT NULL,
   nickname VARCHAR(128) NOT NULL,
   avatar VARCHAR(512) NULL,
   role VARCHAR(32) NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_users_username (username),
   INDEX idx_users_role (role)
 );
 

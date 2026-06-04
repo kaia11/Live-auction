@@ -10,6 +10,8 @@ var (
 	ErrInvalidCredentials   = errors.New("invalid credentials")
 	ErrUnauthorizedToken    = errors.New("unauthorized token")
 	ErrForbiddenRole        = errors.New("forbidden role")
+	ErrUsernameTaken        = errors.New("username already exists")
+	ErrInvalidClientType    = errors.New("invalid client type")
 	ErrSessionNotBidding    = errors.New("session is not bidding")
 	ErrBidOwnershipMismatch = errors.New("room, session and item do not match")
 	ErrDuplicateBidRequest  = errors.New("duplicate bid request")

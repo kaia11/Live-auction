@@ -44,7 +44,6 @@ func New(cfg config.Config) *App {
 
 	tokenService := service.NewTokenService(cfg.JWTSecret)
 	store := service.SharedStore()
-	userRepo := repository.UserRepository(repository.NewMemoryUserRepository(store))
 	roomRepo := repository.RoomRepository(repository.NewMemoryRoomRepository(store))
 	itemRepo := repository.ItemRepository(repository.NewMemoryItemRepository(store))
 	sessionRepo := repository.SessionRepository(repository.NewMemorySessionRepository(store))
@@ -54,24 +53,24 @@ func New(cfg config.Config) *App {
 	commentRepo := repository.CommentRepository(repository.NewMemoryCommentRepository())
 	logRepo := repository.OperationLogRepository(repository.NewMemoryOperationLogRepository())
 	db, err := persistence.OpenMySQL(cfg.MySQLDSN)
-	if err == nil {
-		userRepo = repository.NewMySQLUserRepository(db)
-		roomRepo = repository.NewMySQLRoomRepository(db)
-		itemRepo = repository.NewMySQLItemRepository(db)
-		sessionRepo = repository.NewMySQLSessionRepository(db)
-		orderRepo = repository.NewMySQLOrderRepository(db)
-		bidRepo = repository.NewMySQLBidRepository(db)
-		resultRepo = repository.NewMySQLResultRepository(db)
-		commentRepo = repository.NewMySQLCommentRepository(db)
-		logRepo = repository.NewMySQLOperationLogRepository(db)
-	} else {
-		if cfg.RequirePersistentLedger {
-			panic(fmt.Errorf("mysql persistent ledger required: %w", err))
-		}
-		logger.Error("mysql init skipped error=%v", err)
+	if err != nil {
+		panic(fmt.Errorf("mysql required for user accounts: %w", err))
 	}
 
-	userService := service.NewUserService(tokenService, userRepo)
+	userRepo := repository.UserRepository(repository.NewMySQLUserRepository(db))
+	roomRepo = repository.NewMySQLRoomRepository(db)
+	itemRepo = repository.NewMySQLItemRepository(db)
+	sessionRepo = repository.NewMySQLSessionRepository(db)
+	orderRepo = repository.NewMySQLOrderRepository(db)
+	bidRepo = repository.NewMySQLBidRepository(db)
+	resultRepo = repository.NewMySQLResultRepository(db)
+	commentRepo = repository.NewMySQLCommentRepository(db)
+	logRepo = repository.NewMySQLOperationLogRepository(db)
+
+	userService := service.NewUserService(tokenService, userRepo, redisClient)
+	if err := userService.WarmUserCacheAndMigratePasswords(); err != nil {
+		panic(fmt.Errorf("user bootstrap failed: %w", err))
+	}
 	roomService := service.NewRoomService(roomRepo)
 	liveSnapshotService := service.NewLiveSnapshotService(hub, runtime, roomRepo, itemRepo, sessionRepo, bidRepo, userRepo)
 	itemService := service.NewItemService(itemRepo)

@@ -31,12 +31,26 @@ components:
         data: {}
     LoginRequest:
       type: object
-      required: [phone, password]
+      required: [username, password, clientType]
       properties:
-        phone:
+        username:
           type: string
         password:
           type: string
+        clientType:
+          type: string
+          enum: [viewer, anchor]
+    RegisterRequest:
+      type: object
+      required: [username, password, clientType]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        clientType:
+          type: string
+          enum: [viewer, anchor]
     LoginResponse:
       type: object
       properties:
@@ -49,11 +63,11 @@ components:
       properties:
         id:
           type: string
+        username:
+          type: string
         nickname:
           type: string
         avatar:
-          type: string
-        phone:
           type: string
         role:
           type: string
@@ -208,6 +222,19 @@ paths:
       responses:
         '200':
           description: 登录成功
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: 注册并获取 token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: 注册成功
   /users/me:
     get:
       tags: [User]

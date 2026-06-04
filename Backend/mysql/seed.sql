@@ -1,13 +1,15 @@
 USE auction_live;
 
-INSERT INTO users (id, nickname, avatar, role)
+-- Demo seed passwords are inserted as plaintext bootstrap values and
+-- migrated to bcrypt hashes during backend startup before auth is served.
+INSERT INTO users (id, username, password, nickname, avatar, role)
 VALUES
-  ('user-001', '阿宁', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80', 'viewer'),
-  ('user-002', '小满', 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80', 'viewer'),
-  ('user-003', '阿青', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80', 'viewer'),
-  ('anchor-001', '主播小玉', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80', 'anchor'),
-  ('admin-001', '运营管理员', 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&q=80', 'admin')
-ON DUPLICATE KEY UPDATE nickname = VALUES(nickname), avatar = VALUES(avatar), role = VALUES(role);
+  ('user-001', 'viewer_demo', '123456', '阿宁', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80', 'viewer'),
+  ('user-002', 'viewer_guest', '123456', '小满', 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80', 'viewer'),
+  ('user-003', 'viewer_vip', '123456', '阿青', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80', 'viewer'),
+  ('anchor-001', 'anchor_admin', '123456', '主播小玉', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80', 'anchor'),
+  ('admin-001', 'admin_root', '123456', '运营管理员', 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&q=80', 'admin')
+ON DUPLICATE KEY UPDATE username = VALUES(username), password = VALUES(password), nickname = VALUES(nickname), avatar = VALUES(avatar), role = VALUES(role);
 
 INSERT INTO live_rooms (
   id, title, cover_image, video_url, status, anchor_user_id, anchor_name, online_count, thumbnail, current_session_id

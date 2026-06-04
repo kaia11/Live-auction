@@ -10,6 +10,7 @@ const (
 	CodeRoomNotFound        = 40401
 	CodeSessionNotFound     = 40402
 	CodeItemNotFound        = 40403
+	CodeConflict            = 40900
 	CodeSessionNotBidding   = 40901
 	CodeInvalidBidPrice     = 40902
 	CodeDuplicateBidRequest = 40903

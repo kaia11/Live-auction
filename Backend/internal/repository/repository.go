@@ -44,6 +44,10 @@ type ResultRepository interface {
 
 type UserRepository interface {
 	GetByID(userID string) (*model.User, error)
+	GetByUsername(username string) (*model.User, error)
+	Create(user model.User) error
+	UpdatePasswordHash(userID string, passwordHash string) error
+	List() ([]model.User, error)
 }
 
 type CommentRepository interface {

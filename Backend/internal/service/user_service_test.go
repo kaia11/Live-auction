@@ -4,7 +4,7 @@ import "testing"
 
 func TestUserServiceRequireAnyRoleAllowsAnchor(t *testing.T) {
 	tokenService := NewTokenService("secret-for-test")
-	userService := NewUserService(tokenService, nil)
+	userService := NewUserService(tokenService, nil, nil)
 
 	token, err := tokenService.Sign("anchor-001", "anchor")
 	if err != nil {
@@ -22,7 +22,7 @@ func TestUserServiceRequireAnyRoleAllowsAnchor(t *testing.T) {
 
 func TestUserServiceRequireAnyRoleRejectsViewer(t *testing.T) {
 	tokenService := NewTokenService("secret-for-test")
-	userService := NewUserService(tokenService, nil)
+	userService := NewUserService(tokenService, nil, nil)
 
 	token, err := tokenService.Sign("user-001", "viewer")
 	if err != nil {
@@ -31,5 +31,35 @@ func TestUserServiceRequireAnyRoleRejectsViewer(t *testing.T) {
 
 	if _, err := userService.RequireAnyRole("Bearer "+token, "anchor", "admin"); err == nil {
 		t.Fatalf("expected viewer to be rejected for admin endpoints")
+	}
+}
+
+func TestUserServiceRegisterAndLoginViewer(t *testing.T) {
+	tokenService := NewTokenService("secret-for-test")
+	userService := NewUserService(tokenService, nil, nil)
+
+	result, err := userService.Register("new_viewer", "pass123", "viewer")
+	if err != nil {
+		t.Fatalf("expected register success, got error: %v", err)
+	}
+	if result.User.Role != "viewer" {
+		t.Fatalf("expected viewer role, got %s", result.User.Role)
+	}
+
+	loginResult, err := userService.Login("new_viewer", "pass123", "viewer")
+	if err != nil {
+		t.Fatalf("expected login success, got error: %v", err)
+	}
+	if loginResult.User.Username != "new_viewer" {
+		t.Fatalf("expected username new_viewer, got %s", loginResult.User.Username)
+	}
+}
+
+func TestUserServiceLoginRejectsCrossClientAccess(t *testing.T) {
+	tokenService := NewTokenService("secret-for-test")
+	userService := NewUserService(tokenService, nil, nil)
+
+	if _, err := userService.Login("viewer_demo", "123456", "anchor"); err == nil {
+		t.Fatalf("expected viewer login to be rejected for anchor client")
 	}
 }

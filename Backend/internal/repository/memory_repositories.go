@@ -10,6 +10,8 @@ type MemoryStore interface {
 	ListUserOrders(userID string) []model.AuctionOrder
 	ListUserBids(userID string) []model.Bid
 	GetUserByID(userID string) model.User
+	GetUserByUsername(username string) model.User
+	SaveUser(user model.User)
 }
 
 type MemoryRoomRepository struct {
@@ -196,4 +198,35 @@ func NewMemoryUserRepository(store MemoryStore) *MemoryUserRepository {
 func (r *MemoryUserRepository) GetByID(userID string) (*model.User, error) {
 	user := r.store.GetUserByID(userID)
 	return &user, nil
+}
+
+func (r *MemoryUserRepository) GetByUsername(username string) (*model.User, error) {
+	user := r.store.GetUserByUsername(username)
+	return &user, nil
+}
+
+func (r *MemoryUserRepository) Create(user model.User) error {
+	r.store.SaveUser(user)
+	return nil
+}
+
+func (r *MemoryUserRepository) UpdatePasswordHash(userID string, passwordHash string) error {
+	user := r.store.GetUserByID(userID)
+	if user.ID == "" {
+		return nil
+	}
+	user.Password = passwordHash
+	r.store.SaveUser(user)
+	return nil
+}
+
+func (r *MemoryUserRepository) List() ([]model.User, error) {
+	storeWithUsers, ok := r.store.(interface {
+		ListUsers() []model.User
+	})
+	if !ok {
+		return []model.User{}, nil
+	}
+
+	return storeWithUsers.ListUsers(), nil
 }

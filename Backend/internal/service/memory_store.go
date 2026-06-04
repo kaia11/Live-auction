@@ -12,6 +12,7 @@ import (
 type memoryStore struct {
 	mu                sync.RWMutex
 	users             map[string]model.User
+	userIDsByUsername map[string]string
 	rooms             map[string]model.LiveRoom
 	items             map[string]model.AuctionItem
 	sessions          map[string]model.AuctionSession
@@ -35,11 +36,18 @@ func newMemoryStore() *memoryStore {
 
 	store := &memoryStore{
 		users: map[string]model.User{
-			"user-001":   {ID: "user-001", Nickname: "阿宁", Avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80", Role: domain.UserRoleViewer},
-			"user-002":   {ID: "user-002", Nickname: "小满", Avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80", Role: domain.UserRoleViewer},
-			"user-003":   {ID: "user-003", Nickname: "阿青", Avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80", Role: domain.UserRoleViewer},
-			"anchor-001": {ID: "anchor-001", Nickname: "主播小玉", Avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80", Role: domain.UserRoleAnchor},
-			"admin-001":  {ID: "admin-001", Nickname: "运营管理员", Avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&q=80", Role: domain.UserRoleAdmin},
+			"user-001":   {ID: "user-001", Username: "viewer_demo", Password: "123456", Nickname: "阿宁", Avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80", Role: domain.UserRoleViewer},
+			"user-002":   {ID: "user-002", Username: "viewer_guest", Password: "123456", Nickname: "小满", Avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80", Role: domain.UserRoleViewer},
+			"user-003":   {ID: "user-003", Username: "viewer_vip", Password: "123456", Nickname: "阿青", Avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80", Role: domain.UserRoleViewer},
+			"anchor-001": {ID: "anchor-001", Username: "anchor_admin", Password: "123456", Nickname: "主播小玉", Avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80", Role: domain.UserRoleAnchor},
+			"admin-001":  {ID: "admin-001", Username: "admin_root", Password: "123456", Nickname: "运营管理员", Avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&q=80", Role: domain.UserRoleAdmin},
+		},
+		userIDsByUsername: map[string]string{
+			"viewer_demo":  "user-001",
+			"viewer_guest": "user-002",
+			"viewer_vip":   "user-003",
+			"anchor_admin": "anchor-001",
+			"admin_root":   "admin-001",
 		},
 		rooms: map[string]model.LiveRoom{
 			"room-001": {
@@ -252,9 +260,36 @@ func (s *memoryStore) ListSessionBids(sessionID string) []model.Bid {
 	return bids
 }
 
+func (s *memoryStore) ListUsers() []model.User {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	users := make([]model.User, 0, len(s.users))
+	for _, user := range s.users {
+		users = append(users, user)
+	}
+	return users
+}
+
 func (s *memoryStore) GetUserByID(userID string) model.User {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	return s.users[userID]
+}
+
+func (s *memoryStore) GetUserByUsername(username string) model.User {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	userID := s.userIDsByUsername[username]
+	return s.users[userID]
+}
+
+func (s *memoryStore) SaveUser(user model.User) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.users[user.ID] = user
+	s.userIDsByUsername[user.Username] = user.ID
 }
