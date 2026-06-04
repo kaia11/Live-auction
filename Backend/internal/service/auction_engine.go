@@ -168,14 +168,16 @@ func (e *AuctionEngine) ActivateNextItemLocked(roomID string) (map[string]any, e
 		return nil, ErrRoomNotFound
 	}
 
-	currentSession, ok := e.store.sessions[room.CurrentSessionID]
-	if !ok {
-		return nil, ErrSessionNotFound
-	}
+	if room.CurrentSessionID != "" {
+		currentSession, ok := e.store.sessions[room.CurrentSessionID]
+		if !ok {
+			return nil, ErrSessionNotFound
+		}
 
-	if currentSession.Status == domain.SessionStatePending || currentSession.Status == domain.SessionStateBidding {
-		if _, err := e.CancelSessionLocked(currentSession.ID); err != nil {
-			return nil, err
+		if currentSession.Status == domain.SessionStatePending || currentSession.Status == domain.SessionStateBidding {
+			if _, err := e.CancelSessionLocked(currentSession.ID); err != nil {
+				return nil, err
+			}
 		}
 	}
 
