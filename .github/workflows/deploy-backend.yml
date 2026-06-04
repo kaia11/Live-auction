@@ -38,6 +38,6 @@ jobs:
             set -e
             cd /root/Live-auction
             docker-compose up -d mysql redis
-            docker rm -f auction-backend || true
-            docker-compose up -d --build backend
+            docker ps -aq --filter "name=auction-backend" | xargs -r docker rm -f
+            docker-compose up -d --no-deps --build backend
             docker-compose ps
