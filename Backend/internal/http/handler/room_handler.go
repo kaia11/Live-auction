@@ -5,6 +5,7 @@ import (
 	nethttp "net/http"
 
 	api "auction-live/backend/internal/api"
+	"auction-live/backend/internal/domain"
 	"auction-live/backend/internal/service"
 )
 
@@ -24,6 +25,28 @@ func NewRoomHandler(roomService *service.RoomService, liveSnapshotService *servi
 
 func (h *RoomHandler) ListRooms(w nethttp.ResponseWriter, r *nethttp.Request) {
 	api.Success(w, nethttp.StatusOK, h.roomService.ListRooms())
+}
+
+func (h *RoomHandler) ListMyRooms(w nethttp.ResponseWriter, r *nethttp.Request) {
+	user, err := h.userService.RequireAnyRole(r.Header.Get("Authorization"), domain.UserRoleAnchor, domain.UserRoleAdmin)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrUnauthorizedToken):
+			api.Error(w, nethttp.StatusUnauthorized, api.CodeUnauthorized, err.Error())
+		case errors.Is(err, service.ErrForbiddenRole):
+			api.Error(w, nethttp.StatusForbidden, api.CodeForbidden, err.Error())
+		default:
+			api.Error(w, nethttp.StatusUnauthorized, api.CodeUnauthorized, err.Error())
+		}
+		return
+	}
+
+	if user.Role == domain.UserRoleAdmin {
+		api.Success(w, nethttp.StatusOK, h.roomService.ListRooms())
+		return
+	}
+
+	api.Success(w, nethttp.StatusOK, h.roomService.ListRoomsByAnchorUserID(user.ID))
 }
 
 func (h *RoomHandler) GetRoomDetail(w nethttp.ResponseWriter, r *nethttp.Request) {

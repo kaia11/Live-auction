@@ -328,6 +328,30 @@ func (s *AdminService) ListOrders() []map[string]any {
 	return orders
 }
 
+func (s *AdminService) ListOrdersByAnchorUserID(anchorUserID string) []map[string]any {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	orders := make([]map[string]any, 0, len(s.store.orders))
+	for _, order := range s.store.orders {
+		room, ok := s.store.rooms[order.RoomID]
+		if !ok || room.AnchorUserID != anchorUserID {
+			continue
+		}
+		orders = append(orders, map[string]any{
+			"orderId":     order.ID,
+			"sessionId":   order.SessionID,
+			"roomId":      order.RoomID,
+			"itemId":      order.ItemID,
+			"buyerUserId": order.BuyerUserID,
+			"amount":      order.Amount,
+			"status":      order.Status,
+			"createTime":  order.CreateTime,
+		})
+	}
+	return orders
+}
+
 func (s *AdminService) GetStatsOverview() map[string]any {
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
@@ -351,6 +375,41 @@ func (s *AdminService) GetStatsOverview() map[string]any {
 	}
 }
 
+func (s *AdminService) GetStatsOverviewByAnchorUserID(anchorUserID string) map[string]any {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	roomCount := 0
+	sessionCount := 0
+	sold := 0
+	cancelled := 0
+	for _, room := range s.store.rooms {
+		if room.AnchorUserID != anchorUserID {
+			continue
+		}
+		roomCount++
+		for _, session := range s.store.sessions {
+			if session.RoomID != room.ID {
+				continue
+			}
+			sessionCount++
+			if session.Status == domain.SessionStateEndedSold {
+				sold++
+			}
+			if session.Status == domain.SessionStateCancelled {
+				cancelled++
+			}
+		}
+	}
+
+	return map[string]any{
+		"totalRooms":        roomCount,
+		"totalSessions":     sessionCount,
+		"soldSessions":      sold,
+		"cancelledSessions": cancelled,
+	}
+}
+
 func (s *AdminService) GetStatsTimeline() []map[string]any {
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
@@ -367,4 +426,70 @@ func (s *AdminService) GetStatsTimeline() []map[string]any {
 		})
 	}
 	return timeline
+}
+
+func (s *AdminService) GetStatsTimelineByAnchorUserID(anchorUserID string) []map[string]any {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	timeline := make([]map[string]any, 0, len(s.store.bids))
+	for _, bid := range s.store.bids {
+		room, ok := s.store.rooms[bid.RoomID]
+		if !ok || room.AnchorUserID != anchorUserID {
+			continue
+		}
+		timeline = append(timeline, map[string]any{
+			"time":      bid.CreateTime,
+			"event":     "bid_accepted",
+			"sessionId": bid.SessionID,
+			"itemId":    bid.ItemID,
+			"price":     bid.BidPrice,
+			"userId":    bid.UserID,
+		})
+	}
+	return timeline
+}
+
+func (s *AdminService) RoomOwnedBy(roomID string, anchorUserID string) bool {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	room, ok := s.store.rooms[roomID]
+	return ok && room.AnchorUserID == anchorUserID
+}
+
+func (s *AdminService) SessionOwnedBy(sessionID string, anchorUserID string) bool {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	session, ok := s.store.sessions[sessionID]
+	if !ok {
+		return false
+	}
+	room, ok := s.store.rooms[session.RoomID]
+	return ok && room.AnchorUserID == anchorUserID
+}
+
+func (s *AdminService) ItemOwnedBy(itemID string, anchorUserID string) bool {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	item, ok := s.store.items[itemID]
+	if !ok {
+		return false
+	}
+	room, ok := s.store.rooms[item.RoomID]
+	return ok && room.AnchorUserID == anchorUserID
+}
+
+func (s *AdminService) OrderOwnedBy(orderID string, anchorUserID string) bool {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	order, ok := s.store.ordersByID[orderID]
+	if !ok {
+		return false
+	}
+	room, ok := s.store.rooms[order.RoomID]
+	return ok && room.AnchorUserID == anchorUserID
 }

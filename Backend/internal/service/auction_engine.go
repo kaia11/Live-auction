@@ -59,12 +59,18 @@ func (e *AuctionEngine) StartSessionLocked(sessionID string) (map[string]any, er
 
 	nextSessionStatus, err := statemachine.NextSessionState(session.Status, statemachine.SessionEventStart)
 	if err != nil {
-		return nil, ErrInvalidSessionState
+		return nil, fmt.Errorf("%w: cannot start session %s from status=%s", ErrInvalidSessionState, sessionID, session.Status)
 	}
 
 	nextQueueStatus, err := statemachine.NextQueueState(item.QueueStatus, statemachine.QueueEventActivate)
 	if err != nil {
-		return nil, ErrInvalidQueueOrder
+		return nil, fmt.Errorf(
+			"%w: cannot activate item %s for session %s from queue_status=%s",
+			ErrInvalidQueueOrder,
+			item.ID,
+			sessionID,
+			item.QueueStatus,
+		)
 	}
 
 	session.Status = nextSessionStatus
@@ -121,12 +127,18 @@ func (e *AuctionEngine) CancelSessionLocked(sessionID string) (map[string]any, e
 
 	nextSessionStatus, err := statemachine.NextSessionState(session.Status, statemachine.SessionEventCancel)
 	if err != nil {
-		return nil, ErrInvalidSessionState
+		return nil, fmt.Errorf("%w: cannot cancel session %s from status=%s", ErrInvalidSessionState, sessionID, session.Status)
 	}
 
 	nextQueueStatus, err := statemachine.NextQueueState(item.QueueStatus, statemachine.QueueEventCancel)
 	if err != nil {
-		return nil, ErrInvalidQueueOrder
+		return nil, fmt.Errorf(
+			"%w: cannot cancel item %s for session %s from queue_status=%s",
+			ErrInvalidQueueOrder,
+			item.ID,
+			sessionID,
+			item.QueueStatus,
+		)
 	}
 
 	session.Status = nextSessionStatus
@@ -228,7 +240,13 @@ func (e *AuctionEngine) settleSessionWithEventLocked(session model.AuctionSessio
 
 	nextQueueStatus, err := statemachine.NextQueueState(item.QueueStatus, statemachine.QueueEventFinish)
 	if err != nil {
-		return SessionSettlement{}, ErrInvalidQueueOrder
+		return SessionSettlement{}, fmt.Errorf(
+			"%w: cannot finish item %s for session %s from queue_status=%s",
+			ErrInvalidQueueOrder,
+			item.ID,
+			session.ID,
+			item.QueueStatus,
+		)
 	}
 
 	session.Status = nextSessionStatus
@@ -297,7 +315,13 @@ func (e *AuctionEngine) prepareNextSessionLocked(roomID string) (string, string,
 	nextItem := e.store.items[nextItemID]
 	nextQueueStatus, err := statemachine.NextQueueState(nextItem.QueueStatus, statemachine.QueueEventMarkUpcoming)
 	if err != nil {
-		return "", "", ErrInvalidQueueOrder
+		return "", "", fmt.Errorf(
+			"%w: cannot mark upcoming item %s in room %s from queue_status=%s",
+			ErrInvalidQueueOrder,
+			nextItemID,
+			roomID,
+			nextItem.QueueStatus,
+		)
 	}
 	nextItem.QueueStatus = nextQueueStatus
 	e.store.items[nextItemID] = nextItem
@@ -305,7 +329,13 @@ func (e *AuctionEngine) prepareNextSessionLocked(roomID string) (string, string,
 	nextSession := e.store.sessions[nextSessionID]
 	nextSessionStatus, err := statemachine.NextSessionState(nextSession.Status, statemachine.SessionEventResetToPending)
 	if err != nil {
-		return "", "", ErrInvalidSessionState
+		return "", "", fmt.Errorf(
+			"%w: cannot reset session %s in room %s from status=%s",
+			ErrInvalidSessionState,
+			nextSessionID,
+			roomID,
+			nextSession.Status,
+		)
 	}
 	nextSession.Status = nextSessionStatus
 	nextSession.CurrentPrice = nextItem.StartPrice

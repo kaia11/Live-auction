@@ -67,7 +67,11 @@ func New(cfg config.Config) *App {
 	commentRepo = repository.NewMySQLCommentRepository(db)
 	logRepo = repository.NewMySQLOperationLogRepository(db)
 
-	userService := service.NewUserService(tokenService, userRepo, redisClient)
+	if err := service.SyncMemoryBootstrap(store, userRepo, roomRepo, itemRepo, sessionRepo, bidRepo); err != nil {
+		panic(fmt.Errorf("memory bootstrap failed: %w", err))
+	}
+
+	userService := service.NewUserService(tokenService, userRepo, roomRepo, redisClient)
 	if err := userService.WarmUserCacheAndMigratePasswords(); err != nil {
 		panic(fmt.Errorf("user bootstrap failed: %w", err))
 	}
@@ -91,7 +95,7 @@ func New(cfg config.Config) *App {
 		Metrics:   handler.NewMetricsHandler(metrics),
 		Rooms:     handler.NewRoomHandler(roomService, liveSnapshotService, userService),
 		Items:     handler.NewItemHandler(itemService),
-		Orders:    handler.NewOrderHandler(orderService, auditService, userService, hub),
+		Orders:    handler.NewOrderHandler(orderService, adminService, auditService, userService, hub),
 		Session:   handler.NewSessionHandler(sessionService, commentService, userService, hub),
 		Bids:      handler.NewBidHandler(bidService, userService, hub, metrics),
 		Admin:     handler.NewAdminHandler(adminService, auditService, userService, hub),

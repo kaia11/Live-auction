@@ -29,14 +29,16 @@ type UserService struct {
 	store        *memoryStore
 	tokenService *TokenService
 	repo         repository.UserRepository
+	roomRepo     repository.RoomRepository
 	cache        *userCache
 }
 
-func NewUserService(tokenService *TokenService, repo repository.UserRepository, redisClient *realtime.Client) *UserService {
+func NewUserService(tokenService *TokenService, repo repository.UserRepository, roomRepo repository.RoomRepository, redisClient *realtime.Client) *UserService {
 	return &UserService{
 		store:        sharedStore,
 		tokenService: tokenService,
 		repo:         repo,
+		roomRepo:     roomRepo,
 		cache:        newUserCache(redisClient),
 	}
 }
@@ -109,6 +111,11 @@ func (s *UserService) Register(username string, password string, clientType stri
 	}
 	if err := s.saveUser(user); err != nil {
 		return LoginResult{}, err
+	}
+	if role == domain.UserRoleAnchor {
+		if err := s.createAnchorRoom(user); err != nil {
+			return LoginResult{}, err
+		}
 	}
 
 	token, err := s.tokenService.Sign(user.ID, user.Role)
@@ -284,6 +291,32 @@ func (s *UserService) cacheUserProfile(user model.User) error {
 		return nil
 	}
 	return s.cache.Set(user)
+}
+
+func (s *UserService) createAnchorRoom(user model.User) error {
+	room := model.LiveRoom{
+		ID:               fmt.Sprintf("room-%d", time.Now().UnixNano()),
+		Title:            fmt.Sprintf("%s的直播间", user.Nickname),
+		CoverImage:       "",
+		VideoURL:         "",
+		Status:           domain.RoomStatusOffline,
+		AnchorUserID:     user.ID,
+		AnchorName:       user.Nickname,
+		OnlineCount:      0,
+		Thumbnail:        "",
+		CurrentSessionID: "",
+	}
+
+	s.store.mu.Lock()
+	s.store.rooms[room.ID] = room
+	s.store.roomItems[room.ID] = []string{}
+	s.store.mu.Unlock()
+
+	if s.roomRepo != nil {
+		return s.roomRepo.SaveRoom(room)
+	}
+
+	return nil
 }
 
 func hashPassword(password string) (string, error) {

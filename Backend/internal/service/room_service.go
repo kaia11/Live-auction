@@ -33,6 +33,17 @@ func (s *RoomService) ListRooms() []model.LiveRoom {
 	return rooms
 }
 
+func (s *RoomService) ListRoomsByAnchorUserID(anchorUserID string) []model.LiveRoom {
+	if s.repo != nil {
+		rooms, err := s.repo.ListRoomsByAnchorUserID(anchorUserID)
+		if err == nil {
+			return rooms
+		}
+	}
+
+	return s.store.ListRoomsByAnchorUserID(anchorUserID)
+}
+
 func (s *RoomService) GetRoomDetail(roomID string) model.LiveRoom {
 	if s.repo != nil {
 		room, err := s.repo.GetRoomDetail(roomID)

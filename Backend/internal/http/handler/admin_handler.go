@@ -7,6 +7,7 @@ import (
 
 	api "auction-live/backend/internal/api"
 	"auction-live/backend/internal/domain"
+	"auction-live/backend/internal/logger"
 	"auction-live/backend/internal/service"
 	"auction-live/backend/internal/ws"
 )
@@ -68,8 +69,71 @@ func (h *AdminHandler) ensureAdminAccess(w nethttp.ResponseWriter, r *nethttp.Re
 	return false
 }
 
+func (h *AdminHandler) currentAdminUser(w nethttp.ResponseWriter, r *nethttp.Request) (service.UserProfile, bool) {
+	user, err := h.userService.RequireAnyRole(r.Header.Get("Authorization"), domain.UserRoleAnchor, domain.UserRoleAdmin)
+	if err == nil {
+		return user, true
+	}
+
+	switch {
+	case errors.Is(err, service.ErrUnauthorizedToken):
+		api.Error(w, nethttp.StatusUnauthorized, api.CodeUnauthorized, err.Error())
+	case errors.Is(err, service.ErrForbiddenRole):
+		api.Error(w, nethttp.StatusForbidden, api.CodeForbidden, err.Error())
+	default:
+		api.Error(w, nethttp.StatusUnauthorized, api.CodeUnauthorized, err.Error())
+	}
+
+	return service.UserProfile{}, false
+}
+
+func (h *AdminHandler) ensureRoomOwnership(w nethttp.ResponseWriter, user service.UserProfile, roomID string) bool {
+	if user.Role == domain.UserRoleAdmin || roomID == "" {
+		return true
+	}
+	if h.adminService.RoomOwnedBy(roomID, user.ID) {
+		return true
+	}
+	api.Error(w, nethttp.StatusForbidden, api.CodeForbidden, "forbidden room access")
+	return false
+}
+
+func (h *AdminHandler) ensureSessionOwnership(w nethttp.ResponseWriter, user service.UserProfile, sessionID string) bool {
+	if user.Role == domain.UserRoleAdmin || sessionID == "" {
+		return true
+	}
+	if h.adminService.SessionOwnedBy(sessionID, user.ID) {
+		return true
+	}
+	api.Error(w, nethttp.StatusForbidden, api.CodeForbidden, "forbidden session access")
+	return false
+}
+
+func (h *AdminHandler) ensureItemOwnership(w nethttp.ResponseWriter, user service.UserProfile, itemID string) bool {
+	if user.Role == domain.UserRoleAdmin || itemID == "" {
+		return true
+	}
+	if h.adminService.ItemOwnedBy(itemID, user.ID) {
+		return true
+	}
+	api.Error(w, nethttp.StatusForbidden, api.CodeForbidden, "forbidden item access")
+	return false
+}
+
+func (h *AdminHandler) ensureOrderOwnership(w nethttp.ResponseWriter, user service.UserProfile, orderID string) bool {
+	if user.Role == domain.UserRoleAdmin || orderID == "" {
+		return true
+	}
+	if h.adminService.OrderOwnedBy(orderID, user.ID) {
+		return true
+	}
+	api.Error(w, nethttp.StatusForbidden, api.CodeForbidden, "forbidden order access")
+	return false
+}
+
 func (h *AdminHandler) CreateItem(w nethttp.ResponseWriter, r *nethttp.Request) {
-	if !h.ensureAdminAccess(w, r) {
+	user, ok := h.currentAdminUser(w, r)
+	if !ok {
 		return
 	}
 	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
@@ -77,6 +141,9 @@ func (h *AdminHandler) CreateItem(w nethttp.ResponseWriter, r *nethttp.Request) 
 	roomID := r.PathValue("roomId")
 	if roomID == "" {
 		api.BadRequest(w, "roomId is required")
+		return
+	}
+	if !h.ensureRoomOwnership(w, user, roomID) {
 		return
 	}
 
@@ -113,7 +180,8 @@ func (h *AdminHandler) CreateItem(w nethttp.ResponseWriter, r *nethttp.Request) 
 }
 
 func (h *AdminHandler) UpdateItem(w nethttp.ResponseWriter, r *nethttp.Request) {
-	if !h.ensureAdminAccess(w, r) {
+	user, ok := h.currentAdminUser(w, r)
+	if !ok {
 		return
 	}
 	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
@@ -121,6 +189,9 @@ func (h *AdminHandler) UpdateItem(w nethttp.ResponseWriter, r *nethttp.Request) 
 	itemID := r.PathValue("itemId")
 	if itemID == "" {
 		api.BadRequest(w, "itemId is required")
+		return
+	}
+	if !h.ensureItemOwnership(w, user, itemID) {
 		return
 	}
 
@@ -161,7 +232,8 @@ func (h *AdminHandler) UpdateItem(w nethttp.ResponseWriter, r *nethttp.Request) 
 }
 
 func (h *AdminHandler) ReorderQueue(w nethttp.ResponseWriter, r *nethttp.Request) {
-	if !h.ensureAdminAccess(w, r) {
+	user, ok := h.currentAdminUser(w, r)
+	if !ok {
 		return
 	}
 	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
@@ -169,6 +241,9 @@ func (h *AdminHandler) ReorderQueue(w nethttp.ResponseWriter, r *nethttp.Request
 	roomID := r.PathValue("roomId")
 	if roomID == "" {
 		api.BadRequest(w, "roomId is required")
+		return
+	}
+	if !h.ensureRoomOwnership(w, user, roomID) {
 		return
 	}
 
@@ -194,7 +269,8 @@ func (h *AdminHandler) ReorderQueue(w nethttp.ResponseWriter, r *nethttp.Request
 }
 
 func (h *AdminHandler) ActivateNextItem(w nethttp.ResponseWriter, r *nethttp.Request) {
-	if !h.ensureAdminAccess(w, r) {
+	user, ok := h.currentAdminUser(w, r)
+	if !ok {
 		return
 	}
 	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
@@ -204,13 +280,19 @@ func (h *AdminHandler) ActivateNextItem(w nethttp.ResponseWriter, r *nethttp.Req
 		api.BadRequest(w, "roomId is required")
 		return
 	}
+	if !h.ensureRoomOwnership(w, user, roomID) {
+		return
+	}
 
 	result, err := h.adminService.ActivateNextItem(roomID)
 	if err != nil {
+		logger.Error("activate next item failed room_id=%s operator_id=%s error=%v", roomID, operatorID, err)
 		switch {
 		case errors.Is(err, service.ErrRoomNotFound):
 			api.Error(w, nethttp.StatusNotFound, api.CodeRoomNotFound, err.Error())
 		case errors.Is(err, service.ErrQueueExhausted):
+			api.Conflict(w, api.CodeInvalidParams, err.Error())
+		case errors.Is(err, service.ErrInvalidQueueOrder), errors.Is(err, service.ErrInvalidSessionState):
 			api.Conflict(w, api.CodeInvalidParams, err.Error())
 		default:
 			api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to activate next item")
@@ -224,7 +306,8 @@ func (h *AdminHandler) ActivateNextItem(w nethttp.ResponseWriter, r *nethttp.Req
 }
 
 func (h *AdminHandler) StartSession(w nethttp.ResponseWriter, r *nethttp.Request) {
-	if !h.ensureAdminAccess(w, r) {
+	user, ok := h.currentAdminUser(w, r)
+	if !ok {
 		return
 	}
 	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
@@ -234,14 +317,20 @@ func (h *AdminHandler) StartSession(w nethttp.ResponseWriter, r *nethttp.Request
 		api.BadRequest(w, "sessionId is required")
 		return
 	}
+	if !h.ensureSessionOwnership(w, user, sessionID) {
+		return
+	}
 
 	result, err := h.adminService.StartSession(sessionID)
 	if err != nil {
+		logger.Error("start session failed session_id=%s operator_id=%s error=%v", sessionID, operatorID, err)
 		switch {
 		case errors.Is(err, service.ErrSessionNotFound):
 			api.Error(w, nethttp.StatusNotFound, api.CodeSessionNotFound, err.Error())
 		case errors.Is(err, service.ErrInvalidSessionState):
 			api.Conflict(w, api.CodeSessionNotBidding, err.Error())
+		case errors.Is(err, service.ErrInvalidQueueOrder):
+			api.Conflict(w, api.CodeInvalidParams, err.Error())
 		default:
 			api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to start session")
 		}
@@ -257,7 +346,8 @@ func (h *AdminHandler) StartSession(w nethttp.ResponseWriter, r *nethttp.Request
 }
 
 func (h *AdminHandler) CancelSession(w nethttp.ResponseWriter, r *nethttp.Request) {
-	if !h.ensureAdminAccess(w, r) {
+	user, ok := h.currentAdminUser(w, r)
+	if !ok {
 		return
 	}
 	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
@@ -267,14 +357,20 @@ func (h *AdminHandler) CancelSession(w nethttp.ResponseWriter, r *nethttp.Reques
 		api.BadRequest(w, "sessionId is required")
 		return
 	}
+	if !h.ensureSessionOwnership(w, user, sessionID) {
+		return
+	}
 
 	result, err := h.adminService.CancelSession(sessionID)
 	if err != nil {
+		logger.Error("cancel session failed session_id=%s operator_id=%s error=%v", sessionID, operatorID, err)
 		switch {
 		case errors.Is(err, service.ErrSessionNotFound):
 			api.Error(w, nethttp.StatusNotFound, api.CodeSessionNotFound, err.Error())
 		case errors.Is(err, service.ErrInvalidSessionState):
 			api.Conflict(w, api.CodeSessionNotBidding, err.Error())
+		case errors.Is(err, service.ErrInvalidQueueOrder):
+			api.Conflict(w, api.CodeInvalidParams, err.Error())
 		default:
 			api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to cancel session")
 		}
@@ -290,7 +386,8 @@ func (h *AdminHandler) CancelSession(w nethttp.ResponseWriter, r *nethttp.Reques
 }
 
 func (h *AdminHandler) SettleSession(w nethttp.ResponseWriter, r *nethttp.Request) {
-	if !h.ensureAdminAccess(w, r) {
+	user, ok := h.currentAdminUser(w, r)
+	if !ok {
 		return
 	}
 	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
@@ -300,14 +397,20 @@ func (h *AdminHandler) SettleSession(w nethttp.ResponseWriter, r *nethttp.Reques
 		api.BadRequest(w, "sessionId is required")
 		return
 	}
+	if !h.ensureSessionOwnership(w, user, sessionID) {
+		return
+	}
 
 	result, err := h.adminService.SettleSession(sessionID)
 	if err != nil {
+		logger.Error("settle session failed session_id=%s operator_id=%s error=%v", sessionID, operatorID, err)
 		switch {
 		case errors.Is(err, service.ErrSessionNotFound):
 			api.Error(w, nethttp.StatusNotFound, api.CodeSessionNotFound, err.Error())
 		case errors.Is(err, service.ErrInvalidSessionState):
 			api.Conflict(w, api.CodeSessionNotBidding, err.Error())
+		case errors.Is(err, service.ErrInvalidQueueOrder):
+			api.Conflict(w, api.CodeInvalidParams, err.Error())
 		default:
 			api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to settle session")
 		}
@@ -333,7 +436,8 @@ func (h *AdminHandler) SettleSession(w nethttp.ResponseWriter, r *nethttp.Reques
 }
 
 func (h *AdminHandler) ListRoomSessions(w nethttp.ResponseWriter, r *nethttp.Request) {
-	if !h.ensureAdminAccess(w, r) {
+	user, ok := h.currentAdminUser(w, r)
+	if !ok {
 		return
 	}
 
@@ -342,30 +446,51 @@ func (h *AdminHandler) ListRoomSessions(w nethttp.ResponseWriter, r *nethttp.Req
 		api.BadRequest(w, "roomId is required")
 		return
 	}
+	if !h.ensureRoomOwnership(w, user, roomID) {
+		return
+	}
 
 	api.Success(w, nethttp.StatusOK, h.adminService.ListRoomSessions(roomID))
 }
 
 func (h *AdminHandler) ListOrders(w nethttp.ResponseWriter, r *nethttp.Request) {
-	if !h.ensureAdminAccess(w, r) {
+	user, ok := h.currentAdminUser(w, r)
+	if !ok {
 		return
 	}
 
-	api.Success(w, nethttp.StatusOK, h.adminService.ListOrders())
+	if user.Role == domain.UserRoleAdmin {
+		api.Success(w, nethttp.StatusOK, h.adminService.ListOrders())
+		return
+	}
+
+	api.Success(w, nethttp.StatusOK, h.adminService.ListOrdersByAnchorUserID(user.ID))
 }
 
 func (h *AdminHandler) GetStatsOverview(w nethttp.ResponseWriter, r *nethttp.Request) {
-	if !h.ensureAdminAccess(w, r) {
+	user, ok := h.currentAdminUser(w, r)
+	if !ok {
 		return
 	}
 
-	api.Success(w, nethttp.StatusOK, h.adminService.GetStatsOverview())
+	if user.Role == domain.UserRoleAdmin {
+		api.Success(w, nethttp.StatusOK, h.adminService.GetStatsOverview())
+		return
+	}
+
+	api.Success(w, nethttp.StatusOK, h.adminService.GetStatsOverviewByAnchorUserID(user.ID))
 }
 
 func (h *AdminHandler) GetStatsTimeline(w nethttp.ResponseWriter, r *nethttp.Request) {
-	if !h.ensureAdminAccess(w, r) {
+	user, ok := h.currentAdminUser(w, r)
+	if !ok {
 		return
 	}
 
-	api.Success(w, nethttp.StatusOK, h.adminService.GetStatsTimeline())
+	if user.Role == domain.UserRoleAdmin {
+		api.Success(w, nethttp.StatusOK, h.adminService.GetStatsTimeline())
+		return
+	}
+
+	api.Success(w, nethttp.StatusOK, h.adminService.GetStatsTimelineByAnchorUserID(user.ID))
 }

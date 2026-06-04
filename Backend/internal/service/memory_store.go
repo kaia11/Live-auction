@@ -170,6 +170,19 @@ func (s *memoryStore) ListRooms() []model.LiveRoom {
 	return rooms
 }
 
+func (s *memoryStore) ListRoomsByAnchorUserID(anchorUserID string) []model.LiveRoom {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	rooms := make([]model.LiveRoom, 0)
+	for _, room := range s.rooms {
+		if room.AnchorUserID == anchorUserID {
+			rooms = append(rooms, room)
+		}
+	}
+	return rooms
+}
+
 func (s *memoryStore) GetRoomDetail(roomID string) model.LiveRoom {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

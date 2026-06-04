@@ -4,6 +4,7 @@ import "auction-live/backend/internal/model"
 
 type RoomRepository interface {
 	ListRooms() ([]model.LiveRoom, error)
+	ListRoomsByAnchorUserID(anchorUserID string) ([]model.LiveRoom, error)
 	GetRoomDetail(roomID string) (*model.LiveRoom, error)
 	SaveRoom(room model.LiveRoom) error
 }

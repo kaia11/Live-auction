@@ -4,6 +4,7 @@ import "auction-live/backend/internal/model"
 
 type MemoryStore interface {
 	ListRooms() []model.LiveRoom
+	ListRoomsByAnchorUserID(anchorUserID string) []model.LiveRoom
 	GetRoomDetail(roomID string) model.LiveRoom
 	ListRoomItems(roomID string) []model.AuctionItem
 	GetItemDetail(roomID string, itemID string) model.AuctionItem
@@ -24,6 +25,10 @@ func NewMemoryRoomRepository(store MemoryStore) *MemoryRoomRepository {
 
 func (r *MemoryRoomRepository) ListRooms() ([]model.LiveRoom, error) {
 	return r.store.ListRooms(), nil
+}
+
+func (r *MemoryRoomRepository) ListRoomsByAnchorUserID(anchorUserID string) ([]model.LiveRoom, error) {
+	return r.store.ListRoomsByAnchorUserID(anchorUserID), nil
 }
 
 func (r *MemoryRoomRepository) GetRoomDetail(roomID string) (*model.LiveRoom, error) {

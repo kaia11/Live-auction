@@ -56,6 +56,49 @@ func (r *MySQLRoomRepository) ListRooms() ([]model.LiveRoom, error) {
 	return rooms, rows.Err()
 }
 
+func (r *MySQLRoomRepository) ListRoomsByAnchorUserID(anchorUserID string) ([]model.LiveRoom, error) {
+	rows, err := r.db.Query(`
+		SELECT id, title, cover_image, video_url, status, anchor_user_id, anchor_name, online_count, thumbnail, current_session_id
+		FROM live_rooms
+		WHERE anchor_user_id = ?
+		ORDER BY id
+	`, anchorUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	rooms := make([]model.LiveRoom, 0)
+	for rows.Next() {
+		var room model.LiveRoom
+		var cover sql.NullString
+		var video sql.NullString
+		var thumbnail sql.NullString
+		var currentSession sql.NullString
+		if err := rows.Scan(
+			&room.ID,
+			&room.Title,
+			&cover,
+			&video,
+			&room.Status,
+			&room.AnchorUserID,
+			&room.AnchorName,
+			&room.OnlineCount,
+			&thumbnail,
+			&currentSession,
+		); err != nil {
+			return nil, err
+		}
+		room.CoverImage = nullableString(cover)
+		room.VideoURL = nullableString(video)
+		room.Thumbnail = nullableString(thumbnail)
+		room.CurrentSessionID = nullableString(currentSession)
+		rooms = append(rooms, room)
+	}
+
+	return rooms, rows.Err()
+}
+
 func (r *MySQLRoomRepository) GetRoomDetail(roomID string) (*model.LiveRoom, error) {
 	row := r.db.QueryRow(`
 		SELECT id, title, cover_image, video_url, status, anchor_user_id, anchor_name, online_count, thumbnail, current_session_id

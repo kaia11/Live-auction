@@ -14,6 +14,7 @@ import (
 
 type OrderHandler struct {
 	orderService *service.OrderService
+	adminService *service.AdminService
 	auditService *service.AuditService
 	userService  *service.UserService
 	hub          *ws.Hub
@@ -23,8 +24,8 @@ type updateOrderStatusRequest struct {
 	Action string `json:"action"`
 }
 
-func NewOrderHandler(orderService *service.OrderService, auditService *service.AuditService, userService *service.UserService, hub *ws.Hub) *OrderHandler {
-	return &OrderHandler{orderService: orderService, auditService: auditService, userService: userService, hub: hub}
+func NewOrderHandler(orderService *service.OrderService, adminService *service.AdminService, auditService *service.AuditService, userService *service.UserService, hub *ws.Hub) *OrderHandler {
+	return &OrderHandler{orderService: orderService, adminService: adminService, auditService: auditService, userService: userService, hub: hub}
 }
 
 func (h *OrderHandler) ensureAdminAccess(w nethttp.ResponseWriter, r *nethttp.Request) bool {
@@ -60,10 +61,19 @@ func (h *OrderHandler) UpdateOrderStatus(w nethttp.ResponseWriter, r *nethttp.Re
 		return
 	}
 	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
+	operator, err := h.userService.RequireAnyRole(r.Header.Get("Authorization"), domain.UserRoleAnchor, domain.UserRoleAdmin)
+	if err != nil {
+		api.Error(w, nethttp.StatusUnauthorized, api.CodeUnauthorized, err.Error())
+		return
+	}
 
 	orderID := r.PathValue("orderId")
 	if orderID == "" {
 		api.BadRequest(w, "orderId is required")
+		return
+	}
+	if operator.Role != domain.UserRoleAdmin && !h.adminService.OrderOwnedBy(orderID, operator.ID) {
+		api.Error(w, nethttp.StatusForbidden, api.CodeForbidden, "forbidden order access")
 		return
 	}
 

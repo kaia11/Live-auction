@@ -4,7 +4,7 @@ import "testing"
 
 func TestUserServiceRequireAnyRoleAllowsAnchor(t *testing.T) {
 	tokenService := NewTokenService("secret-for-test")
-	userService := NewUserService(tokenService, nil, nil)
+	userService := NewUserService(tokenService, nil, nil, nil)
 
 	token, err := tokenService.Sign("anchor-001", "anchor")
 	if err != nil {
@@ -22,7 +22,7 @@ func TestUserServiceRequireAnyRoleAllowsAnchor(t *testing.T) {
 
 func TestUserServiceRequireAnyRoleRejectsViewer(t *testing.T) {
 	tokenService := NewTokenService("secret-for-test")
-	userService := NewUserService(tokenService, nil, nil)
+	userService := NewUserService(tokenService, nil, nil, nil)
 
 	token, err := tokenService.Sign("user-001", "viewer")
 	if err != nil {
@@ -36,7 +36,7 @@ func TestUserServiceRequireAnyRoleRejectsViewer(t *testing.T) {
 
 func TestUserServiceRegisterAndLoginViewer(t *testing.T) {
 	tokenService := NewTokenService("secret-for-test")
-	userService := NewUserService(tokenService, nil, nil)
+	userService := NewUserService(tokenService, nil, nil, nil)
 
 	result, err := userService.Register("new_viewer", "pass123", "viewer")
 	if err != nil {
@@ -57,7 +57,7 @@ func TestUserServiceRegisterAndLoginViewer(t *testing.T) {
 
 func TestUserServiceLoginRejectsCrossClientAccess(t *testing.T) {
 	tokenService := NewTokenService("secret-for-test")
-	userService := NewUserService(tokenService, nil, nil)
+	userService := NewUserService(tokenService, nil, nil, nil)
 
 	if _, err := userService.Login("viewer_demo", "123456", "anchor"); err == nil {
 		t.Fatalf("expected viewer login to be rejected for anchor client")
