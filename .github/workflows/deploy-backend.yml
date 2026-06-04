@@ -37,5 +37,7 @@ jobs:
           script: |
             set -e
             cd /root/Live-auction
-            docker-compose up -d --build backend mysql redis
+            docker-compose up -d mysql redis
+            docker rm -f auction-backend || true
+            docker-compose up -d --build backend
             docker-compose ps
