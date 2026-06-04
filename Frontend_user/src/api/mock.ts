@@ -39,23 +39,23 @@ const mockState: MockState = {
   users: {
     'user-001': {
       id: 'user-001',
+      username: 'viewer_demo',
       nickname: '阿宁',
       avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
-      phone: '13800138000',
       role: 'viewer',
     },
     'user-002': {
       id: 'user-002',
+      username: 'viewer_guest',
       nickname: '小满',
       avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80',
-      phone: '13900139000',
       role: 'viewer',
     },
     'anchor-001': {
       id: 'anchor-001',
+      username: 'anchor_admin',
       nickname: '主播小玉',
       avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80',
-      phone: '13700137000',
       role: 'anchor',
     },
   },
@@ -254,12 +254,31 @@ const appendEvent = (roomId: string, event: string, payload: unknown) => {
 
 export const mockLogin = async (payload: LoginPayload): Promise<LoginResponse> => {
   await mockDelay()
-  const user = mockState.users['user-001']
+  const user = Object.values(mockState.users).find((item) => item.username === payload.username) ?? mockState.users['user-001']
   const token = createToken(user.id)
   mockState.currentUserByToken[token] = user.id
   return {
     token,
-    user: { ...user, phone: payload.phone },
+    user,
+  }
+}
+
+export const mockRegister = async (payload: LoginPayload): Promise<LoginResponse> => {
+  await mockDelay()
+  const id = `user-${Object.keys(mockState.users).length + 1}`
+  const user: AuthUser = {
+    id,
+    username: payload.username,
+    nickname: payload.username,
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
+    role: 'viewer',
+  }
+  mockState.users[id] = user
+  const token = createToken(user.id)
+  mockState.currentUserByToken[token] = user.id
+  return {
+    token,
+    user,
   }
 }
 

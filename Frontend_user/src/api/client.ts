@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { USE_MOCK } from './config'
+import { API_BASE_URL, USE_MOCK } from './config'
 
 export interface ApiEnvelope<T> {
   code: number
@@ -37,7 +37,7 @@ export const clearAccessToken = () => {
 }
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080',
+  baseURL: API_BASE_URL,
   timeout: 10000,
 })
 

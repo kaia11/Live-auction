@@ -3,54 +3,61 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
 
-function LoginPage() {
+function RegisterPage() {
   const navigate = useNavigate()
   const [errorMessage, setErrorMessage] = useState('')
-  const { loginWithPassword, loading } = useAuthStore()
+  const { registerWithPassword, loading } = useAuthStore()
 
   return (
     <div className="login-page">
       <Card className="login-card">
-        <Typography.Title level={2}>珠宝直播拍卖后台</Typography.Title>
+        <Typography.Title level={2}>创建主播端账号</Typography.Title>
         <Typography.Paragraph type="secondary">
-          主播/商家端（PC 管理后台） - 使用独立账号体系登录
+          注册的新账号仅用于主播/商家后台，成功后会直接进入总览页。
         </Typography.Paragraph>
         {errorMessage ? <Alert type="error" showIcon message={errorMessage} style={{ marginBottom: 16 }} /> : null}
         <Form
           layout="vertical"
-          initialValues={{ username: 'anchor_admin', password: '123456', agree: true }}
+          initialValues={{ agree: true }}
           onFinish={async (values) => {
             try {
               setErrorMessage('')
-              await loginWithPassword({
+              if (values.password !== values.confirmPassword) {
+                setErrorMessage('两次输入的密码不一致')
+                return
+              }
+              await registerWithPassword({
                 username: values.username,
                 password: values.password,
               })
               navigate('/dashboard')
             } catch (error) {
               const nextMessage =
-                error instanceof Error ? error.message : '登录失败，请稍后重试'
+                error instanceof Error ? error.message : '注册失败，请稍后重试'
               setErrorMessage(nextMessage)
             }
           }}
         >
           <Form.Item label="用户名" name="username" rules={[{ required: true }]}>
-            <Input size="large" placeholder="请输入用户名" autoComplete="username" />
+            <Input size="large" placeholder="设置主播端用户名" autoComplete="username" />
           </Form.Item>
           <Form.Item label="密码" name="password" rules={[{ required: true }]}>
-            <Input.Password size="large" placeholder="请输入密码" autoComplete="current-password" />
+            <Input.Password size="large" placeholder="设置密码" autoComplete="new-password" />
+          </Form.Item>
+          <Form.Item label="确认密码" name="confirmPassword" rules={[{ required: true }]}>
+            <Input.Password size="large" placeholder="再次输入密码" autoComplete="new-password" />
           </Form.Item>
           <Form.Item name="agree" valuePropName="checked">
             <Checkbox>我已阅读并同意《直播竞拍服务协议》</Checkbox>
           </Form.Item>
           <Button size="large" type="primary" htmlType="submit" block loading={loading}>
-            登录后台
+            注册并进入后台
           </Button>
           <div className="auth-switch-row">
-            <Button type="link" onClick={() => navigate('/register')} style={{ paddingInline: 0 }}>
-              没有账号？去注册主播端账号
+            <Button type="link" onClick={() => navigate('/login')} style={{ paddingInline: 0 }}>
+              已有账号？去登录
             </Button>
-            <Typography.Text type="secondary">示例账号：anchor_admin / 123456</Typography.Text>
+            <Typography.Text type="secondary">注册账号与用户端不互通</Typography.Text>
           </div>
         </Form>
       </Card>
@@ -58,4 +65,4 @@ function LoginPage() {
   )
 }
 
-export default LoginPage
+export default RegisterPage

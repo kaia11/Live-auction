@@ -1,7 +1,7 @@
 import { create } from 'zustand'
-import { clearSession, getCurrentUser, login } from '@/api/auth'
+import { clearSession, getCurrentUser, login, register } from '@/api/auth'
 import { getAccessToken } from '@/api/client'
-import type { AuthUser, LoginPayload } from '@/api/auth'
+import type { AuthUser, LoginPayload, RegisterPayload } from '@/api/auth'
 
 const isMerchantRole = (role?: string) => role === 'anchor' || role === 'admin'
 
@@ -11,6 +11,7 @@ interface AuthState {
   loading: boolean
   hydrated: boolean
   loginWithPassword: (payload: LoginPayload) => Promise<void>
+  registerWithPassword: (payload: RegisterPayload) => Promise<void>
   restoreSession: () => Promise<void>
   logout: () => void
 }
@@ -24,6 +25,21 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ loading: true })
     try {
       const result = await login(payload)
+      if (!isMerchantRole(result.user.role)) {
+        clearSession()
+        set({ user: null, token: null, loading: false, hydrated: true })
+        throw new Error('仅主播或管理员账号可登录商家端')
+      }
+      set({ user: result.user, token: result.token, loading: false, hydrated: true })
+    } catch (error) {
+      set({ loading: false, hydrated: true })
+      throw error
+    }
+  },
+  registerWithPassword: async (payload) => {
+    set({ loading: true })
+    try {
+      const result = await register(payload)
       if (!isMerchantRole(result.user.role)) {
         clearSession()
         set({ user: null, token: null, loading: false, hydrated: true })

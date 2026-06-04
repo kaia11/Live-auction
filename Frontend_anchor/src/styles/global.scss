@@ -149,6 +149,14 @@ body {
   box-shadow: 0 16px 36px rgba(37, 99, 235, 0.12);
 }
 
+.auth-switch-row {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .publish-actions {
   display: flex;
   justify-content: flex-end;

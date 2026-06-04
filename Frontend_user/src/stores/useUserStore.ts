@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { User } from '@/types'
-import { clearSession, getCurrentUser, login as loginRequest } from '@/api/auth'
+import { clearSession, getCurrentUser, login as loginRequest, register as registerRequest } from '@/api/auth'
 
 const isViewerRole = (role?: string) => role === 'viewer'
 
@@ -8,7 +8,8 @@ interface UserState {
   user: User | null
   isHydrated: boolean
   setUser: (user: User) => void
-  login: (phone: string, password: string) => Promise<boolean>
+  login: (username: string, password: string) => Promise<boolean>
+  register: (username: string, password: string) => Promise<boolean>
   hydrateUser: () => Promise<void>
   logout: () => void
 }
@@ -19,9 +20,36 @@ export const useUserStore = create<UserState>((set) => ({
 
   setUser: (user) => set({ user }),
 
-  login: async (phone, password) => {
+  login: async (username, password) => {
     try {
-      const result = await loginRequest({ phone, password })
+      const result = await loginRequest({ username, password })
+      if (!isViewerRole(result.user.role)) {
+        clearSession()
+        set({ user: null, isHydrated: true })
+        return false
+      }
+
+      set({
+        user: {
+          id: result.user.id,
+          nickname: result.user.nickname,
+          avatar: result.user.avatar,
+          role: result.user.role,
+          isLoggedIn: true,
+        },
+        isHydrated: true,
+      })
+      return true
+    } catch {
+      clearSession()
+      set({ user: null, isHydrated: true })
+      return false
+    }
+  },
+
+  register: async (username, password) => {
+    try {
+      const result = await registerRequest({ username, password })
       if (!isViewerRole(result.user.role)) {
         clearSession()
         set({ user: null, isHydrated: true })

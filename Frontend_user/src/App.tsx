@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { ConfigProvider } from 'antd-mobile'
 import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 import LiveRoomsPage from './pages/LiveRoomsPage'
 import LiveRoomPage from './pages/LiveRoomPage'
 import AuctionDetailPage from './pages/AuctionDetailPage'
@@ -12,14 +13,15 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const { user, isHydrated } = useUserStore()
   const navigate = useNavigate()
   const location = useLocation()
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register'
 
   useEffect(() => {
-    if (isHydrated && !user?.isLoggedIn && location.pathname !== '/login') {
+    if (isHydrated && !user?.isLoggedIn && !isAuthPage) {
       navigate('/login')
     }
-  }, [isHydrated, user, navigate, location.pathname])
+  }, [isAuthPage, isHydrated, user, navigate])
 
-  if (!isHydrated && location.pathname !== '/login') {
+  if (!isHydrated && !isAuthPage) {
     return null
   }
 
@@ -37,6 +39,7 @@ function App() {
     <ConfigProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route
           path="/rooms"
           element={

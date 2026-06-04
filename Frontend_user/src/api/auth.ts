@@ -1,16 +1,21 @@
 import { apiClient, clearAccessToken, getAccessToken, setAccessToken, unwrapResponse, USE_MOCK } from './client'
-import { mockGetCurrentUser, mockLogin } from './mock'
+import { mockGetCurrentUser, mockLogin, mockRegister } from './mock'
 
 export interface LoginPayload {
-  phone: string
+  username: string
+  password: string
+}
+
+export interface RegisterPayload {
+  username: string
   password: string
 }
 
 export interface AuthUser {
   id: string
+  username: string
   nickname: string
   avatar: string
-  phone?: string
   role?: string
 }
 
@@ -26,7 +31,26 @@ export const login = async (payload: LoginPayload) => {
     return result
   }
 
-  const response = await apiClient.post('/auth/login', payload)
+  const response = await apiClient.post('/auth/login', {
+    ...payload,
+    clientType: 'viewer',
+  })
+  const result = unwrapResponse<LoginResponse>(response)
+  setAccessToken(result.token)
+  return result
+}
+
+export const register = async (payload: RegisterPayload) => {
+  if (USE_MOCK) {
+    const result = await mockRegister(payload)
+    setAccessToken(result.token)
+    return result
+  }
+
+  const response = await apiClient.post('/auth/register', {
+    ...payload,
+    clientType: 'viewer',
+  })
   const result = unwrapResponse<LoginResponse>(response)
   setAccessToken(result.token)
   return result
