@@ -5,6 +5,7 @@ import (
 
 	"auction-live/backend/internal/domain"
 	"auction-live/backend/internal/logger"
+	"auction-live/backend/internal/model"
 	"auction-live/backend/internal/monitoring"
 	"auction-live/backend/internal/realtime"
 	"auction-live/backend/internal/repository"
