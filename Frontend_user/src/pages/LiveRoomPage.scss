@@ -91,6 +91,32 @@
   font-size: 9px;
 }
 
+.realtime-pill {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 1;
+  text-transform: capitalize;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.realtime-pill.state-connected {
+  color: #96f4a9;
+  background: rgba(84, 208, 120, 0.16);
+}
+
+.realtime-pill.state-connecting,
+.realtime-pill.state-reconnecting {
+  color: #ffd789;
+  background: rgba(255, 196, 92, 0.16);
+}
+
+.realtime-pill.state-disconnected,
+.realtime-pill.state-error {
+  color: #ffb0ad;
+  background: rgba(255, 117, 117, 0.16);
+}
+
 .follow-btn {
   --background-color: transparent;
   background: var(--gradient-brand) !important;

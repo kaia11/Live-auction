@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { RankingItem, MyBidStatus, LiveComment } from '@/types'
 
+export type LiveConnectionState = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'error'
+
 export interface LiveRuntimeSnapshot {
   currentRoomId: string | null
   currentItemId: string | null
@@ -11,6 +13,7 @@ export interface LiveRuntimeSnapshot {
   myBidStatus: MyBidStatus
   onlineCount: number
   currentCountdown: number
+  connectionState: LiveConnectionState
 }
 
 export interface LiveRuntimeState extends LiveRuntimeSnapshot {
@@ -18,6 +21,7 @@ export interface LiveRuntimeState extends LiveRuntimeSnapshot {
   syncRuntimeSnapshot: (snapshot: Partial<LiveRuntimeSnapshot>) => void
   setCurrentRoomId: (roomId: string | null) => void
   setCurrentItemId: (itemId: string | null) => void
+  setConnectionState: (connectionState: LiveConnectionState) => void
 }
 
 const initialRuntimeState: LiveRuntimeSnapshot = {
@@ -30,6 +34,7 @@ const initialRuntimeState: LiveRuntimeSnapshot = {
   myBidStatus: { myHighestPrice: 0, myRank: 0, isLeading: false },
   onlineCount: 0,
   currentCountdown: 0,
+  connectionState: 'idle',
 }
 
 export const useLiveRuntimeStore = create<LiveRuntimeState>((set) => ({
@@ -42,5 +47,6 @@ export const useLiveRuntimeStore = create<LiveRuntimeState>((set) => ({
   setCurrentRoomId: (roomId) => set({ currentRoomId: roomId }),
 
   setCurrentItemId: (itemId) => set({ currentItemId: itemId }),
-}))
 
+  setConnectionState: (connectionState) => set({ connectionState }),
+}))

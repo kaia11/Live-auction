@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Toast } from 'antd-mobile'
+import { USE_MOCK } from '../api/client'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
 import { useLiveRoomUIStore } from '../stores/useLiveRoomUIStore'
+import { useLiveRuntimeStore } from '../stores/useLiveRuntimeStore'
 import { useAppStore } from '../stores/useAppStore'
 import { useRoomsQuery } from '../hooks/queries/useRoomsQuery'
 import { useRoomRuntimeQuery } from '../hooks/queries/useRoomRuntimeQuery'
 import { useBidHistoriesQuery } from '../hooks/queries/useBidHistoriesQuery'
 import { useRoomCommentsQuery } from '../hooks/queries/useRoomCommentsQuery'
+import { useLiveRoomRealtime } from '../hooks/useLiveRoomRealtime'
 import CurrentAuctionCard from '../components/CurrentAuctionCard'
 import AuctionItemDrawer from '../components/AuctionItemDrawer'
 import BidActionPanel from '../components/BidActionPanel'
@@ -48,12 +51,15 @@ const LiveRoomPage: React.FC = () => {
     setCurrentAuctionCardClosed,
   } = useLiveRoomUIStore()
   const { setLastVisitedRoomId, setCurrentTab, currentTab } = useAppStore()
+  const connectionState = useLiveRuntimeStore((state) => state.connectionState)
   const [commentDraft, setCommentDraft] = useState('')
 
   const roomsQuery = useRoomsQuery()
   const roomRuntimeQuery = useRoomRuntimeQuery(roomId)
   const bidHistoriesQuery = useBidHistoriesQuery()
   const roomCommentsQuery = useRoomCommentsQuery(roomId)
+
+  useLiveRoomRealtime(roomId)
 
   useEffect(() => {
     if (roomsQuery.data) {
@@ -108,14 +114,18 @@ const LiveRoomPage: React.FC = () => {
       return
     }
 
+    if (!USE_MOCK && connectionState === 'connected') {
+      return
+    }
+
     const timer = window.setInterval(() => {
       void pollRoomEvents(roomId)
-    }, 3000)
+    }, USE_MOCK ? 3000 : 8000)
 
     return () => {
       window.clearInterval(timer)
     }
-  }, [roomId, pollRoomEvents])
+  }, [roomId, pollRoomEvents, connectionState])
 
   const currentItem = items.find((item) => item.id === currentItemId)
   const currentRoom = rooms.find((room) => room.id === roomId)
@@ -167,6 +177,9 @@ const LiveRoomPage: React.FC = () => {
             <span className="anchor-name">{currentRoom?.anchorName ?? '直播间主播'}</span>
             <span className="online-label">{onlineCount}人在线</span>
           </div>
+          <span className={`realtime-pill state-${connectionState}`}>
+            {USE_MOCK ? 'Mock' : connectionState}
+          </span>
           <Button size="small" color="primary" className="follow-btn">关注</Button>
         </div>
         <div className="top-right-actions">

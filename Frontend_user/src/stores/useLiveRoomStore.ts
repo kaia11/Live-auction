@@ -53,6 +53,7 @@ const initialRuntimeState: LiveRuntimeSnapshot = {
   myBidStatus: { myHighestPrice: 0, myRank: 0, isLeading: false },
   onlineCount: 0,
   currentCountdown: 0,
+  connectionState: 'idle',
 }
 
 const syncUIState = (patch: Partial<LiveRoomUIStateValues>) => {
