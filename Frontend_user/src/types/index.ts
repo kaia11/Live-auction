@@ -41,6 +41,7 @@ export interface AuctionItem {
   endTime?: string
   duration: number
   extendedSeconds: number
+  extensionTriggerSeconds: number
   currentLeader?: string
 }
 

@@ -1,5 +1,5 @@
 import { App, Button, Card, Image, Input, Select, Space, Table, Tag } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import AdminLayout from '@/layouts/AdminLayout'
 import {
   activateNextItem,
@@ -34,6 +34,12 @@ const sessionStatusLabelMap: Record<string, string> = {
 }
 
 const buildDisplayStatus = (row: GoodsRow) => {
+  if (row.sessionStatus === 'bidding' && row.endTime) {
+    const endTimeMs = new Date(row.endTime).getTime()
+    if (Number.isFinite(endTimeMs) && endTimeMs <= Date.now()) {
+      return '已结束'
+    }
+  }
   if (row.sessionStatus === 'ended_sold') {
     return '已成交'
   }
@@ -68,68 +74,7 @@ function GoodsPage() {
   const [resultStatus, setResultStatus] = useState<'成交' | '流拍' | '异常取消'>('成交')
   const currentRoomId = useAdminStore((state) => state.currentRoomId)
 
-  useEffect(() => {
-    if (!currentRoomId) {
-      setGoodsRows([])
-      return
-    }
-
-    const loadGoods = async () => {
-      setLoading(true)
-      try {
-        const [items, sessions] = await Promise.all([
-          getRoomItems(currentRoomId),
-          getRoomSessions(currentRoomId),
-        ])
-
-        const rows = items.map((item) => {
-          const session = sessions.find((entry) => entry.itemId === item.id)
-          const row: GoodsRow = {
-            itemId: item.id,
-            sessionId: session?.sessionId ?? '',
-            roomId: item.roomId,
-            title: item.title,
-            coverImage: item.coverImage || getMerchantItemImage(item.id),
-            description: item.description,
-            startPrice: item.startPrice,
-            incrementStep: item.incrementStep,
-            ceilingPrice: item.ceilingPrice,
-            durationSeconds: item.durationSeconds,
-            extensionSeconds: item.extensionSeconds,
-            extensionTriggerSeconds: item.extensionTriggerSeconds,
-            currentPrice: session?.currentPrice ?? item.startPrice,
-            queueStatus: session?.queueStatus ?? item.queueStatus,
-            sessionStatus: session?.status ?? 'pending',
-            endTime: session?.endTime ?? '',
-            displayStatus: '',
-          }
-
-          row.displayStatus = buildDisplayStatus(row)
-          return row
-        })
-
-        setGoodsRows(rows)
-      } catch (error) {
-        const nextMessage =
-          error instanceof Error ? error.message : '商品数据加载失败，请稍后重试'
-        message.error(nextMessage)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    void loadGoods()
-  }, [currentRoomId, message])
-
-  const goodsList = useMemo(() => {
-    return goodsRows.filter((item) => {
-      const hitKeyword = !keyword || item.title.includes(keyword) || item.itemId.includes(keyword)
-      const hitStatus = status === '全部' || item.displayStatus === status
-      return hitKeyword && hitStatus
-    })
-  }, [goodsRows, keyword, status])
-
-  const refreshGoods = async () => {
+  const refreshGoods = useCallback(async () => {
     if (!currentRoomId) {
       return
     }
@@ -161,7 +106,49 @@ function GoodsPage() {
       return row
     })
     setGoodsRows(rows)
-  }
+  }, [currentRoomId])
+
+  useEffect(() => {
+    if (!currentRoomId) {
+      setGoodsRows([])
+      return
+    }
+
+    const loadGoods = async () => {
+      setLoading(true)
+      try {
+        await refreshGoods()
+      } catch (error) {
+        const nextMessage =
+          error instanceof Error ? error.message : '商品数据加载失败，请稍后重试'
+        message.error(nextMessage)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadGoods()
+  }, [currentRoomId, message, refreshGoods])
+
+  const goodsList = useMemo(() => {
+    return goodsRows.filter((item) => {
+      const hitKeyword = !keyword || item.title.includes(keyword) || item.itemId.includes(keyword)
+      const hitStatus = status === '全部' || item.displayStatus === status
+      return hitKeyword && hitStatus
+    })
+  }, [goodsRows, keyword, status])
+
+  useEffect(() => {
+    if (!currentRoomId) {
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      void refreshGoods()
+    }, 5000)
+
+    return () => window.clearInterval(timer)
+  }, [currentRoomId, refreshGoods])
 
   return (
     <AdminLayout
@@ -250,6 +237,7 @@ function GoodsPage() {
                   待上架: 'default',
                   即将开始: 'gold',
                   竞拍中: 'processing',
+                  已结束: 'default',
                   已成交: 'success',
                   已流拍: 'warning',
                   已取消: 'error',
@@ -350,7 +338,7 @@ function GoodsPage() {
               ceilingPrice: typeof values.ceilingPrice === 'number' ? values.ceilingPrice : null,
               durationSeconds: values.durationSeconds,
               extensionSeconds: values.extensionSeconds,
-              extensionTriggerSeconds: selectedGoods.extensionTriggerSeconds,
+              extensionTriggerSeconds: 30,
             })
             message.success('规则已保存')
             setEditOpen(false)

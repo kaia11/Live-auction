@@ -93,7 +93,7 @@ export function RuleConfigDrawer({ open, onClose }: RuleConfigDrawerProps) {
         </Form.Item>
         <Form.Item label="规则提示">
           <div className="rule-tip-box">
-            最后 30 秒有人出价，系统在原时长基础上自动延时 15 秒。封顶价为空时即为无封顶。
+            默认规则为最后 30 秒有人出价时自动延时 N 秒（N 由商家填写）。封顶价为空时即为无封顶。
           </div>
         </Form.Item>
         <Button type="primary" block onClick={onClose}>

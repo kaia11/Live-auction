@@ -35,12 +35,17 @@ body {
 
 .pc-admin-menu {
   background: transparent !important;
-  color: #cbd5e1 !important;
+  color: #ffffff !important;
   border-inline-end: none !important;
 
   .ant-menu-item {
     margin-inline: 10px !important;
     border-radius: 8px !important;
+    color: #ffffff !important;
+  }
+
+  .ant-menu-title-content {
+    color: #ffffff !important;
   }
 
   .ant-menu-item-selected {

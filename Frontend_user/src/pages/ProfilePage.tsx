@@ -39,7 +39,7 @@ const ProfilePage: React.FC = () => {
         <div className="profile-top-nav">
           <span className="back-btn" onClick={goBack}>‹</span>
           <span className="page-title">个人主页</span>
-          <span className="setting-text">设置</span>
+          <span className="setting-text" onClick={handleLogout}>退出登录</span>
         </div>
 
         <div className="user-info-card">

@@ -14,7 +14,6 @@ import { useLiveRoomRealtime } from '../hooks/useLiveRoomRealtime'
 import CurrentAuctionCard from '../components/CurrentAuctionCard'
 import AuctionItemDrawer from '../components/AuctionItemDrawer'
 import BidActionPanel from '../components/BidActionPanel'
-import RuleModal from '../components/RuleModal'
 import BidSuccessModal from '../components/BidSuccessModal'
 import OvertakenModal from '../components/OvertakenModal'
 import AuctionEndPanel from '../components/AuctionEndPanel'
@@ -42,14 +41,12 @@ const LiveRoomPage: React.FC = () => {
   const {
     showAuctionItemDrawer,
     showBidPanel,
-    showRuleModal,
     showBidSuccessModal,
     showOvertakenModal,
     showAuctionEndPanel,
     showDelayBanner,
     toggleAuctionItemDrawer,
     openBidPanel,
-    toggleRuleModal,
     setCurrentAuctionCardClosed,
   } = useLiveRoomUIStore()
   const { setLastVisitedRoomId, setCurrentTab, currentTab } = useAppStore()
@@ -207,6 +204,14 @@ const LiveRoomPage: React.FC = () => {
     navigate('/profile')
   }
 
+  const goBackLiveList = () => {
+    if (window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+    navigate('/rooms')
+  }
+
   const handleCloseBidCard = () => {
     if (currentItem) {
       setCollapsedItem(currentItem)
@@ -287,15 +292,22 @@ const LiveRoomPage: React.FC = () => {
   return (
     <div className="live-room-page" ref={pageRef}>
       <div className="live-bg">
-        <img
-          src={currentRoom?.coverImage ?? 'https://picsum.photos/livebg/1080/1920'}
-          alt="live background"
-          className="bg-image"
+        <video
+          className="bg-video"
+          src="/videos/live-bg.mp4"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
         />
         <div className="bg-overlay" />
       </div>
 
       <div className="top-area">
+        <button className="exit-live-btn" onClick={goBackLiveList}>
+          退出
+        </button>
         <div className="anchor-info-bar">
           <div className="anchor-avatar">
             {(currentRoom?.anchorName ?? '主').slice(0, 1)}
@@ -390,12 +402,6 @@ const LiveRoomPage: React.FC = () => {
         </div>
         <div className="func-buttons-row">
           <button className="func-btn send-btn" onClick={() => void handleSubmitComment()}>发送</button>
-          <span
-            className="func-btn"
-            onClick={toggleRuleModal}
-          >
-            规则
-          </span>
           <span className="func-btn" onClick={toggleAuctionItemDrawer}>拍品列表</span>
           <span className="func-btn">智能出价</span>
         </div>
@@ -422,7 +428,6 @@ const LiveRoomPage: React.FC = () => {
         {showDelayBanner && <DelayBanner />}
         {showAuctionItemDrawer && <AuctionItemDrawer />}
         {showBidPanel && <BidActionPanel />}
-        {showRuleModal && <RuleModal />}
         {showBidSuccessModal && <BidSuccessModal />}
         {showOvertakenModal && <OvertakenModal />}
         {showAuctionEndPanel && <AuctionEndPanel />}

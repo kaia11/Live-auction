@@ -54,10 +54,24 @@
   background: var(--gradient-brand) !important;
   --text-color: #ffffff;
   color: #ffffff !important;
-  height: 52px;
-  border-radius: 16px;
-  font-size: 20px;
+  height: 44px;
+  border-radius: 14px;
+  font-size: 16px;
   font-weight: 900;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
   margin-top: 10px;
+}
+
+.back-btn .adm-button-content {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 16px;
 }

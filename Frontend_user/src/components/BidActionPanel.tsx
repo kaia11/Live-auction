@@ -149,6 +149,12 @@ const BidActionPanel: React.FC = () => {
                   <span className="k">状态</span>
                   <span className="v">{item.status}</span>
                 </div>
+                <div className="detail-cell">
+                  <span className="k">延时规则</span>
+                  <span className="v">
+                    最后{item.extensionTriggerSeconds}s内出价延长{item.extendedSeconds}s
+                  </span>
+                </div>
               </div>
             </div>
           ) : (

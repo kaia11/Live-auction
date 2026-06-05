@@ -91,7 +91,7 @@ function PublishPage() {
               <Form.Item label="竞拍总时长（秒）" name="durationSec" rules={[{ required: true }]}>
                 <InputNumber size="large" min={60} style={{ width: '100%' }} />
               </Form.Item>
-              <Form.Item label="延时机制（最后30秒出价）" name="delaySec" rules={[{ required: true }]}>
+              <Form.Item label="延时规则（最后30秒内出价延长N秒）" name="delaySec" rules={[{ required: true }]}>
                 <InputNumber size="large" min={5} style={{ width: '100%' }} addonAfter="秒" />
               </Form.Item>
             </Col>

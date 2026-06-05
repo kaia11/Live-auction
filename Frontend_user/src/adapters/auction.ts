@@ -73,6 +73,7 @@ const mapBackendItem = (item: BackendAuctionItem, session: BackendAuctionSession
     endTime: isCurrentItem ? session.endTime : undefined,
     duration: item.durationSeconds,
     extendedSeconds: item.extensionSeconds,
+    extensionTriggerSeconds: item.extensionTriggerSeconds,
     currentLeader: isCurrentItem ? session.leaderUserId : undefined,
   }
 }

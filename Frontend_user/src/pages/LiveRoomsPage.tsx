@@ -61,7 +61,15 @@ const LiveRoomsPage: React.FC = () => {
             >
               <Card className="room-card">
                 <div className="room-cover">
-                  <Image src={room.coverImage} fit="cover" />
+                  <video
+                    className="room-cover-video"
+                    src="/videos/live-bg.mp4"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                  />
                   <div className="live-badge">直播中</div>
                   {room.thumbnail && (
                     <div className="current-item-thumb">
