@@ -12,7 +12,8 @@ func TestBidServiceCreateBidAcceptsRepoBackedUserOutsideSharedStore(t *testing.T
 	store.users = map[string]model.User{}
 	store.userIDsByUsername = map[string]string{}
 
-	userRepo := repository.NewMemoryUserRepository(store)
+	repoStore := newMemoryStore()
+	userRepo := repository.NewMemoryUserRepository(repoStore)
 	if err := userRepo.Create(model.User{
 		ID:       "user-repo-only",
 		Username: "repo_only",
@@ -21,8 +22,6 @@ func TestBidServiceCreateBidAcceptsRepoBackedUserOutsideSharedStore(t *testing.T
 	}); err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
-
-	delete(store.users, "user-repo-only")
 
 	bidService := NewBidService(nil, repository.NewMemoryBidRepository(store), repository.NewMemoryRoomRepository(store), repository.NewMemoryItemRepository(store), userRepo, repository.NewMemorySessionRepository(store), nil, nil)
 	bidService.store = store
