@@ -15,6 +15,8 @@ type BidService struct {
 	engine      *AuctionEngine
 	runtime     *realtime.Runtime
 	repo        repository.BidRepository
+	roomRepo    repository.RoomRepository
+	itemRepo    repository.ItemRepository
 	userRepo    repository.UserRepository
 	sessionRepo repository.SessionRepository
 }
@@ -28,12 +30,14 @@ type CreateBidInput struct {
 	RequestID string
 }
 
-func NewBidService(runtime *realtime.Runtime, repo repository.BidRepository, userRepo repository.UserRepository, sessionRepo repository.SessionRepository, resultRepo repository.ResultRepository, orderRepo repository.OrderRepository) *BidService {
+func NewBidService(runtime *realtime.Runtime, repo repository.BidRepository, roomRepo repository.RoomRepository, itemRepo repository.ItemRepository, userRepo repository.UserRepository, sessionRepo repository.SessionRepository, resultRepo repository.ResultRepository, orderRepo repository.OrderRepository) *BidService {
 	return &BidService{
 		store:       sharedStore,
 		engine:      NewAuctionEngine(sharedStore, runtime, nil, nil, sessionRepo, resultRepo, orderRepo),
 		runtime:     runtime,
 		repo:        repo,
+		roomRepo:    roomRepo,
+		itemRepo:    itemRepo,
 		userRepo:    userRepo,
 		sessionRepo: sessionRepo,
 	}
@@ -274,20 +278,17 @@ func (s *BidService) loadBidContext(input CreateBidInput) (model.LiveRoom, model
 		return model.LiveRoom{}, model.AuctionSession{}, model.AuctionItem{}, ErrUserNotFound
 	}
 
-	s.store.mu.RLock()
-	defer s.store.mu.RUnlock()
-
-	room, ok := s.store.rooms[input.RoomID]
+	room, ok := s.loadRoom(input.RoomID)
 	if !ok {
 		return model.LiveRoom{}, model.AuctionSession{}, model.AuctionItem{}, ErrRoomNotFound
 	}
 
-	session, ok := s.store.sessions[input.SessionID]
+	session, ok := s.loadSession(input.RoomID, input.SessionID)
 	if !ok {
 		return model.LiveRoom{}, model.AuctionSession{}, model.AuctionItem{}, ErrSessionNotFound
 	}
 
-	item, ok := s.store.items[input.ItemID]
+	item, ok := s.loadItem(input.RoomID, input.ItemID)
 	if !ok {
 		return model.LiveRoom{}, model.AuctionSession{}, model.AuctionItem{}, ErrItemNotFound
 	}
@@ -312,6 +313,67 @@ func (s *BidService) userExists(userID string) bool {
 
 	_, ok := s.store.users[userID]
 	return ok
+}
+
+func (s *BidService) loadRoom(roomID string) (model.LiveRoom, bool) {
+	if roomID == "" {
+		return model.LiveRoom{}, false
+	}
+
+	if s.roomRepo != nil {
+		room, err := s.roomRepo.GetRoomDetail(roomID)
+		if err == nil && room != nil && room.ID != "" {
+			return *room, true
+		}
+	}
+
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	room, ok := s.store.rooms[roomID]
+	return room, ok
+}
+
+func (s *BidService) loadSession(roomID string, sessionID string) (model.AuctionSession, bool) {
+	if sessionID == "" {
+		return model.AuctionSession{}, false
+	}
+
+	if s.sessionRepo != nil && roomID != "" {
+		sessions, err := s.sessionRepo.ListRoomSessions(roomID)
+		if err == nil {
+			for _, session := range sessions {
+				if session.ID == sessionID {
+					return session, true
+				}
+			}
+		}
+	}
+
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	session, ok := s.store.sessions[sessionID]
+	return session, ok
+}
+
+func (s *BidService) loadItem(roomID string, itemID string) (model.AuctionItem, bool) {
+	if itemID == "" {
+		return model.AuctionItem{}, false
+	}
+
+	if s.itemRepo != nil && roomID != "" {
+		item, err := s.itemRepo.GetItemDetail(roomID, itemID)
+		if err == nil && item != nil && item.ID != "" {
+			return *item, true
+		}
+	}
+
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	item, ok := s.store.items[itemID]
+	return item, ok
 }
 
 func (s *BidService) loadProcessedRequest(requestID string) (model.BidResult, bool) {
