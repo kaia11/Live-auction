@@ -169,17 +169,29 @@ func (s *SettlementScheduler) settleSession(session model.AuctionSession) (Sessi
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 
-	if current, ok := s.store.sessions[session.ID]; ok {
-		current.Status = session.Status
-		current.CurrentPrice = session.CurrentPrice
-		current.LeaderUserID = session.LeaderUserID
-		current.EndTime = session.EndTime
-		current.ParticipantCount = session.ParticipantCount
-		current.IncrementStep = session.IncrementStep
-		current.ExtensionSeconds = session.ExtensionSeconds
-		current.ExtensionTrigger = session.ExtensionTrigger
-		current.CeilingPrice = session.CeilingPrice
-		s.store.sessions[session.ID] = current
+	current := session
+	if existing, ok := s.store.sessions[session.ID]; ok {
+		current = existing
+	}
+	current.Status = session.Status
+	current.CurrentPrice = session.CurrentPrice
+	current.LeaderUserID = session.LeaderUserID
+	current.EndTime = session.EndTime
+	current.ParticipantCount = session.ParticipantCount
+	current.IncrementStep = session.IncrementStep
+	current.ExtensionSeconds = session.ExtensionSeconds
+	current.ExtensionTrigger = session.ExtensionTrigger
+	current.CeilingPrice = session.CeilingPrice
+	s.store.sessions[session.ID] = current
+
+	if s.engine != nil && s.engine.itemRepo != nil {
+		if item, err := s.engine.itemRepo.GetItemDetail(session.RoomID, session.ItemID); err == nil && item != nil && item.ID != "" {
+			s.store.items[item.ID] = *item
+		}
+	}
+	if room, ok := s.store.rooms[session.RoomID]; ok && room.CurrentSessionID == "" {
+		room.CurrentSessionID = session.ID
+		s.store.rooms[session.RoomID] = room
 	}
 
 	return s.engine.SettleSessionLocked(session.ID)
