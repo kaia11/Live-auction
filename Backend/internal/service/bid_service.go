@@ -15,6 +15,7 @@ type BidService struct {
 	engine      *AuctionEngine
 	runtime     *realtime.Runtime
 	repo        repository.BidRepository
+	userRepo    repository.UserRepository
 	sessionRepo repository.SessionRepository
 }
 
@@ -27,12 +28,13 @@ type CreateBidInput struct {
 	RequestID string
 }
 
-func NewBidService(runtime *realtime.Runtime, repo repository.BidRepository, sessionRepo repository.SessionRepository, resultRepo repository.ResultRepository, orderRepo repository.OrderRepository) *BidService {
+func NewBidService(runtime *realtime.Runtime, repo repository.BidRepository, userRepo repository.UserRepository, sessionRepo repository.SessionRepository, resultRepo repository.ResultRepository, orderRepo repository.OrderRepository) *BidService {
 	return &BidService{
 		store:       sharedStore,
 		engine:      NewAuctionEngine(sharedStore, runtime, nil, nil, sessionRepo, resultRepo, orderRepo),
 		runtime:     runtime,
 		repo:        repo,
+		userRepo:    userRepo,
 		sessionRepo: sessionRepo,
 	}
 }
@@ -268,12 +270,12 @@ func (s *BidService) createBidWithMemoryLock(input CreateBidInput, session model
 }
 
 func (s *BidService) loadBidContext(input CreateBidInput) (model.LiveRoom, model.AuctionSession, model.AuctionItem, error) {
-	s.store.mu.RLock()
-	defer s.store.mu.RUnlock()
-
-	if _, ok := s.store.users[input.UserID]; !ok {
+	if !s.userExists(input.UserID) {
 		return model.LiveRoom{}, model.AuctionSession{}, model.AuctionItem{}, ErrUserNotFound
 	}
+
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
 
 	room, ok := s.store.rooms[input.RoomID]
 	if !ok {
@@ -291,6 +293,25 @@ func (s *BidService) loadBidContext(input CreateBidInput) (model.LiveRoom, model
 	}
 
 	return room, session, item, nil
+}
+
+func (s *BidService) userExists(userID string) bool {
+	if userID == "" {
+		return false
+	}
+
+	if s.userRepo != nil {
+		user, err := s.userRepo.GetByID(userID)
+		if err == nil && user != nil && user.ID != "" {
+			return true
+		}
+	}
+
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	_, ok := s.store.users[userID]
+	return ok
 }
 
 func (s *BidService) loadProcessedRequest(requestID string) (model.BidResult, bool) {
