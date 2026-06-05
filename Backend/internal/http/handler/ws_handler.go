@@ -62,10 +62,18 @@ func (h *WebSocketHandler) ServeRoomStream(w nethttp.ResponseWriter, r *nethttp.
 
 	client := ws.NewClient(roomID, 64)
 	unregister := h.hub.Register(roomID, client)
+	if err := h.roomService.UpdateOnlineCount(roomID, h.hub.RoomClientCount(roomID)); err != nil {
+		logger.Error("update online count failed room_id=%s error=%v", roomID, err)
+	}
 	if h.metrics != nil {
 		h.metrics.RecordWSConnect()
 	}
-	defer unregister()
+	defer func() {
+		unregister()
+		if err := h.roomService.UpdateOnlineCount(roomID, h.hub.RoomClientCount(roomID)); err != nil {
+			logger.Error("update online count failed room_id=%s error=%v", roomID, err)
+		}
+	}()
 	defer func() {
 		if h.metrics != nil {
 			h.metrics.RecordWSDisconnect()

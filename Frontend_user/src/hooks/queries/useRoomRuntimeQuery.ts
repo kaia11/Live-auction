@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getCurrentSession, getRoomItems } from '@/api/rooms'
+import { getCurrentSession, getRoomDetail, getRoomItems } from '@/api/rooms'
 import { getMyBidStatus, getSessionRanking } from '@/api/sessions'
 import { mapAuctionRuntime } from '@/adapters/auction'
 import { useUserStore } from '@/stores/useUserStore'
@@ -14,7 +14,8 @@ export const useRoomRuntimeQuery = (roomId: string | undefined) => {
     enabled: Boolean(roomId),
     queryFn: async () => {
       const safeRoomId = roomId as string
-      const [items, session] = await Promise.all([
+      const [room, items, session] = await Promise.all([
+        getRoomDetail(safeRoomId),
         getRoomItems(safeRoomId),
         getCurrentSession(safeRoomId),
       ])
@@ -26,7 +27,7 @@ export const useRoomRuntimeQuery = (roomId: string | undefined) => {
 
       return {
         ...runtime,
-        onlineCount: session.participantCount,
+        onlineCount: room?.onlineCount ?? 0,
       }
     },
   })

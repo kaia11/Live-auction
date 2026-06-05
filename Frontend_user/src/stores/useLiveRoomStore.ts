@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { LiveRoom, AuctionItem, BidHistory, LiveComment } from '@/types'
-import { BackendCommentPayload, createRoomComment, getCurrentSession, getRoomEvents, getRoomItems, getRooms } from '@/api/rooms'
+import { BackendCommentPayload, createRoomComment, getCurrentSession, getRoomDetail, getRoomEvents, getRoomItems, getRooms } from '@/api/rooms'
 import { createBid, getMyBidHistories } from '@/api/bids'
 import { getMyBidStatus, getSessionRanking } from '@/api/sessions'
 import { mapAuctionRuntime, mapBackendRoom, mapBidHistories } from '@/adapters/auction'
@@ -121,7 +121,8 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
 
   loadRoomRuntime: async (roomId) => {
     const userId = useUserStore.getState().user?.id
-    const [items, session] = await Promise.all([
+    const [room, items, session] = await Promise.all([
+      getRoomDetail(roomId),
       getRoomItems(roomId),
       getCurrentSession(roomId),
     ])
@@ -130,7 +131,6 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
       getMyBidStatus(session.id, userId ?? 'user-001'),
     ])
 
-    const currentRoom = getMappedRoomById(roomId, useLiveRoomStore.getState().rooms)
     const runtime = mapAuctionRuntime(items, session, ranking, myStatus)
     const runtimePatch = {
       currentRoomId: roomId,
@@ -138,7 +138,7 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
       currentSessionId: runtime.currentSessionId,
       top3Ranking: runtime.top3Ranking,
       myBidStatus: runtime.myBidStatus,
-      onlineCount: currentRoom?.onlineCount ?? session.participantCount,
+      onlineCount: room?.onlineCount ?? 0,
       currentCountdown: runtime.currentCountdown,
     }
 
@@ -290,8 +290,6 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
     return true
   },
 }))
-
-const getMappedRoomById = (roomId: string, rooms: LiveRoom[]) => rooms.find((room) => room.id === roomId)
 
 const extractComments = (events: Awaited<ReturnType<typeof getRoomEvents>>): LiveComment[] =>
   events

@@ -74,6 +74,16 @@ export const getRooms = async () => {
   return unwrapResponse<BackendRoom[]>(response)
 }
 
+export const getRoomDetail = async (roomId: string) => {
+  if (USE_MOCK) {
+    const rooms = await mockGetRooms()
+    return rooms.find((room) => room.id === roomId) ?? null
+  }
+
+  const response = await apiClient.get(`/rooms/${roomId}`)
+  return unwrapResponse<BackendRoom>(response)
+}
+
 export const getRoomItems = async (roomId: string) => {
   if (USE_MOCK) {
     return mockGetRoomItems(roomId)

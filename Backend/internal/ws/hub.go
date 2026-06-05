@@ -157,6 +157,13 @@ func (h *Hub) Register(roomID string, client *Client) func() {
 	}
 }
 
+func (h *Hub) RoomClientCount(roomID string) int {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	return len(h.clients[roomID])
+}
+
 func (h *Hub) ensureRoomSyncLocked(roomID string) {
 	if h.store == nil {
 		return

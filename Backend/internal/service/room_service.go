@@ -57,3 +57,27 @@ func (s *RoomService) GetRoomDetail(roomID string) model.LiveRoom {
 
 	return s.store.rooms[roomID]
 }
+
+func (s *RoomService) UpdateOnlineCount(roomID string, onlineCount int) error {
+	if roomID == "" {
+		return nil
+	}
+
+	s.store.mu.Lock()
+	room, ok := s.store.rooms[roomID]
+	if ok {
+		room.OnlineCount = onlineCount
+		s.store.rooms[roomID] = room
+	}
+	s.store.mu.Unlock()
+
+	if s.repo != nil {
+		room, err := s.repo.GetRoomDetail(roomID)
+		if err == nil && room != nil && room.ID != "" {
+			room.OnlineCount = onlineCount
+			return s.repo.SaveRoom(*room)
+		}
+	}
+
+	return nil
+}
