@@ -114,6 +114,10 @@ func (s *SettlementScheduler) ScanOnce() []SessionSettlement {
 }
 
 func (s *SettlementScheduler) snapshotSessions() []model.AuctionSession {
+	if sessions, ok := s.snapshotSessionsFromRepositories(); ok {
+		return sessions
+	}
+
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 
@@ -122,6 +126,28 @@ func (s *SettlementScheduler) snapshotSessions() []model.AuctionSession {
 		sessions = append(sessions, session)
 	}
 	return sessions
+}
+
+func (s *SettlementScheduler) snapshotSessionsFromRepositories() ([]model.AuctionSession, bool) {
+	if s.engine == nil || s.engine.roomRepo == nil || s.engine.sessionRepo == nil {
+		return nil, false
+	}
+
+	rooms, err := s.engine.roomRepo.ListRooms()
+	if err != nil || len(rooms) == 0 {
+		return nil, false
+	}
+
+	sessions := make([]model.AuctionSession, 0)
+	for _, room := range rooms {
+		roomSessions, err := s.engine.sessionRepo.ListRoomSessions(room.ID)
+		if err != nil {
+			return nil, false
+		}
+		sessions = append(sessions, roomSessions...)
+	}
+
+	return sessions, true
 }
 
 func (s *SettlementScheduler) tryClaimSettlement(sessionID string) bool {

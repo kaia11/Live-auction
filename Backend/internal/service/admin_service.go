@@ -275,6 +275,7 @@ func (s *AdminService) CancelSession(sessionID string) (map[string]any, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 
+	s.refreshSessionContextLocked(sessionID)
 	return s.engine.CancelSessionLocked(sessionID)
 }
 
@@ -282,7 +283,43 @@ func (s *AdminService) SettleSession(sessionID string) (SessionSettlement, error
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 
+	s.refreshSessionContextLocked(sessionID)
 	return s.engine.SettleSessionLocked(sessionID)
+}
+
+func (s *AdminService) refreshSessionContextLocked(sessionID string) {
+	if sessionID == "" || s.sessionRepo == nil {
+		return
+	}
+
+	for _, roomID := range s.store.roomItems {
+		_ = roomID
+	}
+
+	for roomID := range s.store.rooms {
+		sessions, err := s.sessionRepo.ListRoomSessions(roomID)
+		if err != nil {
+			continue
+		}
+		for _, session := range sessions {
+			if session.ID != sessionID {
+				continue
+			}
+			s.store.sessions[session.ID] = session
+			if s.itemRepo != nil {
+				if item, err := s.itemRepo.GetItemDetail(session.RoomID, session.ItemID); err == nil && item != nil && item.ID != "" {
+					s.store.items[item.ID] = *item
+				}
+			}
+			if room, ok := s.store.rooms[session.RoomID]; ok {
+				if room.CurrentSessionID == "" {
+					room.CurrentSessionID = session.ID
+					s.store.rooms[session.RoomID] = room
+				}
+			}
+			return
+		}
+	}
 }
 
 func (s *AdminService) ListRoomSessions(roomID string) []map[string]any {

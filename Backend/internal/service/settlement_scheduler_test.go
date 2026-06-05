@@ -6,6 +6,7 @@ import (
 
 	"auction-live/backend/internal/domain"
 	"auction-live/backend/internal/model"
+	"auction-live/backend/internal/repository"
 	"auction-live/backend/internal/ws"
 )
 
@@ -43,6 +44,32 @@ func TestSettlementSchedulerScanOnceReconcilesFinishedQueueItem(t *testing.T) {
 	}
 	if outcomes[0].QueueStatus != domain.QueueStateFinished {
 		t.Fatalf("unexpected reconciled queue status %q", outcomes[0].QueueStatus)
+	}
+}
+
+func TestSettlementSchedulerScanOnceUsesRepositorySessions(t *testing.T) {
+	store := newMemoryStore()
+	store.sessions = map[string]model.AuctionSession{}
+
+	repoStore := newMemoryStore()
+	repoStore.sessions["session-001"] = forceSessionEndTime(repoStore.sessions["session-001"], time.Now().Add(-time.Minute).Format(time.RFC3339))
+
+	scheduler := NewSettlementScheduler(
+		store,
+		ws.NewHub(nil),
+		nil,
+		repository.NewMemoryRoomRepository(repoStore),
+		repository.NewMemoryItemRepository(repoStore),
+		repository.NewMemorySessionRepository(repoStore),
+		nil,
+		nil,
+		nil,
+		time.Second,
+	)
+
+	outcomes := scheduler.ScanOnce()
+	if len(outcomes) != 1 {
+		t.Fatalf("expected 1 outcome from repository sessions, got %d", len(outcomes))
 	}
 }
 
