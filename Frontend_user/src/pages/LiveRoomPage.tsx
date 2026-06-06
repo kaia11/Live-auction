@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Toast } from 'antd-mobile'
+import { motion } from 'framer-motion'
+import {
+  ChevronLeft,
+  Gift,
+  Heart,
+  MessageCircle,
+  Search,
+  Share2,
+  UserRound,
+} from 'lucide-react'
 import { USE_MOCK } from '../api/client'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
 import { useLiveRoomUIStore } from '../stores/useLiveRoomUIStore'
@@ -53,6 +63,7 @@ const LiveRoomPage: React.FC = () => {
   const connectionState = useLiveRuntimeStore((state) => state.connectionState)
   const [commentDraft, setCommentDraft] = useState('')
   const [isFollowed, setIsFollowed] = useState(false)
+  const [bgVideoError, setBgVideoError] = useState(false)
   const [isCardCollapsed, setIsCardCollapsed] = useState(false)
   const [collapsedItem, setCollapsedItem] = useState<AuctionItem | null>(null)
   const [collapsedPos, setCollapsedPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 })
@@ -165,9 +176,20 @@ const LiveRoomPage: React.FC = () => {
 
   const currentItem = items.find((item) => item.id === currentItemId)
   const currentRoom = rooms.find((room) => room.id === roomId)
+  const hasItems = items.length > 0
   // 仅在“当前拍品拍卖卡片”可见时上移弹幕
   const shouldShiftComments = !isCardCollapsed && !!currentItem
   const collapsedPreviewItem = collapsedItem ?? currentItem
+
+  useEffect(() => {
+    if (!currentRoom) {
+      return
+    }
+    if (currentRoom.status !== 'living') {
+      Toast.show('直播间未开播，已返回列表')
+      navigate('/rooms')
+    }
+  }, [currentRoom, navigate])
 
   useEffect(() => {
     if (collapsedReady) {
@@ -292,21 +314,30 @@ const LiveRoomPage: React.FC = () => {
   return (
     <div className="live-room-page" ref={pageRef}>
       <div className="live-bg">
-        <video
-          className="bg-video"
-          src="/videos/live-bg.mp4"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-        />
+        {bgVideoError ? (
+          <img
+            className="bg-video bg-fallback-image"
+            src={currentRoom?.coverImage || '/images/Image.png'}
+            alt="live background fallback"
+          />
+        ) : (
+          <video
+            className="bg-video"
+            src="/videos/live-bg.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            onError={() => setBgVideoError(true)}
+          />
+        )}
         <div className="bg-overlay" />
       </div>
 
       <div className="top-area">
         <button className="exit-live-btn" onClick={goBackLiveList}>
-          退出
+          <ChevronLeft size={14} />
         </button>
         <div className="anchor-info-bar">
           <div className="anchor-avatar">
@@ -316,9 +347,6 @@ const LiveRoomPage: React.FC = () => {
             <span className="anchor-name">{currentRoom?.anchorName ?? '直播间主播'}</span>
             <span className="online-label">{onlineCount}人在线</span>
           </div>
-          <span className={`realtime-pill state-${connectionState}`}>
-            {USE_MOCK ? 'Mock' : connectionState}
-          </span>
           <Button
             size="small"
             color="primary"
@@ -329,8 +357,12 @@ const LiveRoomPage: React.FC = () => {
           </Button>
         </div>
         <div className="top-right-actions">
-          <span className="search-action" onClick={goToRooms}>🔍</span>
-          <span className="gift-action">🎁</span>
+          <button className="search-action icon-btn" onClick={goToRooms}>
+            <Search size={16} />
+          </button>
+          <button className="gift-action icon-btn">
+            <Gift size={16} />
+          </button>
         </div>
       </div>
 
@@ -371,10 +403,26 @@ const LiveRoomPage: React.FC = () => {
       )}
 
       <div className="right-side-actions">
-        <div className="action-btn"><span>❤️</span><small>喜欢</small></div>
-        <div className="action-btn"><span>💬</span><small>讨论</small></div>
-        <div className="action-btn"><span>↗️</span><small>分享</small></div>
-        <div className="action-btn" onClick={goToProfile}>👤</div>
+        <div className="like-burst" aria-hidden>
+          <span>❤</span>
+          <span>❤</span>
+          <span>❤</span>
+        </div>
+        <motion.div className="action-btn" whileTap={{ scale: 0.92 }}>
+          <Heart size={18} />
+          <small>喜欢</small>
+        </motion.div>
+        <motion.div className="action-btn" whileTap={{ scale: 0.92 }}>
+          <MessageCircle size={18} />
+          <small>讨论</small>
+        </motion.div>
+        <motion.div className="action-btn" whileTap={{ scale: 0.92 }}>
+          <Share2 size={18} />
+          <small>分享</small>
+        </motion.div>
+        <motion.div className="action-btn" onClick={goToProfile} whileTap={{ scale: 0.92 }}>
+          <UserRound size={18} />
+        </motion.div>
       </div>
 
       <div className={`comment-stream ${shouldShiftComments ? 'with-panel' : ''}`}>
@@ -402,7 +450,9 @@ const LiveRoomPage: React.FC = () => {
         </div>
         <div className="func-buttons-row">
           <button className="func-btn send-btn" onClick={() => void handleSubmitComment()}>发送</button>
-          <span className="func-btn" onClick={toggleAuctionItemDrawer}>拍品列表</span>
+          {hasItems ? (
+            <span className="func-btn" onClick={toggleAuctionItemDrawer}>拍品列表</span>
+          ) : null}
           <span className="func-btn">智能出价</span>
         </div>
       </div>

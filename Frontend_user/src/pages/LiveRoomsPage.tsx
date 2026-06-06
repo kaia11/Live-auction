@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SearchBar, Tabs, Card, Image } from 'antd-mobile'
+import { SearchBar, Tabs, Card, Image, Toast } from 'antd-mobile'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
 import { useAppStore } from '../stores/useAppStore'
 import { useRoomsQuery } from '../hooks/queries/useRoomsQuery'
@@ -19,6 +19,11 @@ const LiveRoomsPage: React.FC = () => {
   }, [roomsQuery.data, syncRooms])
 
   const enterRoom = (roomId: string) => {
+    const room = rooms.find((entry) => entry.id === roomId)
+    if (!room || room.status !== 'living') {
+      Toast.show('直播间未开播，暂不可进入')
+      return
+    }
     setCurrentRoomId(roomId)
     navigate(`/live/${roomId}`)
   }
@@ -56,21 +61,31 @@ const LiveRoomsPage: React.FC = () => {
           {rooms.map((room) => (
             <div
               key={room.id}
-              className="room-card-wrapper"
+              className={`room-card-wrapper ${room.status !== 'living' ? 'disabled' : ''}`}
               onClick={() => enterRoom(room.id)}
             >
               <Card className="room-card">
                 <div className="room-cover">
-                  <video
-                    className="room-cover-video"
-                    src="/videos/live-bg.mp4"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="metadata"
-                  />
-                  <div className="live-badge">直播中</div>
+                  {room.status === 'living' ? (
+                    <>
+                      <img className="room-cover-image" src={room.coverImage} alt={room.title} />
+                      <video
+                        className="room-cover-video"
+                        src="/videos/live-bg.mp4"
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        preload="metadata"
+                        onError={(event) => {
+                          event.currentTarget.style.display = 'none'
+                        }}
+                      />
+                    </>
+                  ) : (
+                    <img className="room-cover-image" src={room.coverImage} alt={room.title} />
+                  )}
+                  <div className="live-badge">{room.status === 'living' ? '直播中' : '未开播'}</div>
                   {room.thumbnail && (
                     <div className="current-item-thumb">
                       <Image src={room.thumbnail} fit="cover" />

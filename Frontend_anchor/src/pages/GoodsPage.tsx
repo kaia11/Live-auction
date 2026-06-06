@@ -1,5 +1,6 @@
 import { App, Button, Card, Image, Input, Select, Space, Table, Tag } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AxiosError } from 'axios'
 import AdminLayout from '@/layouts/AdminLayout'
 import {
   activateNextItem,
@@ -56,6 +57,18 @@ const buildDisplayStatus = (row: GoodsRow) => {
     return '即将开始'
   }
   return queueStatusLabelMap[row.queueStatus] ?? sessionStatusLabelMap[row.sessionStatus] ?? '待上架'
+}
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  const err = error as AxiosError<{ message?: string; code?: number }>
+  const apiMessage = err.response?.data?.message
+  if (apiMessage) {
+    return apiMessage
+  }
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+  return fallback
 }
 
 function GoodsPage() {
@@ -156,6 +169,49 @@ function GoodsPage() {
       title="商品管理"
       actions={
         <Space>
+          <Button
+            type="primary"
+            onClick={async () => {
+              if (!currentRoomId) {
+                message.warning('请先选择直播间')
+                return
+              }
+
+              try {
+                let sessions = await getRoomSessions(currentRoomId)
+                let startable = sessions.find(
+                  (s) => s.status === 'pending' && s.queueStatus === 'upcoming' && !!s.itemId && !!s.sessionId,
+                )
+
+                if (!startable) {
+                  const hasPendingQueued = sessions.some(
+                    (s) => s.status === 'pending' && s.queueStatus === 'queued' && !!s.itemId && !!s.sessionId,
+                  )
+                  if (hasPendingQueued) {
+                    await activateNextItem(currentRoomId)
+                    sessions = await getRoomSessions(currentRoomId)
+                    startable = sessions.find(
+                      (s) => s.status === 'pending' && s.queueStatus === 'upcoming' && !!s.itemId && !!s.sessionId,
+                    )
+                  }
+                }
+
+                if (!startable) {
+                  message.warning('暂无可开播场次，请先上传并上架商品')
+                  return
+                }
+
+                await startSession(startable.sessionId)
+                message.success('直播已开始')
+                await refreshGoods()
+              } catch (error) {
+                const nextMessage = getApiErrorMessage(error, '开始直播失败，请稍后重试')
+                message.error(nextMessage)
+              }
+            }}
+          >
+            开始直播
+          </Button>
           <Button onClick={() => setRulePanelOpen(true)}>全局规则配置</Button>
           <Button
             type="primary"

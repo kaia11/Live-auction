@@ -20,7 +20,7 @@ export const mapBackendRoom = (room: BackendRoom): LiveRoom => ({
   coverImage: getRoomCoverImage(room.id),
   status: room.status === 'live' ? 'living' : 'offline',
   onlineCount: room.onlineCount ?? 0,
-  thumbnail: getRoomThumbnailImage(room.id),
+  thumbnail: room.currentSessionId ? getRoomThumbnailImage(room.id) : undefined,
 })
 
 export const mapAuctionRuntime = (

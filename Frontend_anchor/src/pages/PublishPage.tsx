@@ -1,11 +1,10 @@
-import { App, Button, Card, Col, Form, Input, InputNumber, Row } from 'antd'
+import { App, Button, Card, Col, Form, Input, InputNumber, Row, Upload } from 'antd'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '@/layouts/AdminLayout'
 import RuleModal from '@/components/modals/RuleModal'
 import { PublishSuccessModal } from '@/components/modals/StatusModals'
 import { createItem } from '@/api/admin'
-import { getMerchantItemImage } from '@/assets/localImages'
 import { useAdminStore } from '@/stores/useAdminStore'
 
 function PublishPage() {
@@ -16,6 +15,7 @@ function PublishPage() {
   const [publishedName, setPublishedName] = useState('珠宝拍品')
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
+  const coverImage = Form.useWatch('coverImage', form)
   const currentRoomId = useAdminStore((state) => state.currentRoomId)
 
   return (
@@ -37,12 +37,16 @@ function PublishPage() {
               message.warning('请先在右上角选择直播间')
               return
             }
+            if (!values.coverImage) {
+              message.warning('请先上传商品图片')
+              return
+            }
 
             setSubmitting(true)
             try {
               await createItem(currentRoomId, {
                 title: values.name,
-                coverImage: getMerchantItemImage(values.name),
+                coverImage: values.coverImage,
                 description: values.intro,
                 startPrice: values.startPrice,
                 incrementStep: values.increment,
@@ -71,10 +75,41 @@ function PublishPage() {
               <Form.Item label="商品简介" name="intro" rules={[{ required: true }]}>
                 <Input.TextArea rows={4} placeholder="请输入拍卖品简介" />
               </Form.Item>
-              <Form.Item label="商品图片（Mock）">
+              <Form.Item name="coverImage" hidden>
+                <Input />
+              </Form.Item>
+              <Form.Item label="商品图片">
+                <Upload
+                  maxCount={1}
+                  accept="image/*"
+                  showUploadList={false}
+                  beforeUpload={(file) => {
+                    if (!file.type.startsWith('image/')) {
+                      message.error('请选择图片文件')
+                      return Upload.LIST_IGNORE
+                    }
+                    if (file.size > 5 * 1024 * 1024) {
+                      message.error('图片请控制在 5MB 内')
+                      return Upload.LIST_IGNORE
+                    }
+                    const objectUrl = URL.createObjectURL(file)
+                    form.setFieldValue('coverImage', objectUrl)
+                    return false
+                  }}
+                  onRemove={() => {
+                    form.setFieldValue('coverImage', undefined)
+                  }}
+                >
+                  <Button>选择本地图片</Button>
+                </Upload>
+              </Form.Item>
+              <Form.Item label="商品图片预览">
                 <div className="mock-upload-preview">
-                  <img src={getMerchantItemImage(form.getFieldValue('name'))} alt="mock cover" />
-                  <div className="mock-upload-copy">当前使用商家端本地 mock 图作为直播占位画面</div>
+                  {coverImage ? (
+                    <img src={coverImage} alt="cover preview" />
+                  ) : (
+                    <div className="mock-upload-copy">尚未上传图片</div>
+                  )}
                 </div>
               </Form.Item>
             </Col>

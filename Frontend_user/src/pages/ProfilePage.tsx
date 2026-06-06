@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Image, Card } from 'antd-mobile'
 import { useUserStore } from '../stores/useUserStore'
@@ -11,6 +11,36 @@ const ProfilePage: React.FC = () => {
   const { user, logout } = useUserStore()
   const { bidHistories, loadBidHistories } = useLiveRoomStore()
   const { currentTab, setCurrentTab, lastVisitedRoomId } = useAppStore()
+
+  const dedupedBidHistories = useMemo(() => {
+    const byItem = new Map<string, typeof bidHistories[number]>()
+    for (const history of bidHistories) {
+      const existing = byItem.get(history.itemId)
+      if (!existing) {
+        byItem.set(history.itemId, history)
+        continue
+      }
+      if (history.bidPrice > existing.bidPrice) {
+        byItem.set(history.itemId, history)
+        continue
+      }
+      if (history.bidPrice === existing.bidPrice) {
+        const nextTime = new Date(history.bidTime).getTime()
+        const oldTime = new Date(existing.bidTime).getTime()
+        if (Number.isFinite(nextTime) && Number.isFinite(oldTime) && nextTime > oldTime) {
+          byItem.set(history.itemId, history)
+        }
+      }
+    }
+    return Array.from(byItem.values()).sort((a, b) => {
+      const ta = new Date(a.bidTime).getTime()
+      const tb = new Date(b.bidTime).getTime()
+      if (Number.isFinite(ta) && Number.isFinite(tb)) {
+        return tb - ta
+      }
+      return b.bidPrice - a.bidPrice
+    })
+  }, [bidHistories])
 
   useEffect(() => {
     void loadBidHistories()
@@ -70,7 +100,7 @@ const ProfilePage: React.FC = () => {
           <div className="history-header-row">
             <h3 className="history-title">我的竞拍记录</h3>
           </div>
-          {bidHistories.map((h) => (
+          {dedupedBidHistories.map((h) => (
             <div key={h.id} className="history-item-row">
               <Image className="history-thumb" src={h.itemImage} fit="cover" />
               <div className="history-info">

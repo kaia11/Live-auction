@@ -1,19 +1,7 @@
-import coverPrimary from '../../images/generated-1779436183124.png'
-import coverSecondary from '../../images/generated-1779437166813.png'
+import unifiedPreviewImage from '../../images/Image.png'
 
-const gallery = [coverPrimary, coverSecondary]
-
-export const getLocalGalleryImage = (seed?: string) => {
-  if (!seed) {
-    return gallery[0]
-  }
-
-  let hash = 0
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
-  }
-
-  return gallery[hash % gallery.length]
+export const getLocalGalleryImage = (_seed?: string) => {
+  return unifiedPreviewImage
 }
 
 export const getRoomCoverImage = (roomId: string) => getLocalGalleryImage(`room:${roomId}`)
