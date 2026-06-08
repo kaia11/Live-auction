@@ -112,6 +112,11 @@ func (h *BidHandler) CreateBid(w nethttp.ResponseWriter, r *nethttp.Request) {
 				h.metrics.RecordBidFailure("duplicate_request")
 			}
 			api.Conflict(w, api.CodeDuplicateBidRequest, err.Error())
+		case errors.Is(err, service.ErrAlreadyLeadingBid):
+			if h.metrics != nil {
+				h.metrics.RecordBidFailure("already_leading")
+			}
+			api.Conflict(w, api.CodeInvalidBidPrice, err.Error())
 		case errors.Is(err, service.ErrInvalidBidPrice), errors.Is(err, service.ErrBidOwnershipMismatch), errors.Is(err, service.ErrUserNotFound):
 			if h.metrics != nil {
 				h.metrics.RecordBidFailure("invalid_bid")

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"testing"
 
 	"auction-live/backend/internal/model"
@@ -71,5 +72,24 @@ func TestBidServiceCreateBidUsesRepositoryContextForRoomSessionItem(t *testing.T
 	}
 	if result.ItemID != "item-001" {
 		t.Fatalf("expected item-001, got %s", result.ItemID)
+	}
+}
+
+func TestBidServiceCreateBidRejectsCurrentLeader(t *testing.T) {
+	store := newMemoryStore()
+	bidService := NewBidService(nil, repository.NewMemoryBidRepository(store), repository.NewMemoryRoomRepository(store), repository.NewMemoryItemRepository(store), repository.NewMemoryUserRepository(store), repository.NewMemorySessionRepository(store), nil, nil)
+	bidService.store = store
+	bidService.engine = NewAuctionEngine(store, nil, nil, nil, nil, nil, nil)
+
+	_, _, err := bidService.CreateBid(CreateBidInput{
+		RoomID:    "room-001",
+		SessionID: "session-001",
+		ItemID:    "item-001",
+		UserID:    "user-003",
+		BidPrice:  140,
+		RequestID: "req-leading-user",
+	})
+	if !errors.Is(err, ErrAlreadyLeadingBid) {
+		t.Fatalf("expected ErrAlreadyLeadingBid, got %v", err)
 	}
 }

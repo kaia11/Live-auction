@@ -13,6 +13,7 @@ var (
 	ErrUsernameTaken        = errors.New("username already exists")
 	ErrInvalidClientType    = errors.New("invalid client type")
 	ErrSessionNotBidding    = errors.New("session is not bidding")
+	ErrAlreadyLeadingBid    = errors.New("already leading bid")
 	ErrBidOwnershipMismatch = errors.New("room, session and item do not match")
 	ErrDuplicateBidRequest  = errors.New("duplicate bid request")
 	ErrInvalidBidPrice      = errors.New("invalid bid price")

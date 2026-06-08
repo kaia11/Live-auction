@@ -74,6 +74,8 @@ const BidActionPanel: React.FC = () => {
       const message = err.response?.data?.message ?? ''
       if (message.includes('session is not bidding')) {
         Toast.show('当前场次未在竞拍中')
+      } else if (message.includes('already leading bid')) {
+        Toast.show('您已经是最高价')
       } else if (message.includes('invalid bid price')) {
         Toast.show(`出价无效，最低可出 ¥${minAllowedPrice}`)
       } else if (message.includes('duplicate bid request')) {

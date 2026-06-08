@@ -53,6 +53,10 @@ func (s *BidService) CreateBid(input CreateBidInput) (model.BidResult, *SessionS
 		return model.BidResult{}, nil, ErrBidOwnershipMismatch
 	}
 
+	if session.LeaderUserID != "" && session.LeaderUserID == input.UserID {
+		return model.BidResult{}, nil, ErrAlreadyLeadingBid
+	}
+
 	if s.runtime == nil {
 		return s.createBidWithMemoryLock(input, session, item)
 	}
