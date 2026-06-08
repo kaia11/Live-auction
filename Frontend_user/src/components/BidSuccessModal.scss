@@ -49,7 +49,7 @@
   color: var(--text-secondary);
 }
 
-.back-btn {
+.bid-success-back-btn {
   --background-color: transparent;
   background: var(--gradient-brand) !important;
   --text-color: #ffffff;
@@ -65,13 +65,16 @@
   justify-content: center;
   line-height: 1;
   margin-top: 10px;
+  width: 100%;
+  min-height: 44px;
 }
 
-.back-btn .adm-button-content {
+.bid-success-back-btn .adm-button-content {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
   font-size: 16px;
+  white-space: nowrap;
 }

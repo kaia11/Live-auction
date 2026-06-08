@@ -32,6 +32,7 @@ export interface AuctionItem {
   title: string
   description: string
   images: string[]
+  depositAmount: number
   startPrice: number
   currentPrice: number
   minIncrement: number

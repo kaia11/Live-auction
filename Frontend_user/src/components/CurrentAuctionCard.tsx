@@ -3,6 +3,9 @@ import { Button, Loading, Toast } from 'antd-mobile'
 import { AxiosError } from 'axios'
 import { AuctionItem } from '../types'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
+import { useUserStore } from '../stores/useUserStore'
+import DepositPaymentModal from './DepositPaymentModal'
+import { hasPaidDeposit, markDepositPaid } from '../utils/deposit'
 import './CurrentAuctionCard.scss'
 
 interface Props {
@@ -13,13 +16,17 @@ interface Props {
 
 const CurrentAuctionCard: React.FC<Props> = ({ item, onClose, onOpenDetail }) => {
   const { myBidStatus, submitBid } = useLiveRoomStore()
+  const currentUserId = useUserStore((state) => state.user?.id)
   const [countdown, setCountdown] = useState(0)
   const [biddingPrice, setBiddingPrice] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [pendingBidPrice, setPendingBidPrice] = useState<number | null>(null)
+  const [showDepositModal, setShowDepositModal] = useState(false)
 
   const increment = item.minIncrement || 1
   const basePrice = Math.max(item.currentPrice, item.startPrice)
   const minAllowedPrice = basePrice + increment
+  const canBid = item.status === '竞拍中'
 
   const countdownTargetMs = useMemo(() => {
     if (!item.endTime) {
@@ -50,10 +57,12 @@ const CurrentAuctionCard: React.FC<Props> = ({ item, onClose, onOpenDetail }) =>
   }, [minAllowedPrice])
 
   const handleMinus = () => {
+    if (!canBid) return
     setBiddingPrice((prev) => Math.max(minAllowedPrice, prev - increment))
   }
 
   const handlePlus = () => {
+    if (!canBid) return
     if (item.maxPrice && biddingPrice + increment > item.maxPrice) {
       Toast.show('已达到封顶价')
       return
@@ -61,19 +70,10 @@ const CurrentAuctionCard: React.FC<Props> = ({ item, onClose, onOpenDetail }) =>
     setBiddingPrice((prev) => prev + increment)
   }
 
-  const handleQuickBid = async () => {
-    if (item.status !== '竞拍中') {
-      Toast.show('当前拍品未开拍，无法出价')
-      return
-    }
-    if (biddingPrice < minAllowedPrice) {
-      Toast.show(`最低可出价 ¥${minAllowedPrice}`)
-      return
-    }
-
+  const submitBidRequest = async (targetBidPrice: number) => {
     setIsSubmitting(true)
     try {
-      await submitBid(biddingPrice)
+      await submitBid(targetBidPrice)
       Toast.show('出价成功')
     } catch (error) {
       const err = error as AxiosError<{ message?: string }>
@@ -94,6 +94,25 @@ const CurrentAuctionCard: React.FC<Props> = ({ item, onClose, onOpenDetail }) =>
     }
   }
 
+  const handleQuickBid = async () => {
+    if (!canBid) {
+      Toast.show(`当前拍品${item.status}，无法出价`)
+      return
+    }
+    if (biddingPrice < minAllowedPrice) {
+      Toast.show(`最低可出价 ¥${minAllowedPrice}`)
+      return
+    }
+
+    if (item.depositAmount > 0 && currentUserId && !hasPaidDeposit(currentUserId, item.id)) {
+      setPendingBidPrice(biddingPrice)
+      setShowDepositModal(true)
+      return
+    }
+
+    await submitBidRequest(biddingPrice)
+  }
+
   return (
     <div className="current-auction-card">
       <div className="card-top-row">
@@ -106,7 +125,7 @@ const CurrentAuctionCard: React.FC<Props> = ({ item, onClose, onOpenDetail }) =>
           <div className="price-countdown-row">
             <span className="current-price">¥{item.currentPrice}</span>
             <span className="countdown-text">
-              {item.status === '竞拍中' ? `⏱ ${countdown}s` : '⏱ 未开拍'}
+              {canBid ? `⏱ ${countdown}s` : `⏱ ${item.status}`}
             </span>
           </div>
         </div>
@@ -120,17 +139,35 @@ const CurrentAuctionCard: React.FC<Props> = ({ item, onClose, onOpenDetail }) =>
       <div className="card-bottom-btns">
         <Button size="small" className="detail-btn" onClick={onOpenDetail}>详情</Button>
         <div className="inline-bid-controls">
-          <button className="inline-adjust-btn" onClick={handleMinus}>-</button>
+          <button className="inline-adjust-btn" onClick={handleMinus} disabled={!canBid}>-</button>
           <span className="inline-bid-price">¥{biddingPrice}</span>
-          <button className="inline-adjust-btn" onClick={handlePlus}>+</button>
+          <button className="inline-adjust-btn" onClick={handlePlus} disabled={!canBid}>+</button>
         </div>
       </div>
-      <Button className="bid-btn" color="primary" onClick={handleQuickBid} disabled={isSubmitting}>
-        {isSubmitting ? <Loading color="white" /> : '立即出价'}
+      <Button className={`bid-btn ${!canBid ? 'is-disabled' : ''}`} color="primary" onClick={handleQuickBid} disabled={isSubmitting || !canBid}>
+        {isSubmitting ? <Loading color="white" /> : (canBid ? '立即出价' : '暂不可出价')}
       </Button>
       <p className="inline-bid-hint">
-        当前最低可出 ¥{minAllowedPrice}（步长 ¥{increment}）
+        当前最低可出 ¥{minAllowedPrice}（最小加价额度 ¥{increment}）
       </p>
+      {showDepositModal && (
+        <DepositPaymentModal
+          amount={item.depositAmount}
+          onCancel={() => {
+            setShowDepositModal(false)
+            setPendingBidPrice(null)
+          }}
+          onConfirm={() => {
+            if (currentUserId) {
+              markDepositPaid(currentUserId, item.id)
+            }
+            const nextBid = pendingBidPrice ?? biddingPrice
+            setShowDepositModal(false)
+            setPendingBidPrice(null)
+            void submitBidRequest(nextBid)
+          }}
+        />
+      )}
     </div>
   )
 }

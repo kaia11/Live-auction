@@ -14,7 +14,7 @@ const BidSuccessModal: React.FC = () => {
         <h2 className="success-title">出价成功!</h2>
         <p className="success-price">当前价格: ¥{item?.currentPrice}</p>
         <p className="is-leading-text">{myBidStatus.isLeading ? '恭喜，目前您领先!' : '正在竞争中...'}</p>
-        <Button className="back-btn" color="primary" block onClick={closeAllModals}>
+        <Button className="bid-success-back-btn" color="primary" block onClick={closeAllModals}>
           返回直播间
         </Button>
       </div>

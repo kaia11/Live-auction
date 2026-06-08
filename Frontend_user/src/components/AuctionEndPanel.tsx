@@ -14,7 +14,7 @@ const AuctionEndPanel: React.FC = () => {
         <div className="end-icon">🏁</div>
         <h2 className="end-title">{statusText}</h2>
         <p className="end-price">最终成交价: ¥{item?.currentPrice}</p>
-        <Button className="back-btn" color="primary" block onClick={closeAllModals}>
+        <Button className="auction-end-back-btn" color="primary" block onClick={closeAllModals}>
           返回直播间
         </Button>
       </div>

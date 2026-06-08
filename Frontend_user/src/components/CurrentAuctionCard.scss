@@ -142,6 +142,11 @@
   font-size: 12px;
 }
 
+.bid-btn.is-disabled {
+  background: linear-gradient(135deg, #b8b8c0 0%, #9fa4af 100%) !important;
+  box-shadow: none;
+}
+
 .inline-bid-controls {
   flex: 1;
   display: flex;
@@ -163,6 +168,11 @@
   font-size: 15px;
   font-weight: 700;
   line-height: 1;
+}
+
+.inline-adjust-btn:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
 }
 
 .inline-bid-price {

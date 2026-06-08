@@ -28,7 +28,9 @@ const AuctionItemDrawer: React.FC = () => {
         <div className="items-scroll-area">
           {items.map((item) => (
             <div key={item.id} className="item-row-card" onClick={() => goToDetail(item.id)}>
-              <div className="item-row-thumb" />
+              <div className="item-row-thumb">
+                <img src={item.images[0]} alt={item.title} />
+              </div>
               <div className="item-row-info">
                 <div className="item-row-title">{item.title}</div>
                 <div className="item-row-price">¥{item.currentPrice}</div>

@@ -29,6 +29,7 @@ function PublishPage() {
             intro: '18K金镶嵌，证书齐全，珠宝直播专场拍品',
             startPrice: 0,
             increment: 20,
+            depositAmount: 0,
             durationSec: 900,
             delaySec: 15,
           }}
@@ -47,7 +48,7 @@ function PublishPage() {
               await createItem(currentRoomId, {
                 title: values.name,
                 coverImage: values.coverImage,
-                description: values.intro,
+                description: `${values.intro} #deposit=${values.depositAmount}#`,
                 startPrice: values.startPrice,
                 incrementStep: values.increment,
                 ceilingPrice: typeof values.ceilingPrice === 'number' ? values.ceilingPrice : null,
@@ -119,6 +120,9 @@ function PublishPage() {
               </Form.Item>
               <Form.Item label="固定加价幅度" name="increment" rules={[{ required: true }]}>
                 <InputNumber size="large" min={1} style={{ width: '100%' }} addonAfter="元" />
+              </Form.Item>
+              <Form.Item label="保证金金额" name="depositAmount" rules={[{ required: true }]}>
+                <InputNumber size="large" min={0} style={{ width: '100%' }} addonAfter="元" />
               </Form.Item>
               <Form.Item label="封顶价（可空）" name="ceilingPrice">
                 <InputNumber size="large" min={0} style={{ width: '100%' }} addonAfter="元" />

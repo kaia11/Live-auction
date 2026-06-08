@@ -59,17 +59,21 @@ export const mapBidHistories = (histories: BackendBidHistory[]): BidHistory[] =>
 
 const mapBackendItem = (item: BackendAuctionItem, session: BackendAuctionSession): AuctionItem => {
   const isCurrentItem = item.id === session.itemId
+  const { description, depositAmount } = extractDepositAmount(normalizeText(item.description))
+  const normalizedSessionStatus = normalizeSessionStatus(session.status)
+  const normalizedQueueStatus = normalizeQueueStatus(item.queueStatus)
 
   return {
     id: item.id,
     title: normalizeText(item.title),
-    description: normalizeText(item.description),
+    description,
     images: [getItemCoverImage(item.id)],
+    depositAmount,
     startPrice: item.startPrice,
     currentPrice: isCurrentItem ? session.currentPrice : item.startPrice,
     minIncrement: item.incrementStep,
     maxPrice: item.ceilingPrice ?? null,
-    status: resolveAuctionItemStatus(item, session, isCurrentItem),
+    status: resolveAuctionItemStatus(normalizedSessionStatus, normalizedQueueStatus, isCurrentItem),
     endTime: isCurrentItem ? session.endTime : undefined,
     duration: item.durationSeconds,
     extendedSeconds: item.extensionSeconds,
@@ -78,13 +82,28 @@ const mapBackendItem = (item: BackendAuctionItem, session: BackendAuctionSession
   }
 }
 
+const extractDepositAmount = (description: string) => {
+  const marker = /#deposit=(\d+)#/i
+  const matched = description.match(marker)
+  if (!matched) {
+    return { description, depositAmount: 0 }
+  }
+
+  const amount = Number.parseInt(matched[1], 10)
+  const cleaned = description.replace(marker, '').trim()
+  return {
+    description: cleaned || description,
+    depositAmount: Number.isFinite(amount) ? amount : 0,
+  }
+}
+
 const resolveAuctionItemStatus = (
-  item: BackendAuctionItem,
-  session: BackendAuctionSession,
+  sessionStatus: string,
+  queueStatus: string,
   isCurrentItem: boolean,
 ): AuctionItemStatus => {
   if (isCurrentItem) {
-    switch (session.status) {
+    switch (sessionStatus) {
       case 'bidding':
         return AuctionItemStatus.BIDDING
       case 'ended_sold':
@@ -93,12 +112,23 @@ const resolveAuctionItemStatus = (
         return AuctionItemStatus.PASSED
       case 'cancelled':
         return AuctionItemStatus.CANCELLED
-      default:
+      case 'pending':
+        if (queueStatus === 'active') {
+          return AuctionItemStatus.BIDDING
+        }
+        if (queueStatus === 'cancelled') {
+          return AuctionItemStatus.CANCELLED
+        }
+        if (queueStatus === 'finished') {
+          return AuctionItemStatus.ENDED
+        }
         return AuctionItemStatus.NOT_STARTED
+      default:
+        return queueStatus === 'finished' ? AuctionItemStatus.ENDED : AuctionItemStatus.NOT_STARTED
     }
   }
 
-  switch (item.queueStatus) {
+  switch (queueStatus) {
     case 'queued':
     case 'upcoming':
       return AuctionItemStatus.COMING_SOON
@@ -107,6 +137,30 @@ const resolveAuctionItemStatus = (
     default:
       return AuctionItemStatus.PENDING
   }
+}
+
+const normalizeStatus = (value: string) => value.trim().toLowerCase()
+
+const normalizeSessionStatus = (status: string) => {
+  const value = normalizeStatus(status)
+  if (!value) return 'pending'
+  if (value.includes('ended_sold') || value === 'sold' || value.includes('已成交')) return 'ended_sold'
+  if (value.includes('ended_passed') || value === 'passed' || value.includes('流拍')) return 'ended_passed'
+  if (value.includes('cancel') || value.includes('已取消')) return 'cancelled'
+  if (value.includes('bidding') || value === 'active' || value.includes('竞拍中')) return 'bidding'
+  if (value.includes('pending') || value.includes('upcoming') || value.includes('queued') || value.includes('未开始') || value.includes('待上架') || value.includes('即将开始')) return 'pending'
+  return value
+}
+
+const normalizeQueueStatus = (status: string) => {
+  const value = normalizeStatus(status)
+  if (!value) return 'queued'
+  if (value.includes('cancel') || value.includes('已取消')) return 'cancelled'
+  if (value.includes('finish') || value.includes('结束') || value.includes('已成交') || value.includes('流拍')) return 'finished'
+  if (value.includes('active') || value.includes('bidding') || value.includes('竞拍中')) return 'active'
+  if (value.includes('upcoming') || value.includes('即将开始')) return 'upcoming'
+  if (value.includes('queued') || value.includes('待上架')) return 'queued'
+  return value
 }
 
 const getCountdownSeconds = (endTime: string) => {

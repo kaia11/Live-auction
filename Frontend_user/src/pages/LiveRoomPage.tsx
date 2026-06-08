@@ -31,6 +31,10 @@ import DelayBanner from '../components/DelayBanner'
 import { AuctionItem } from '../types'
 import './LiveRoomPage.scss'
 
+const ASSET_BASE = import.meta.env.BASE_URL
+const LIVE_BG_VIDEO_SRC = `${ASSET_BASE}videos/live-bg.mp4?v=20260609`
+const FALLBACK_IMAGE_SRC = `${ASSET_BASE}images/Image.png`
+
 const LiveRoomPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
@@ -69,6 +73,7 @@ const LiveRoomPage: React.FC = () => {
   const [collapsedPos, setCollapsedPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 })
   const [collapsedReady, setCollapsedReady] = useState(false)
   const pageRef = React.useRef<HTMLDivElement | null>(null)
+  const bgVideoRef = React.useRef<HTMLVideoElement | null>(null)
   const dragRef = React.useRef({
     dragging: false,
     moved: false,
@@ -174,6 +179,41 @@ const LiveRoomPage: React.FC = () => {
     }
   }, [roomId, pollRoomEvents, connectionState])
 
+  useEffect(() => {
+    const video = bgVideoRef.current
+    if (!video || bgVideoError) {
+      return
+    }
+
+    const tryPlay = () => {
+      video.defaultMuted = true
+      void video.play().catch(() => {
+        // Browsers may block autoplay on first paint; keep retrying on interaction/visibility.
+      })
+    }
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        tryPlay()
+      }
+    }
+
+    tryPlay()
+    const timer = window.setInterval(() => {
+      if (video.paused && !video.ended) {
+        tryPlay()
+      }
+    }, 1500)
+
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', tryPlay)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', tryPlay)
+    }
+  }, [bgVideoError])
+
   const currentItem = items.find((item) => item.id === currentItemId)
   const currentRoom = rooms.find((room) => room.id === roomId)
   const hasItems = items.length > 0
@@ -227,10 +267,6 @@ const LiveRoomPage: React.FC = () => {
   }
 
   const goBackLiveList = () => {
-    if (window.history.length > 1) {
-      navigate(-1)
-      return
-    }
     navigate('/rooms')
   }
 
@@ -317,18 +353,26 @@ const LiveRoomPage: React.FC = () => {
         {bgVideoError ? (
           <img
             className="bg-video bg-fallback-image"
-            src={currentRoom?.coverImage || '/images/Image.png'}
+            src={currentRoom?.coverImage || FALLBACK_IMAGE_SRC}
             alt="live background fallback"
           />
         ) : (
           <video
+            ref={bgVideoRef}
             className="bg-video"
-            src="/videos/live-bg.mp4"
+            src={LIVE_BG_VIDEO_SRC}
             autoPlay
             muted
             loop
             playsInline
             preload="auto"
+            onCanPlay={() => {
+              if (bgVideoRef.current) {
+                void bgVideoRef.current.play().catch(() => {
+                  // Ignore autoplay block and keep fallback behavior.
+                })
+              }
+            }}
             onError={() => setBgVideoError(true)}
           />
         )}

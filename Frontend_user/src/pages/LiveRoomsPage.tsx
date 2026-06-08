@@ -6,6 +6,9 @@ import { useAppStore } from '../stores/useAppStore'
 import { useRoomsQuery } from '../hooks/queries/useRoomsQuery'
 import './LiveRoomsPage.scss'
 
+const ASSET_BASE = import.meta.env.BASE_URL
+const LIVE_BG_VIDEO_SRC = `${ASSET_BASE}videos/live-bg.mp4?v=20260609`
+
 const LiveRoomsPage: React.FC = () => {
   const navigate = useNavigate()
   const { rooms, syncRooms, setCurrentRoomId } = useLiveRoomStore()
@@ -71,12 +74,18 @@ const LiveRoomsPage: React.FC = () => {
                       <img className="room-cover-image" src={room.coverImage} alt={room.title} />
                       <video
                         className="room-cover-video"
-                        src="/videos/live-bg.mp4"
+                        src={LIVE_BG_VIDEO_SRC}
                         autoPlay
                         muted
                         loop
                         playsInline
-                        preload="metadata"
+                        preload="auto"
+                        onCanPlay={(event) => {
+                          event.currentTarget.defaultMuted = true
+                          void event.currentTarget.play().catch(() => {
+                            // Keep image fallback and retry on next render/user interaction.
+                          })
+                        }}
                         onError={(event) => {
                           event.currentTarget.style.display = 'none'
                         }}
