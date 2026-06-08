@@ -53,7 +53,7 @@ func TestAuctionEngineSettleSessionNoBidEndsPassed(t *testing.T) {
 	}
 }
 
-func TestAuctionEngineStartSessionMarksRoomLive(t *testing.T) {
+func TestAuctionEngineStartSessionRequiresRoomLive(t *testing.T) {
 	store := newMemoryStore()
 	store.rooms["room-001"] = withRoomStatus(store.rooms["room-001"], domain.RoomStatusOffline)
 	store.items["item-001"] = withQueueStatus(store.items["item-001"], domain.QueueStateUpcoming)
@@ -61,12 +61,8 @@ func TestAuctionEngineStartSessionMarksRoomLive(t *testing.T) {
 	engine := NewAuctionEngine(store, nil, nil, nil, nil, nil, nil)
 
 	_, err := engine.StartSessionLocked("session-001")
-	if err != nil {
-		t.Fatalf("StartSessionLocked() error = %v", err)
-	}
-
-	if store.rooms["room-001"].Status != domain.RoomStatusLive {
-		t.Fatalf("expected room status live, got %q", store.rooms["room-001"].Status)
+	if !errors.Is(err, ErrRoomNotLive) {
+		t.Fatalf("expected ErrRoomNotLive, got %v", err)
 	}
 }
 
@@ -78,6 +74,25 @@ func TestAdminServiceStopRoomLiveRejectsActiveSession(t *testing.T) {
 	_, err := adminService.StopRoomLive("room-001")
 	if !errors.Is(err, ErrRoomHasActiveSession) {
 		t.Fatalf("expected ErrRoomHasActiveSession, got %v", err)
+	}
+}
+
+func TestAdminServiceStartRoomLiveMarksRoomLive(t *testing.T) {
+	store := newMemoryStore()
+	store.rooms["room-001"] = withRoomStatus(store.rooms["room-001"], domain.RoomStatusOffline)
+	adminService := NewAdminService(nil, repository.NewMemoryRoomRepository(store), repository.NewMemoryItemRepository(store), repository.NewMemorySessionRepository(store), nil, nil)
+	adminService.store = store
+
+	result, err := adminService.StartRoomLive("room-001")
+	if err != nil {
+		t.Fatalf("StartRoomLive() error = %v", err)
+	}
+
+	if result["status"] != domain.RoomStatusLive {
+		t.Fatalf("expected status live, got %v", result["status"])
+	}
+	if store.rooms["room-001"].Status != domain.RoomStatusLive {
+		t.Fatalf("expected room status live, got %q", store.rooms["room-001"].Status)
 	}
 }
 

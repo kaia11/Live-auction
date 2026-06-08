@@ -327,6 +327,8 @@ func (h *AdminHandler) StartSession(w nethttp.ResponseWriter, r *nethttp.Request
 		switch {
 		case errors.Is(err, service.ErrSessionNotFound):
 			api.Error(w, nethttp.StatusNotFound, api.CodeSessionNotFound, err.Error())
+		case errors.Is(err, service.ErrRoomNotLive):
+			api.Conflict(w, api.CodeSessionNotBidding, err.Error())
 		case errors.Is(err, service.ErrInvalidSessionState):
 			api.Conflict(w, api.CodeSessionNotBidding, err.Error())
 		case errors.Is(err, service.ErrInvalidQueueOrder):
@@ -342,6 +344,38 @@ func (h *AdminHandler) StartSession(w nethttp.ResponseWriter, r *nethttp.Request
 		h.hub.Publish(roomID, ws.EventAuctionSessionActivated, result)
 	}
 	_ = h.auditService.CreateLog("session", "start", operatorID, roomID, "session", sessionID, "start session")
+	api.Success(w, nethttp.StatusOK, result)
+}
+
+func (h *AdminHandler) StartRoomLive(w nethttp.ResponseWriter, r *nethttp.Request) {
+	user, ok := h.currentAdminUser(w, r)
+	if !ok {
+		return
+	}
+	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
+
+	roomID := r.PathValue("roomId")
+	if roomID == "" {
+		api.BadRequest(w, "roomId is required")
+		return
+	}
+	if !h.ensureRoomOwnership(w, user, roomID) {
+		return
+	}
+
+	result, err := h.adminService.StartRoomLive(roomID)
+	if err != nil {
+		logger.Error("start room live failed room_id=%s operator_id=%s error=%v", roomID, operatorID, err)
+		switch {
+		case errors.Is(err, service.ErrRoomNotFound):
+			api.Error(w, nethttp.StatusNotFound, api.CodeRoomNotFound, err.Error())
+		default:
+			api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to start live room")
+		}
+		return
+	}
+
+	_ = h.auditService.CreateLog("room", "start_live", operatorID, roomID, "room", roomID, "start live room")
 	api.Success(w, nethttp.StatusOK, result)
 }
 

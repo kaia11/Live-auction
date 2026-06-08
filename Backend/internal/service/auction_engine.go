@@ -52,6 +52,14 @@ func (e *AuctionEngine) StartSessionLocked(sessionID string) (map[string]any, er
 		return nil, ErrSessionNotFound
 	}
 
+	room, ok := e.store.rooms[session.RoomID]
+	if !ok || room.ID == "" {
+		return nil, ErrRoomNotFound
+	}
+	if room.Status != domain.RoomStatusLive {
+		return nil, ErrRoomNotLive
+	}
+
 	item, ok := e.store.items[session.ItemID]
 	if !ok {
 		return nil, ErrItemNotFound
@@ -85,9 +93,7 @@ func (e *AuctionEngine) StartSessionLocked(sessionID string) (map[string]any, er
 	item.QueueStatus = nextQueueStatus
 	e.store.items[item.ID] = item
 
-	room := e.store.rooms[session.RoomID]
 	room.CurrentSessionID = sessionID
-	room.Status = domain.RoomStatusLive
 	e.store.rooms[session.RoomID] = room
 	if err := e.persistRoomItemSession(room, item, session); err != nil {
 		return nil, err

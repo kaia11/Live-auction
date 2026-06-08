@@ -52,6 +52,11 @@ export const activateNextItem = async (roomId: string) => {
   return unwrapResponse<SessionActionResponse>(response)
 }
 
+export const startRoomLive = async (roomId: string) => {
+  const response = await apiClient.post(`/admin/rooms/${roomId}/start`)
+  return unwrapResponse<{ roomId: string; status: 'live' | 'offline' }>(response)
+}
+
 export const stopRoomLive = async (roomId: string) => {
   const response = await apiClient.post(`/admin/rooms/${roomId}/stop`)
   return unwrapResponse<{ roomId: string; status: 'live' | 'offline' }>(response)

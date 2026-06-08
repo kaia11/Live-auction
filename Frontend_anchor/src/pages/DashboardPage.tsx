@@ -1,12 +1,31 @@
-import { App, Button, Card, Col, Divider, Row, Table, Tag } from 'antd'
+import { App, Button, Card, Col, Divider, Row, Space, Table, Tag } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
+import { AxiosError } from 'axios'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '@/layouts/AdminLayout'
 import StatCard from '@/components/common/StatCard'
-import { getOverview, getRoomItems, getTimeline } from '@/api/admin'
+import {
+  getOverview,
+  getRoomItems,
+  getTimeline,
+  startRoomLive,
+  stopRoomLive,
+} from '@/api/admin'
 import { getMerchantRoomImage } from '@/assets/localImages'
 import type { AuctionItem, DashboardOverview, DashboardTimelineEvent } from '@/types'
 import { useAdminStore } from '@/stores/useAdminStore'
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  const err = error as AxiosError<{ message?: string }>
+  const apiMessage = err.response?.data?.message
+  if (apiMessage) {
+    return apiMessage
+  }
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+  return fallback
+}
 
 function DashboardPage() {
   const { message } = App.useApp()
@@ -16,6 +35,12 @@ function DashboardPage() {
   const [items, setItems] = useState<AuctionItem[]>([])
   const [timeline, setTimeline] = useState<DashboardTimelineEvent[]>([])
   const currentRoomId = useAdminStore((state) => state.currentRoomId)
+  const rooms = useAdminStore((state) => state.rooms)
+  const updateRoomStatus = useAdminStore((state) => state.updateRoomStatus)
+  const currentRoom = useMemo(
+    () => rooms.find((room) => room.id === currentRoomId),
+    [rooms, currentRoomId],
+  )
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -70,9 +95,51 @@ function DashboardPage() {
       activePath="/dashboard"
       title="运营总览"
       actions={
-        <Button type="primary" onClick={() => navigate('/publish')}>
-          + 添加商品
-        </Button>
+        <Space>
+          <Button
+            type="primary"
+            disabled={currentRoom?.status === 'live'}
+            onClick={async () => {
+              if (!currentRoomId) {
+                message.warning('请先选择直播间')
+                return
+              }
+
+              try {
+                await startRoomLive(currentRoomId)
+                updateRoomStatus(currentRoomId, 'live')
+                message.success('直播已开始')
+              } catch (error) {
+                message.error(getApiErrorMessage(error, '开始直播失败，请稍后重试'))
+              }
+            }}
+          >
+            {currentRoom?.status === 'live' ? '直播中' : '开始直播'}
+          </Button>
+          <Button
+            danger
+            disabled={currentRoom?.status !== 'live'}
+            onClick={async () => {
+              if (!currentRoomId) {
+                message.warning('请先选择直播间')
+                return
+              }
+
+              try {
+                await stopRoomLive(currentRoomId)
+                updateRoomStatus(currentRoomId, 'offline')
+                message.success('已下播')
+              } catch (error) {
+                message.error(getApiErrorMessage(error, '下播失败，请稍后重试'))
+              }
+            }}
+          >
+            下播
+          </Button>
+          <Button type="primary" onClick={() => navigate('/publish')}>
+            + 添加商品
+          </Button>
+        </Space>
       }
     >
       <Row gutter={16}>

@@ -18,6 +18,7 @@ var (
 	ErrDuplicateBidRequest  = errors.New("duplicate bid request")
 	ErrInvalidBidPrice      = errors.New("invalid bid price")
 	ErrInvalidSessionState  = errors.New("invalid session state transition")
+	ErrRoomNotLive          = errors.New("room is not live")
 	ErrRoomHasActiveSession = errors.New("cannot stop live room while a session is bidding")
 	ErrOrderNotFound        = errors.New("order not found")
 	ErrInvalidOrderState    = errors.New("invalid order state transition")

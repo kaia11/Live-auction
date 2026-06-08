@@ -47,6 +47,7 @@ func NewRouter(handlers Handlers) http.Handler {
 	mux.HandleFunc("PATCH /admin/items/{itemId}", handlers.Admin.UpdateItem)
 	mux.HandleFunc("POST /admin/rooms/{roomId}/queue/reorder", handlers.Admin.ReorderQueue)
 	mux.HandleFunc("POST /admin/rooms/{roomId}/queue/next", handlers.Admin.ActivateNextItem)
+	mux.HandleFunc("POST /admin/rooms/{roomId}/start", handlers.Admin.StartRoomLive)
 	mux.HandleFunc("POST /admin/rooms/{roomId}/stop", handlers.Admin.StopRoomLive)
 	mux.HandleFunc("POST /admin/sessions/{sessionId}/start", handlers.Admin.StartSession)
 	mux.HandleFunc("POST /admin/sessions/{sessionId}/cancel", handlers.Admin.CancelSession)

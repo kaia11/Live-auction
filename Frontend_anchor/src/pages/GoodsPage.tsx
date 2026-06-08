@@ -8,6 +8,7 @@ import {
   getRoomItems,
   getRoomSessions,
   settleSession,
+  startRoomLive,
   startSession,
   stopRoomLive,
   updateItem,
@@ -186,30 +187,7 @@ function GoodsPage() {
               }
 
               try {
-                let sessions = await getRoomSessions(currentRoomId)
-                let startable = sessions.find(
-                  (s) => s.status === 'pending' && s.queueStatus === 'upcoming' && !!s.itemId && !!s.sessionId,
-                )
-
-                if (!startable) {
-                  const hasPendingQueued = sessions.some(
-                    (s) => s.status === 'pending' && s.queueStatus === 'queued' && !!s.itemId && !!s.sessionId,
-                  )
-                  if (hasPendingQueued) {
-                    await activateNextItem(currentRoomId)
-                    sessions = await getRoomSessions(currentRoomId)
-                    startable = sessions.find(
-                      (s) => s.status === 'pending' && s.queueStatus === 'upcoming' && !!s.itemId && !!s.sessionId,
-                    )
-                  }
-                }
-
-                if (!startable) {
-                  message.warning('暂无可开播场次，请先上传并上架商品')
-                  return
-                }
-
-                await startSession(startable.sessionId)
+                await startRoomLive(currentRoomId)
                 updateRoomStatus(currentRoomId, 'live')
                 message.success('直播已开始')
                 await refreshGoods()
@@ -359,19 +337,22 @@ function GoodsPage() {
                     取消竞拍
                   </Button>
                   <Button
-                    size="small"
-                    type="primary"
-                    disabled={row.sessionStatus !== 'pending' || currentRoom?.status !== 'live'}
-                    onClick={async () => {
-                      if (currentRoom?.status !== 'live') {
-                        message.warning('请先开始直播')
-                        return
+                  size="small"
+                  type="primary"
+                  disabled={row.sessionStatus !== 'pending' || currentRoom?.status !== 'live'}
+                  onClick={async () => {
+                    if (currentRoom?.status !== 'live') {
+                      message.warning('请先开始直播')
+                      return
+                    }
+                    try {
+                      if (row.queueStatus === 'queued') {
+                        await activateNextItem(currentRoomId)
                       }
-                      try {
-                        await startSession(row.sessionId)
-                        message.success('竞拍已开始')
-                        await refreshGoods()
-                      } catch (error) {
+                      await startSession(row.sessionId)
+                      message.success('竞拍已开始')
+                      await refreshGoods()
+                    } catch (error) {
                         const nextMessage =
                           error instanceof Error ? error.message : '开始竞拍失败，请稍后重试'
                         message.error(nextMessage)
