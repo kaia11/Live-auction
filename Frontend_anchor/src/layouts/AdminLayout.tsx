@@ -23,11 +23,12 @@ function AdminLayout({ activePath, title, actions, children }: AdminLayoutProps)
   const navigate = useNavigate()
   const { rooms, currentRoomId, setCurrentRoomId } = useAdminStore()
   const { user, logout } = useAuthStore()
+  const currentRoom = useMemo(() => rooms.find((room) => room.id === currentRoomId), [rooms, currentRoomId])
 
   const roomOptions = useMemo(
     () =>
       rooms.map((room) => ({
-        label: room.title,
+        label: `${room.title} (${room.status === 'live' ? '直播中' : '未开播'})`,
         value: room.id,
       })),
     [rooms],
@@ -57,6 +58,11 @@ function AdminLayout({ activePath, title, actions, children }: AdminLayoutProps)
                 options={roomOptions}
                 onChange={setCurrentRoomId}
               />
+            ) : null}
+            {currentRoom ? (
+              <Tag color={currentRoom.status === 'live' ? 'green' : 'default'}>
+                {currentRoom.status === 'live' ? '直播中' : '未开播'}
+              </Tag>
             ) : null}
             {user ? <Tag color="blue">{user.nickname}</Tag> : null}
             {actions}

@@ -87,6 +87,7 @@ func (e *AuctionEngine) StartSessionLocked(sessionID string) (map[string]any, er
 
 	room := e.store.rooms[session.RoomID]
 	room.CurrentSessionID = sessionID
+	room.Status = domain.RoomStatusLive
 	e.store.rooms[session.RoomID] = room
 	if err := e.persistRoomItemSession(room, item, session); err != nil {
 		return nil, err

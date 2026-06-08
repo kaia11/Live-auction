@@ -52,6 +52,11 @@ export const activateNextItem = async (roomId: string) => {
   return unwrapResponse<SessionActionResponse>(response)
 }
 
+export const stopRoomLive = async (roomId: string) => {
+  const response = await apiClient.post(`/admin/rooms/${roomId}/stop`)
+  return unwrapResponse<{ roomId: string; status: 'live' | 'offline' }>(response)
+}
+
 export const getAdminOrders = async () => {
   const response = await apiClient.get('/admin/orders')
   return unwrapResponse<AdminOrder[]>(response)

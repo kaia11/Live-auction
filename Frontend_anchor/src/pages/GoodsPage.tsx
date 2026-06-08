@@ -9,6 +9,7 @@ import {
   getRoomSessions,
   settleSession,
   startSession,
+  stopRoomLive,
   updateItem,
 } from '@/api/admin'
 import { getMerchantItemImage } from '@/assets/localImages'
@@ -86,6 +87,12 @@ function GoodsPage() {
   const [resultOpen, setResultOpen] = useState(false)
   const [resultStatus, setResultStatus] = useState<'成交' | '流拍' | '异常取消'>('成交')
   const currentRoomId = useAdminStore((state) => state.currentRoomId)
+  const rooms = useAdminStore((state) => state.rooms)
+  const updateRoomStatus = useAdminStore((state) => state.updateRoomStatus)
+  const currentRoom = useMemo(
+    () => rooms.find((room) => room.id === currentRoomId),
+    [rooms, currentRoomId],
+  )
 
   const refreshGoods = useCallback(async () => {
     if (!currentRoomId) {
@@ -171,6 +178,7 @@ function GoodsPage() {
         <Space>
           <Button
             type="primary"
+            disabled={currentRoom?.status === 'live'}
             onClick={async () => {
               if (!currentRoomId) {
                 message.warning('请先选择直播间')
@@ -202,6 +210,7 @@ function GoodsPage() {
                 }
 
                 await startSession(startable.sessionId)
+                updateRoomStatus(currentRoomId, 'live')
                 message.success('直播已开始')
                 await refreshGoods()
               } catch (error) {
@@ -210,7 +219,29 @@ function GoodsPage() {
               }
             }}
           >
-            开始直播
+            {currentRoom?.status === 'live' ? '直播中' : '开始直播'}
+          </Button>
+          <Button
+            danger
+            disabled={currentRoom?.status !== 'live'}
+            onClick={async () => {
+              if (!currentRoomId) {
+                message.warning('请先选择直播间')
+                return
+              }
+
+              try {
+                await stopRoomLive(currentRoomId)
+                updateRoomStatus(currentRoomId, 'offline')
+                message.success('已下播')
+                await refreshGoods()
+              } catch (error) {
+                const nextMessage = getApiErrorMessage(error, '下播失败，请稍后重试')
+                message.error(nextMessage)
+              }
+            }}
+          >
+            下播
           </Button>
           <Button onClick={() => setRulePanelOpen(true)}>全局规则配置</Button>
           <Button
@@ -330,8 +361,12 @@ function GoodsPage() {
                   <Button
                     size="small"
                     type="primary"
-                    disabled={row.sessionStatus !== 'pending'}
+                    disabled={row.sessionStatus !== 'pending' || currentRoom?.status !== 'live'}
                     onClick={async () => {
+                      if (currentRoom?.status !== 'live') {
+                        message.warning('请先开始直播')
+                        return
+                      }
                       try {
                         await startSession(row.sessionId)
                         message.success('竞拍已开始')

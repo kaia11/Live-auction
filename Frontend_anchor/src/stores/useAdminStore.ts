@@ -24,6 +24,7 @@ interface AdminState {
   currentRoomId: string
   setRooms: (rooms: LiveRoom[]) => void
   setCurrentRoomId: (roomId: string) => void
+  updateRoomStatus: (roomId: string, status: LiveRoom['status']) => void
 }
 
 export const useAdminStore = create<AdminState>((set) => ({
@@ -49,5 +50,8 @@ export const useAdminStore = create<AdminState>((set) => ({
     setStoredRoomId(roomId)
     set({ currentRoomId: roomId })
   },
+  updateRoomStatus: (roomId, status) =>
+    set((state) => ({
+      rooms: state.rooms.map((room) => (room.id === roomId ? { ...room, status } : room)),
+    })),
 }))
-

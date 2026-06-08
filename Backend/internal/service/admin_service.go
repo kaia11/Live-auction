@@ -271,6 +271,35 @@ func (s *AdminService) StartSession(sessionID string) (map[string]any, error) {
 	return s.engine.StartSessionLocked(sessionID)
 }
 
+func (s *AdminService) StopRoomLive(roomID string) (map[string]any, error) {
+	s.store.mu.Lock()
+	defer s.store.mu.Unlock()
+
+	room, ok := s.store.rooms[roomID]
+	if !ok || room.ID == "" {
+		return nil, ErrRoomNotFound
+	}
+
+	for _, session := range s.store.sessions {
+		if session.RoomID == roomID && session.Status == domain.SessionStateBidding {
+			return nil, ErrRoomHasActiveSession
+		}
+	}
+
+	room.Status = domain.RoomStatusOffline
+	s.store.rooms[roomID] = room
+	if s.engine != nil && s.engine.roomRepo != nil {
+		if err := s.engine.roomRepo.SaveRoom(room); err != nil {
+			return nil, err
+		}
+	}
+
+	return map[string]any{
+		"roomId": roomID,
+		"status": room.Status,
+	}, nil
+}
+
 func (s *AdminService) CancelSession(sessionID string) (map[string]any, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()

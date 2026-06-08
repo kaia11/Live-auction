@@ -345,6 +345,40 @@ func (h *AdminHandler) StartSession(w nethttp.ResponseWriter, r *nethttp.Request
 	api.Success(w, nethttp.StatusOK, result)
 }
 
+func (h *AdminHandler) StopRoomLive(w nethttp.ResponseWriter, r *nethttp.Request) {
+	user, ok := h.currentAdminUser(w, r)
+	if !ok {
+		return
+	}
+	operatorID, _ := h.userService.TryGetCurrentUserID(r.Header.Get("Authorization"))
+
+	roomID := r.PathValue("roomId")
+	if roomID == "" {
+		api.BadRequest(w, "roomId is required")
+		return
+	}
+	if !h.ensureRoomOwnership(w, user, roomID) {
+		return
+	}
+
+	result, err := h.adminService.StopRoomLive(roomID)
+	if err != nil {
+		logger.Error("stop room live failed room_id=%s operator_id=%s error=%v", roomID, operatorID, err)
+		switch {
+		case errors.Is(err, service.ErrRoomNotFound):
+			api.Error(w, nethttp.StatusNotFound, api.CodeRoomNotFound, err.Error())
+		case errors.Is(err, service.ErrRoomHasActiveSession):
+			api.Conflict(w, api.CodeSessionNotBidding, err.Error())
+		default:
+			api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to stop live room")
+		}
+		return
+	}
+
+	_ = h.auditService.CreateLog("room", "stop_live", operatorID, roomID, "room", roomID, "stop live room")
+	api.Success(w, nethttp.StatusOK, result)
+}
+
 func (h *AdminHandler) CancelSession(w nethttp.ResponseWriter, r *nethttp.Request) {
 	user, ok := h.currentAdminUser(w, r)
 	if !ok {
