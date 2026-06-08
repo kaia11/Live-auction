@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"time"
 
 	"auction-live/backend/internal/domain"
 	"auction-live/backend/internal/model"
@@ -64,8 +65,8 @@ func (s *AdminService) CreateItem(roomID string, input CreateItemInput) (model.A
 		return model.AuctionItem{}, nil, ErrInvalidBidPrice
 	}
 
-	itemID := fmt.Sprintf("item-%03d", len(s.store.items)+1)
-	sessionID := fmt.Sprintf("session-%03d", len(s.store.sessions)+1)
+	itemID := fmt.Sprintf("item-%d", time.Now().UnixNano())
+	sessionID := fmt.Sprintf("session-%d", time.Now().UnixNano())
 	previousQueue := append([]string(nil), s.store.roomItems[roomID]...)
 	item := model.AuctionItem{
 		ID:                      itemID,
