@@ -1,0 +1,80 @@
+name: Deploy Frontends
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "Frontend_user/**"
+      - "Frontend_anchor/**"
+      - ".github/workflows/deploy-frontend.yml"
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node for user frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: Frontend_user/package-lock.json
+
+      - name: Install user frontend deps
+        working-directory: Frontend_user
+        run: npm ci
+
+      - name: Build user frontend
+        working-directory: Frontend_user
+        run: npm run build
+
+      - name: Setup Node for anchor frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: Frontend_anchor/package-lock.json
+
+      - name: Install anchor frontend deps
+        working-directory: Frontend_anchor
+        run: npm ci
+
+      - name: Build anchor frontend
+        working-directory: Frontend_anchor
+        run: npm run build
+
+      - name: Upload frontend dist to ECS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
+          password: ${{ secrets.ECS_PASSWORD }}
+          port: ${{ secrets.ECS_PORT }}
+          source: "Frontend_user/dist,Frontend_anchor/dist"
+          target: "/root/Live-auction/frontend-deploy"
+          overwrite: true
+
+      - name: Publish frontend dist on ECS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
+          password: ${{ secrets.ECS_PASSWORD }}
+          port: ${{ secrets.ECS_PORT }}
+          script: |
+            set -e
+            mkdir -p /var/www/live-auction-user
+            mkdir -p /var/www/live-auction-anchor
+
+            rm -rf /var/www/live-auction-user/*
+            rm -rf /var/www/live-auction-anchor/*
+
+            cp -r /root/Live-auction/frontend-deploy/Frontend_user/dist/* /var/www/live-auction-user/
+            cp -r /root/Live-auction/frontend-deploy/Frontend_anchor/dist/* /var/www/live-auction-anchor/
+
+            nginx -t
+            systemctl reload nginx
