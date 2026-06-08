@@ -86,6 +86,12 @@ Backend/答辩与压测说明.md
 Frontend_user_终版改造计划.md
 Frontend_user_分阶段改造执行方案.md
 后端高并发设计说明.local.md
+接口测试.md
+接口权限矩阵.md
+Backend/压测操作手册.md
 
 # local tool artifacts
 .codex
+
+# java backend migration workspace
+java_backend/
