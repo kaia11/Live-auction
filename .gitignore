@@ -26,6 +26,7 @@ pnpm-debug.log*
 .env.test.local
 .env.production.local
 server-access.local.env
+云端部署运维速查.local.md
 
 # OS files
 .DS_Store
@@ -84,6 +85,7 @@ WebSocket高并发生产化清单.md
 Backend/答辩与压测说明.md
 Frontend_user_终版改造计划.md
 Frontend_user_分阶段改造执行方案.md
+后端高并发设计说明.local.md
 
 # local tool artifacts
 .codex
