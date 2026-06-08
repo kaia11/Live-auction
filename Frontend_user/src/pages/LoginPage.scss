@@ -71,6 +71,7 @@
   .auth-input {
     display: flex;
     align-items: center;
+    position: relative;
     height: 74px;
     background: rgba(255, 255, 255, 0.78);
     border-radius: 22px;
@@ -110,6 +111,29 @@
 
   .input-field::placeholder {
     color: #b0a3b0;
+  }
+
+  .password-field {
+    padding-right: 44px;
+  }
+
+  .password-toggle {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    color: var(--brand-plum);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .password-field::-ms-reveal,
+  .password-field::-ms-clear {
+    display: none;
   }
 }
 

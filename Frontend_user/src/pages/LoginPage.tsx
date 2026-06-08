@@ -9,6 +9,7 @@ const LoginPage: React.FC = () => {
   const { login } = useUserStore()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [agreed, setAgreed] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -61,13 +62,21 @@ const LoginPage: React.FC = () => {
           <span className="eye-icon">◠</span>
           <div className="divider"></div>
           <input
-            className="input-field"
+            className="input-field password-field"
             placeholder="请输入密码"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
           />
+          <button
+            className="password-toggle"
+            type="button"
+            onClick={() => setShowPassword((value) => !value)}
+            aria-label={showPassword ? '隐藏密码' : '显示密码'}
+          >
+            {showPassword ? '◉' : '◎'}
+          </button>
         </div>
       </div>
 
