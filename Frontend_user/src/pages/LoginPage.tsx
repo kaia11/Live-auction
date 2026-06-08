@@ -75,7 +75,10 @@ const LoginPage: React.FC = () => {
             onClick={() => setShowPassword((value) => !value)}
             aria-label={showPassword ? '隐藏密码' : '显示密码'}
           >
-            {showPassword ? '◉' : '◎'}
+            <span className={`password-toggle-icon ${showPassword ? 'visible' : ''}`}>
+              <span className="eye-outline" />
+              <span className="eye-pupil" />
+            </span>
           </button>
         </div>
       </div>

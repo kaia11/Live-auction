@@ -129,6 +129,41 @@
     line-height: 1;
     cursor: pointer;
     padding: 4px;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .password-toggle-icon {
+    position: relative;
+    width: 20px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .eye-outline {
+    width: 20px;
+    height: 12px;
+    border: 2px solid currentColor;
+    border-radius: 12px / 9px;
+    display: block;
+  }
+
+  .eye-pupil {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .password-toggle-icon.visible .eye-pupil {
+    width: 7px;
+    height: 7px;
   }
 
   .password-field::-ms-reveal,
