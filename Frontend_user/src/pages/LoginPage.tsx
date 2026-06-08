@@ -33,7 +33,7 @@ const LoginPage: React.FC = () => {
       </div>
 
       <div className="top-nav">
-        <span className="back-btn">‹</span>
+        <button className="back-btn" type="button" onClick={() => navigate(-1)}>‹</button>
         <span className="help-text">帮助</span>
       </div>
 
@@ -71,7 +71,7 @@ const LoginPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="links-row">
+      <div className="links-block">
         <button className="link-btn" onClick={() => navigate('/register')} type="button">去注册</button>
         <span className="link-text">示例账号：viewer_demo / 123456</span>
       </div>
