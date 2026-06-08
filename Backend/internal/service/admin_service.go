@@ -66,6 +66,7 @@ func (s *AdminService) CreateItem(roomID string, input CreateItemInput) (model.A
 
 	itemID := fmt.Sprintf("item-%03d", len(s.store.items)+1)
 	sessionID := fmt.Sprintf("session-%03d", len(s.store.sessions)+1)
+	previousQueue := append([]string(nil), s.store.roomItems[roomID]...)
 	item := model.AuctionItem{
 		ID:                      itemID,
 		RoomID:                  roomID,
@@ -82,6 +83,7 @@ func (s *AdminService) CreateItem(roomID string, input CreateItemInput) (model.A
 	}
 	s.store.items[itemID] = item
 	s.store.roomItems[roomID] = append(s.store.roomItems[roomID], itemID)
+	s.store.roomItems[roomID] = uniqueQueueIDs(s.store.roomItems[roomID])
 	session := model.AuctionSession{
 		ID:                sessionID,
 		RoomID:            roomID,
@@ -100,19 +102,31 @@ func (s *AdminService) CreateItem(roomID string, input CreateItemInput) (model.A
 	s.store.sessions[sessionID] = session
 	if s.itemRepo != nil {
 		if err := s.itemRepo.SaveItem(item); err != nil {
+			delete(s.store.items, itemID)
+			delete(s.store.sessions, sessionID)
+			s.store.roomItems[roomID] = previousQueue
 			return model.AuctionItem{}, nil, err
 		}
 		if err := s.itemRepo.ReplaceRoomQueue(roomID, s.store.roomItems[roomID]); err != nil {
+			delete(s.store.items, itemID)
+			delete(s.store.sessions, sessionID)
+			s.store.roomItems[roomID] = previousQueue
 			return model.AuctionItem{}, nil, err
 		}
 	}
 	if s.sessionRepo != nil {
 		if err := s.sessionRepo.SaveSession(session); err != nil {
+			delete(s.store.items, itemID)
+			delete(s.store.sessions, sessionID)
+			s.store.roomItems[roomID] = previousQueue
 			return model.AuctionItem{}, nil, err
 		}
 	}
 	if s.runtime != nil {
 		if err := saveSessionState(s.runtime, session, item); err != nil {
+			delete(s.store.items, itemID)
+			delete(s.store.sessions, sessionID)
+			s.store.roomItems[roomID] = previousQueue
 			return model.AuctionItem{}, nil, err
 		}
 	}
@@ -581,4 +595,24 @@ func (s *AdminService) OrderOwnedBy(orderID string, anchorUserID string) bool {
 	}
 	room, ok := s.store.rooms[order.RoomID]
 	return ok && room.AnchorUserID == anchorUserID
+}
+
+func uniqueQueueIDs(itemIDs []string) []string {
+	if len(itemIDs) <= 1 {
+		return itemIDs
+	}
+
+	seen := make(map[string]struct{}, len(itemIDs))
+	result := make([]string, 0, len(itemIDs))
+	for _, itemID := range itemIDs {
+		if itemID == "" {
+			continue
+		}
+		if _, exists := seen[itemID]; exists {
+			continue
+		}
+		seen[itemID] = struct{}{}
+		result = append(result, itemID)
+	}
+	return result
 }
