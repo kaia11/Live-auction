@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"auction-live/backend/internal/domain"
@@ -63,6 +64,9 @@ func (s *AdminService) CreateItem(roomID string, input CreateItemInput) (model.A
 
 	if input.Title == "" || input.IncrementStep <= 0 || input.DurationSeconds <= 0 {
 		return model.AuctionItem{}, nil, ErrInvalidBidPrice
+	}
+	if err := validateCoverImage(input.CoverImage); err != nil {
+		return model.AuctionItem{}, nil, err
 	}
 
 	itemID := fmt.Sprintf("item-%d", time.Now().UnixNano())
@@ -158,6 +162,9 @@ func (s *AdminService) UpdateItem(itemID string, input UpdateItemInput) (model.A
 		item.Title = *input.Title
 	}
 	if input.CoverImage != nil {
+		if err := validateCoverImage(*input.CoverImage); err != nil {
+			return model.AuctionItem{}, err
+		}
 		item.CoverImage = *input.CoverImage
 	}
 	if input.Description != nil {
@@ -616,4 +623,24 @@ func uniqueQueueIDs(itemIDs []string) []string {
 		result = append(result, itemID)
 	}
 	return result
+}
+
+func validateCoverImage(coverImage string) error {
+	coverImage = strings.TrimSpace(coverImage)
+	if coverImage == "" {
+		return fmt.Errorf("coverImage is required")
+	}
+	if strings.HasPrefix(coverImage, "blob:") {
+		return fmt.Errorf("coverImage must be uploaded to the server")
+	}
+	if strings.HasPrefix(coverImage, "/images/") {
+		return fmt.Errorf("coverImage must use /uploads/ path or a public http(s) url")
+	}
+	if strings.HasPrefix(coverImage, "http://") || strings.HasPrefix(coverImage, "https://") {
+		return nil
+	}
+	if strings.HasPrefix(coverImage, "/uploads/") {
+		return nil
+	}
+	return fmt.Errorf("coverImage must use /uploads/ path or a public http(s) url")
 }

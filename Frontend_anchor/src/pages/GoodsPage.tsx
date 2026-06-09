@@ -1,4 +1,4 @@
-import { App, Button, Card, Image, Input, Select, Space, Table, Tag } from 'antd'
+import { App, Button, Card, Input, Select, Space, Table, Tag } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AxiosError } from 'axios'
 import AdminLayout from '@/layouts/AdminLayout'
@@ -13,8 +13,7 @@ import {
   stopRoomLive,
   updateItem,
 } from '@/api/admin'
-import { getMerchantItemImage } from '@/assets/localImages'
-import { resolveCoverImage } from '@/utils/assetUrl'
+import { GoodsCoverImage } from '@/components/GoodsCoverImage'
 import type { GoodsRow } from '@/types'
 import { GoodsEditDrawer, RuleConfigDrawer } from '@/components/goods/GoodsDrawers'
 import RuleModal from '@/components/modals/RuleModal'
@@ -109,7 +108,7 @@ function GoodsPage() {
         sessionId: session?.sessionId ?? '',
         roomId: item.roomId,
         title: item.title,
-        coverImage: resolveCoverImage(item.coverImage, getMerchantItemImage(item.id)),
+        coverImage: item.coverImage,
         description: item.description,
         startPrice: item.startPrice,
         incrementStep: item.incrementStep,
@@ -278,7 +277,7 @@ function GoodsPage() {
               width: 340,
               render: (_, row: GoodsRow) => (
                 <Space>
-                  <Image src={resolveCoverImage(row.coverImage, getMerchantItemImage(row.itemId))} width={56} height={56} style={{ borderRadius: 8 }} />
+                  <GoodsCoverImage coverImage={row.coverImage} itemId={row.itemId} width={56} height={56} style={{ borderRadius: 8 }} />
                   <div>
                     <div className="goods-name">{row.title}</div>
                     <div className="goods-sub">ID: {row.itemId}</div>

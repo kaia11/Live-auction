@@ -3,6 +3,11 @@ import coverSecondary from '../../images/generated-1779437166813.png'
 
 const gallery = [coverPrimary, coverSecondary]
 
+export const localImagePathMap: Record<string, string> = {
+  '/images/generated-1779436183124.png': coverPrimary,
+  '/images/generated-1779437166813.png': coverSecondary,
+}
+
 export const getLocalGalleryImage = (seed?: string) => {
   if (!seed) {
     return gallery[0]

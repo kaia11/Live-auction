@@ -7,7 +7,7 @@ import { PublishSuccessModal } from '@/components/modals/StatusModals'
 import { createItem } from '@/api/admin'
 import { uploadImage } from '@/api/uploads'
 import { useAdminStore } from '@/stores/useAdminStore'
-import { resolveAssetUrl } from '@/utils/assetUrl'
+import { isPersistedCoverImage, normalizeCoverImageForSave, resolveCoverImage } from '@/utils/assetUrl'
 
 function PublishPage() {
   const { message } = App.useApp()
@@ -41,7 +41,7 @@ function PublishPage() {
               message.warning('请先在右上角选择直播间')
               return
             }
-            if (!values.coverImage) {
+            if (!isPersistedCoverImage(values.coverImage)) {
               message.warning('请先上传商品图片')
               return
             }
@@ -50,7 +50,7 @@ function PublishPage() {
             try {
               await createItem(currentRoomId, {
                 title: values.name,
-                coverImage: values.coverImage,
+                coverImage: normalizeCoverImageForSave(values.coverImage),
                 description: `${values.intro} #deposit=${values.depositAmount}#`,
                 startPrice: values.startPrice,
                 incrementStep: values.increment,
@@ -101,7 +101,7 @@ function PublishPage() {
                       setUploading(true)
                       try {
                         const result = await uploadImage(file)
-                        form.setFieldValue('coverImage', resolveAssetUrl(result.url))
+                        form.setFieldValue('coverImage', result.url)
                         message.success('图片上传成功')
                       } catch (error) {
                         const nextMessage =
@@ -124,7 +124,7 @@ function PublishPage() {
               <Form.Item label="商品图片预览">
                 <div className="mock-upload-preview">
                   {coverImage ? (
-                    <img src={coverImage} alt="cover preview" />
+                    <img src={resolveCoverImage(coverImage, coverImage)} alt="cover preview" />
                   ) : (
                     <div className="mock-upload-copy">尚未上传图片</div>
                   )}
