@@ -97,8 +97,8 @@ const BidActionPanel: React.FC = () => {
   const submitBidRequest = async (targetBidPrice: number) => {
     setIsSubmitting(true)
     try {
-      const success = await submitBid(targetBidPrice)
-      if (success) {
+      const outcome = await submitBid(targetBidPrice)
+      if (outcome === 'leading') {
         Toast.show('出价成功！')
       }
     } catch (error) {

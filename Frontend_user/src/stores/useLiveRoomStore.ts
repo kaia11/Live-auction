@@ -32,7 +32,7 @@ interface LiveRoomState extends LiveRoomUIStateValues, LiveRuntimeSnapshot {
   toggleRuleModal: () => void
   closeAllModals: () => void
   setCurrentAuctionCardClosed: (closed: boolean) => void
-  submitBid: (price: number) => Promise<boolean>
+  submitBid: (price: number) => Promise<'leading' | 'overtaken' | false>
   configureAutoProxy: (maxPrice: number, enabled: boolean) => Promise<boolean>
   submitComment: (content: string) => Promise<boolean>
 }
@@ -259,7 +259,7 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
 
     const requestId = `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
-    await createBid({
+    const result = await createBid({
       roomId: currentRoomId,
       sessionId: currentSessionId,
       itemId: currentItemId,
@@ -276,14 +276,18 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
     const events = await getRoomEvents(currentRoomId)
     const latestVersion = events.length > 0 ? events[events.length - 1].version : 0
 
-    syncUIState({ showBidSuccessModal: true })
     syncRuntimeState({ lastEventVersion: latestVersion })
+    set({ lastEventVersion: latestVersion })
 
-    set({
-      lastEventVersion: latestVersion,
-      showBidSuccessModal: true,
-    })
-    return true
+    if (result.isLeading) {
+      syncUIState({ showBidSuccessModal: true, showOvertakenModal: false })
+      set({ showBidSuccessModal: true, showOvertakenModal: false })
+      return 'leading'
+    }
+
+    syncUIState({ showBidSuccessModal: false, showOvertakenModal: true })
+    set({ showBidSuccessModal: false, showOvertakenModal: true })
+    return 'overtaken'
   },
 
   configureAutoProxy: async (maxPrice, enabled) => {

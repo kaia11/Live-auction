@@ -93,8 +93,10 @@ const CurrentAuctionCard: React.FC<Props> = ({ item, onClose, onOpenDetail }) =>
   const submitBidRequest = async (targetBidPrice: number) => {
     setIsSubmitting(true)
     try {
-      await submitBid(targetBidPrice)
-      Toast.show('出价成功')
+      const outcome = await submitBid(targetBidPrice)
+      if (outcome === 'leading') {
+        Toast.show('出价成功')
+      }
     } catch (error) {
       const err = error as AxiosError<{ message?: string }>
       const message = err.response?.data?.message ?? ''
