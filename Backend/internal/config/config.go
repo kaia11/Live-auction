@@ -15,6 +15,7 @@ type Config struct {
 	RedisDB                 int
 	JWTSecret               string
 	WSAllowedOrigin         string
+	UploadDir               string
 }
 
 func (c Config) HTTPAddress() string {
@@ -32,6 +33,7 @@ func Load() Config {
 		RedisDB:                 getEnvAsInt("REDIS_DB", 0),
 		JWTSecret:               getEnv("JWT_SECRET", "replace_me"),
 		WSAllowedOrigin:         getEnv("WS_ALLOWED_ORIGIN", "*"),
+		UploadDir:               getEnv("UPLOAD_DIR", "uploads"),
 	}
 }
 

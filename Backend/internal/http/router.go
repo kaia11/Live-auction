@@ -16,6 +16,7 @@ type Handlers struct {
 	Session   *handler.SessionHandler
 	Bids      *handler.BidHandler
 	Admin     *handler.AdminHandler
+	Upload    *handler.UploadHandler
 	WebSocket *handler.WebSocketHandler
 }
 
@@ -27,6 +28,7 @@ func NewRouter(handlers Handlers) http.Handler {
 	mux.HandleFunc("GET /users/me", handlers.Auth.GetCurrentUser)
 	mux.HandleFunc("GET /health", handlers.Health.GetHealth)
 	mux.HandleFunc("GET /metrics", handlers.Metrics.GetMetrics)
+	mux.HandleFunc("GET /uploads/{file...}", handlers.Upload.ServeUpload)
 	mux.HandleFunc("GET /rooms", handlers.Rooms.ListRooms)
 	mux.HandleFunc("GET /admin/my/rooms", handlers.Rooms.ListMyRooms)
 	mux.HandleFunc("GET /rooms/{roomId}", handlers.Rooms.GetRoomDetail)
@@ -44,6 +46,7 @@ func NewRouter(handlers Handlers) http.Handler {
 	mux.HandleFunc("POST /bids", handlers.Bids.CreateBid)
 	mux.HandleFunc("POST /sessions/{sessionId}/auto-proxy", handlers.Bids.ConfigureAutoProxy)
 
+	mux.HandleFunc("POST /admin/uploads/image", handlers.Upload.UploadImage)
 	mux.HandleFunc("POST /admin/rooms/{roomId}/items", handlers.Admin.CreateItem)
 	mux.HandleFunc("PATCH /admin/items/{itemId}", handlers.Admin.UpdateItem)
 	mux.HandleFunc("POST /admin/rooms/{roomId}/queue/reorder", handlers.Admin.ReorderQueue)

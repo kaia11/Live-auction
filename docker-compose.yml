@@ -14,6 +14,9 @@ services:
       REDIS_ADDR: redis:6379
       JWT_SECRET: replace_me
       WS_ALLOWED_ORIGIN: "*"
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads-data:/app/uploads
     depends_on:
       mysql:
         condition: service_healthy
@@ -73,3 +76,4 @@ services:
 
 volumes:
   mysql-data:
+  uploads-data:

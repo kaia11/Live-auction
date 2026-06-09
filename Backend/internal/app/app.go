@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"auction-live/backend/internal/config"
@@ -87,6 +88,9 @@ func New(cfg config.Config) *App {
 	adminService := service.NewAdminService(runtime, roomRepo, itemRepo, sessionRepo, resultRepo, orderRepo)
 	orderService := service.NewOrderService(orderRepo)
 	scheduler := service.NewSettlementScheduler(store, hub, runtime, roomRepo, itemRepo, sessionRepo, resultRepo, orderRepo, metrics, time.Second)
+	if err := os.MkdirAll(cfg.UploadDir, 0o755); err != nil {
+		panic(fmt.Errorf("upload dir init failed: %w", err))
+	}
 	if err := service.SyncRealtimeBootstrap(runtime, roomRepo, itemRepo, sessionRepo, bidRepo, userRepo, store); err != nil {
 		panic(fmt.Errorf("realtime bootstrap failed: %w", err))
 	}
@@ -101,6 +105,7 @@ func New(cfg config.Config) *App {
 		Session:   handler.NewSessionHandler(sessionService, commentService, userService, hub),
 		Bids:      handler.NewBidHandler(bidService, userService, hub, metrics),
 		Admin:     handler.NewAdminHandler(adminService, auditService, userService, hub),
+		Upload:    handler.NewUploadHandler(cfg.UploadDir, userService),
 		WebSocket: handler.NewWebSocketHandler(userService, roomService, hub, metrics),
 	}
 

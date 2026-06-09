@@ -3,6 +3,7 @@ import { BackendAuctionItem, BackendAuctionSession, BackendRoom } from '@/api/ro
 import { BackendBidHistory } from '@/api/bids'
 import { BackendMyStatus, BackendRankingResponse } from '@/api/sessions'
 import { getHistoryImage, getItemCoverImage, getRoomCoverImage, getRoomThumbnailImage } from '@/assets/localImages'
+import { resolveItemCoverImage } from '@/utils/assetUrl'
 
 export interface AuctionRuntimeViewModel {
   items: AuctionItem[]
@@ -69,7 +70,7 @@ const mapBackendItem = (item: BackendAuctionItem, session: BackendAuctionSession
     id: item.id,
     title: normalizeText(item.title),
     description,
-    images: [getItemCoverImage(item.id)],
+    images: [resolveItemCoverImage(item.coverImage, getItemCoverImage(item.id))],
     depositAmount,
     startPrice: item.startPrice,
     currentPrice: isCurrentItem ? session.currentPrice : item.startPrice,

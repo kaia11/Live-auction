@@ -14,6 +14,7 @@ import {
   updateItem,
 } from '@/api/admin'
 import { getMerchantItemImage } from '@/assets/localImages'
+import { resolveCoverImage } from '@/utils/assetUrl'
 import type { GoodsRow } from '@/types'
 import { GoodsEditDrawer, RuleConfigDrawer } from '@/components/goods/GoodsDrawers'
 import RuleModal from '@/components/modals/RuleModal'
@@ -108,7 +109,7 @@ function GoodsPage() {
         sessionId: session?.sessionId ?? '',
         roomId: item.roomId,
         title: item.title,
-        coverImage: item.coverImage || getMerchantItemImage(item.id),
+        coverImage: resolveCoverImage(item.coverImage, getMerchantItemImage(item.id)),
         description: item.description,
         startPrice: item.startPrice,
         incrementStep: item.incrementStep,
@@ -277,7 +278,7 @@ function GoodsPage() {
               width: 340,
               render: (_, row: GoodsRow) => (
                 <Space>
-                  <Image src={row.coverImage || getMerchantItemImage(row.itemId)} width={56} height={56} style={{ borderRadius: 8 }} />
+                  <Image src={resolveCoverImage(row.coverImage, getMerchantItemImage(row.itemId))} width={56} height={56} style={{ borderRadius: 8 }} />
                   <div>
                     <div className="goods-name">{row.title}</div>
                     <div className="goods-sub">ID: {row.itemId}</div>

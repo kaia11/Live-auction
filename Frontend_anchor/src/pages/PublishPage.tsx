@@ -5,7 +5,9 @@ import AdminLayout from '@/layouts/AdminLayout'
 import RuleModal from '@/components/modals/RuleModal'
 import { PublishSuccessModal } from '@/components/modals/StatusModals'
 import { createItem } from '@/api/admin'
+import { uploadImage } from '@/api/uploads'
 import { useAdminStore } from '@/stores/useAdminStore'
+import { resolveAssetUrl } from '@/utils/assetUrl'
 
 function PublishPage() {
   const { message } = App.useApp()
@@ -14,6 +16,7 @@ function PublishPage() {
   const [successOpen, setSuccessOpen] = useState(false)
   const [publishedName, setPublishedName] = useState('珠宝拍品')
   const [submitting, setSubmitting] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [form] = Form.useForm()
   const coverImage = Form.useWatch('coverImage', form)
   const currentRoomId = useAdminStore((state) => state.currentRoomId)
@@ -93,15 +96,29 @@ function PublishPage() {
                       message.error('图片请控制在 5MB 内')
                       return Upload.LIST_IGNORE
                     }
-                    const objectUrl = URL.createObjectURL(file)
-                    form.setFieldValue('coverImage', objectUrl)
+
+                    void (async () => {
+                      setUploading(true)
+                      try {
+                        const result = await uploadImage(file)
+                        form.setFieldValue('coverImage', resolveAssetUrl(result.url))
+                        message.success('图片上传成功')
+                      } catch (error) {
+                        const nextMessage =
+                          error instanceof Error ? error.message : '图片上传失败，请稍后重试'
+                        message.error(nextMessage)
+                      } finally {
+                        setUploading(false)
+                      }
+                    })()
+
                     return false
                   }}
                   onRemove={() => {
                     form.setFieldValue('coverImage', undefined)
                   }}
                 >
-                  <Button>选择本地图片</Button>
+                  <Button loading={uploading}>选择本地图片</Button>
                 </Upload>
               </Form.Item>
               <Form.Item label="商品图片预览">
