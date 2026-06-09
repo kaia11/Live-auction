@@ -18,7 +18,7 @@ function LoginPage() {
         {errorMessage ? <Alert type="error" showIcon message={errorMessage} style={{ marginBottom: 16 }} /> : null}
         <Form
           layout="vertical"
-          initialValues={{ username: 'anchor_admin', password: '123456', agree: true }}
+          initialValues={{ username: 'silence001', password: '111111', agree: true }}
           onFinish={async (values) => {
             try {
               setErrorMessage('')
@@ -50,7 +50,7 @@ function LoginPage() {
             <Button type="link" onClick={() => navigate('/register')} style={{ paddingInline: 0 }}>
               没有账号？去注册主播端账号
             </Button>
-            <Typography.Text type="secondary">示例账号：anchor_admin / 123456</Typography.Text>
+            <Typography.Text type="secondary">示例账号：silence001 / 111111</Typography.Text>
           </div>
         </Form>
       </Card>

@@ -7,8 +7,8 @@ import './LoginPage.scss'
 const LoginPage: React.FC = () => {
   const navigate = useNavigate()
   const { login } = useUserStore()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('silence')
+  const [password, setPassword] = useState('111111')
   const [showPassword, setShowPassword] = useState(false)
   const [agreed, setAgreed] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -85,7 +85,7 @@ const LoginPage: React.FC = () => {
 
       <div className="links-block">
         <button className="link-btn" onClick={() => navigate('/register')} type="button">去注册</button>
-        <span className="link-text">示例账号：viewer_demo / 123456</span>
+        <span className="link-text">示例账号：silence / 111111</span>
       </div>
 
       <button className="login-btn" onClick={handleLogin} disabled={loading}>

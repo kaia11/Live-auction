@@ -39,7 +39,7 @@ const mockState: MockState = {
   users: {
     'user-001': {
       id: 'user-001',
-      username: 'viewer_demo',
+      username: 'silence',
       nickname: '阿宁',
       avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
       role: 'viewer',
@@ -53,7 +53,7 @@ const mockState: MockState = {
     },
     'anchor-001': {
       id: 'anchor-001',
-      username: 'anchor_admin',
+      username: 'silence001',
       nickname: '主播小玉',
       avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80',
       role: 'anchor',

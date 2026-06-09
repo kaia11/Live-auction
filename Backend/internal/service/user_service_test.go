@@ -59,7 +59,7 @@ func TestUserServiceLoginRejectsCrossClientAccess(t *testing.T) {
 	tokenService := NewTokenService("secret-for-test")
 	userService := NewUserService(tokenService, nil, nil, nil)
 
-	if _, err := userService.Login("viewer_demo", "123456", "anchor"); err == nil {
+	if _, err := userService.Login("silence", "111111", "anchor"); err == nil {
 		t.Fatalf("expected viewer login to be rejected for anchor client")
 	}
 }
