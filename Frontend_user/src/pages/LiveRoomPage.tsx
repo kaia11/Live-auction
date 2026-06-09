@@ -459,7 +459,6 @@ const LiveRoomPage: React.FC = () => {
           </div>
           <Button
             size="small"
-            color="primary"
             className={`follow-btn ${isFollowed ? 'followed' : 'unfollowed'}`}
             onClick={() => setIsFollowed((prev) => !prev)}
           >

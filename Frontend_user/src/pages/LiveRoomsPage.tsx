@@ -70,27 +70,21 @@ const LiveRoomsPage: React.FC = () => {
               <Card className="room-card">
                 <div className="room-cover">
                   {room.status === 'living' ? (
-                    <>
-                      <img className="room-cover-image" src={room.coverImage} alt={room.title} />
-                      <video
-                        className="room-cover-video"
-                        src={LIVE_BG_VIDEO_SRC}
-                        autoPlay
-                        muted
-                        loop
-                        playsInline
-                        preload="auto"
-                        onCanPlay={(event) => {
-                          event.currentTarget.defaultMuted = true
-                          void event.currentTarget.play().catch(() => {
-                            // Keep image fallback and retry on next render/user interaction.
-                          })
-                        }}
-                        onError={(event) => {
-                          event.currentTarget.style.display = 'none'
-                        }}
-                      />
-                    </>
+                    <video
+                      className="room-cover-video"
+                      src={LIVE_BG_VIDEO_SRC}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="auto"
+                      onCanPlay={(event) => {
+                        event.currentTarget.defaultMuted = true
+                        void event.currentTarget.play().catch(() => {
+                          // Keep poster fallback and retry on next render/user interaction.
+                        })
+                      }}
+                    />
                   ) : (
                     <img className="room-cover-image" src={room.coverImage} alt={room.title} />
                   )}

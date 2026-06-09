@@ -50,20 +50,6 @@
   z-index: 10;
 }
 
-.exit-live-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(22, 17, 24, 0.46);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  backdrop-filter: blur(12px);
-}
-
 .anchor-info-bar {
   display: flex;
   align-items: center;
@@ -101,7 +87,7 @@
 }
 
 .anchor-name {
-  color: white;
+  color: #fff !important;
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
@@ -143,15 +129,16 @@
 .follow-btn {
   --background-color: transparent !important;
   --border-radius: 999px !important;
-  border: 1px solid #ff8f5b !important;
-  color: #ff8f5b !important;
-  background: rgba(255, 255, 255, 0.08) !important;
+  --text-color: #fff !important;
+  border: none !important;
+  color: #fff !important;
+  background: var(--gradient-brand) !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 11px;
   font-weight: 700;
-  box-shadow: none;
+  box-shadow: none !important;
   height: 28px;
   min-width: 56px;
   flex-shrink: 0;
@@ -159,16 +146,20 @@
   padding: 0 10px !important;
 }
 
+.follow-btn .adm-button-content {
+  color: inherit !important;
+}
+
 .follow-btn.followed {
-  border-color: #8c8f98 !important;
-  color: #8c8f98 !important;
-  background: rgba(130, 134, 141, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  background: rgba(120, 124, 132, 0.72) !important;
 }
 
 .follow-btn.unfollowed {
-  border-color: #ff8f5b !important;
-  color: #ff8f5b !important;
-  background: rgba(255, 143, 91, 0.18) !important;
+  border: none !important;
+  color: #fff !important;
+  background: var(--gradient-brand) !important;
 }
 
 .top-ranking-panel {

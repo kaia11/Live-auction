@@ -4,13 +4,17 @@ import { Image, Card } from 'antd-mobile'
 import { useUserStore } from '../stores/useUserStore'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
 import { useAppStore } from '../stores/useAppStore'
+import { computeProfileStats, getProfileBadge } from '../utils/profileStats'
 import './ProfilePage.scss'
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate()
-  const { user, logout } = useUserStore()
+  const { user, logout, hydrateUser } = useUserStore()
   const { bidHistories, loadBidHistories } = useLiveRoomStore()
   const { currentTab, setCurrentTab, lastVisitedRoomId } = useAppStore()
+
+  const profileStats = useMemo(() => computeProfileStats(bidHistories), [bidHistories])
+  const profileBadge = useMemo(() => getProfileBadge(profileStats), [profileStats])
 
   const dedupedBidHistories = useMemo(() => {
     const byItem = new Map<string, typeof bidHistories[number]>()
@@ -43,8 +47,9 @@ const ProfilePage: React.FC = () => {
   }, [bidHistories])
 
   useEffect(() => {
+    void hydrateUser()
     void loadBidHistories()
-  }, [loadBidHistories])
+  }, [hydrateUser, loadBidHistories])
 
   const handleLogout = () => {
     logout()
@@ -75,7 +80,7 @@ const ProfilePage: React.FC = () => {
         <div className="user-info-card">
           <Image className="user-avatar" src={user?.avatar || 'https://picsum.photos/avatar/150/150'} fit="cover" />
           <div className="user-text">
-            <p className="user-badge">VIP 收藏用户</p>
+            <p className="user-badge">{profileBadge}</p>
             <h2 className="nickname">{user?.nickname || '未登录'}</h2>
             <p className="user-id-text">ID: {user?.id || '-'}</p>
           </div>
@@ -83,15 +88,15 @@ const ProfilePage: React.FC = () => {
 
         <div className="stats-row">
           <Card className="stat-card">
-            <div className="stat-num">12</div>
+            <div className="stat-num">{profileStats.participatedSessions}</div>
             <div className="stat-label">参与场次</div>
           </Card>
           <Card className="stat-card">
-            <div className="stat-num">3</div>
+            <div className="stat-num">{profileStats.successfulBids}</div>
             <div className="stat-label">成功竞拍</div>
           </Card>
           <Card className="stat-card">
-            <div className="stat-num">28</div>
+            <div className="stat-num">{profileStats.totalBids}</div>
             <div className="stat-label">累计出价</div>
           </Card>
         </div>

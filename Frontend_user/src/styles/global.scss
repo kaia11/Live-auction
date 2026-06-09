@@ -67,6 +67,32 @@ input {
   font: inherit;
 }
 
+.back-btn,
+.nav-btn,
+.exit-live-btn {
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 34px;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.live-room-page .exit-live-btn {
+  color: #fff;
+}
+
 .adm-toast-main {
   border-radius: 18px !important;
   backdrop-filter: blur(18px);

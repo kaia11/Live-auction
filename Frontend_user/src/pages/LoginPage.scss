@@ -27,22 +27,6 @@
   justify-content: space-between;
 }
 
-.back-btn {
-  width: 44px;
-  height: 76px;
-  border: none;
-  border-radius: 18px;
-  background: linear-gradient(180deg, #ff5d7b 0%, #ffb35b 100%);
-  color: #fff;
-  font-size: 36px;
-  font-weight: 300;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 16px 28px rgba(255, 126, 102, 0.28);
-  cursor: pointer;
-}
-
 .help-text {
   font-size: 16px;
   font-weight: 700;
@@ -199,12 +183,6 @@
   font-size: 14px;
   font-weight: 600;
   color: #8b5269;
-}
-
-.nav-btn {
-  font-size: 34px;
-  font-weight: 300;
-  color: var(--text-primary);
 }
 
 .login-btn {

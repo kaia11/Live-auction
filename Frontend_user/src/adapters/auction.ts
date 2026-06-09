@@ -54,7 +54,7 @@ export const mapBidHistories = (histories: BackendBidHistory[]): BidHistory[] =>
     id: history.id,
     itemId: history.itemId,
     itemTitle: normalizeText(history.itemTitle),
-    itemImage: getHistoryImage(history.itemId),
+    itemImage: resolveItemCoverImage(history.itemImage, getHistoryImage(history.itemId)),
     bidPrice: history.bidPrice,
     result: history.result,
     bidTime: history.bidTime,
