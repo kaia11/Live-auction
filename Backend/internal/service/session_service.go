@@ -111,7 +111,12 @@ func (s *SessionService) GetUserStatus(sessionID string, userID string) model.Se
 		}
 	}
 
-	return buildSessionUserStatus(session, rankings, userID)
+	status := buildSessionUserStatus(session, rankings, userID)
+	if cfg, ok := s.loadAutoProxyConfig(sessionID, userID); ok {
+		status.AutoProxyEnabled = true
+		status.AutoProxyMaxPrice = cfg.MaxPrice
+	}
+	return status
 }
 
 func (s *SessionService) loadUsers() map[string]model.User {
@@ -130,6 +135,14 @@ func (s *SessionService) loadSessionFromStore(sessionID string) model.AuctionSes
 	defer s.store.mu.RUnlock()
 
 	return s.store.sessions[sessionID]
+}
+
+func (s *SessionService) loadAutoProxyConfig(sessionID string, userID string) (model.AutoProxyConfig, bool) {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	config, ok := s.store.autoProxyConfigs[sessionID+"::"+userID]
+	return config, ok
 }
 
 func (s *SessionService) loadRankingEntries(sessionID string, limit int, users map[string]model.User) []model.RankingEntry {

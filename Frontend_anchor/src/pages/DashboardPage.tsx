@@ -1,5 +1,5 @@
 import { App, Button, Card, Col, Divider, Row, Space, Table, Tag } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AxiosError } from 'axios'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '@/layouts/AdminLayout'
@@ -34,6 +34,10 @@ function DashboardPage() {
   const [overview, setOverview] = useState<DashboardOverview | null>(null)
   const [items, setItems] = useState<AuctionItem[]>([])
   const [timeline, setTimeline] = useState<DashboardTimelineEvent[]>([])
+  const [previewVideoError, setPreviewVideoError] = useState(false)
+  const [useLocalVideoFallback, setUseLocalVideoFallback] = useState(false)
+  const previewVideoRef = useRef<HTMLVideoElement | null>(null)
+  const videoProgressRef = useRef<{ lastTime: number; stuckCount: number }>({ lastTime: 0, stuckCount: 0 })
   const currentRoomId = useAdminStore((state) => state.currentRoomId)
   const rooms = useAdminStore((state) => state.rooms)
   const updateRoomStatus = useAdminStore((state) => state.updateRoomStatus)
@@ -41,6 +45,60 @@ function DashboardPage() {
     () => rooms.find((room) => room.id === currentRoomId),
     [rooms, currentRoomId],
   )
+  const localFallbackVideo = `${import.meta.env.BASE_URL}videos/live-bg.mp4?v=20260609`
+  const remoteVideo = currentRoom?.videoUrl?.trim() || ''
+  const previewVideoSrc = useLocalVideoFallback || !remoteVideo ? localFallbackVideo : remoteVideo
+
+  useEffect(() => {
+    setPreviewVideoError(false)
+    setUseLocalVideoFallback(false)
+    videoProgressRef.current = { lastTime: 0, stuckCount: 0 }
+  }, [currentRoomId, currentRoom?.videoUrl])
+
+  useEffect(() => {
+    if (previewVideoError) {
+      return
+    }
+    const video = previewVideoRef.current
+    if (!video) {
+      return
+    }
+
+    const tryPlay = () => {
+      video.defaultMuted = true
+      void video.play().catch(() => {
+        // Keep retrying: some browsers need extra user interaction timing.
+      })
+    }
+
+    tryPlay()
+    const timer = window.setInterval(() => {
+      const now = video.currentTime
+      if (!video.paused && Number.isFinite(now)) {
+        if (Math.abs(now - videoProgressRef.current.lastTime) < 0.01) {
+          videoProgressRef.current.stuckCount += 1
+        } else {
+          videoProgressRef.current.stuckCount = 0
+        }
+        videoProgressRef.current.lastTime = now
+      }
+
+      if (video.paused && !video.ended) {
+        tryPlay()
+      }
+      if (videoProgressRef.current.stuckCount >= 3) {
+        videoProgressRef.current.stuckCount = 0
+        video.load()
+        tryPlay()
+      }
+    }, 1500)
+
+    window.addEventListener('focus', tryPlay)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('focus', tryPlay)
+    }
+  }, [previewVideoError, previewVideoSrc])
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -164,8 +222,38 @@ function DashboardPage() {
               当前直播间：{currentRoomId || '未选择'} | 价格字段基于房间内拍品快照
             </p>
             <div className="dashboard-mock-preview">
-              <img src={getMerchantRoomImage(currentRoomId)} alt="mock live preview" />
-              <span>当前直播画面使用商家端本地 mock 图片占位</span>
+              {!previewVideoError ? (
+                <video
+                  ref={previewVideoRef}
+                  className="dashboard-live-preview-video"
+                  src={previewVideoSrc}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  controls
+                  onCanPlay={(event) => {
+                    event.currentTarget.defaultMuted = true
+                    void event.currentTarget.play().catch(() => {
+                      // Retried by timer/focus fallback above.
+                    })
+                  }}
+                  onError={() => {
+                    if (!useLocalVideoFallback && remoteVideo) {
+                      setUseLocalVideoFallback(true)
+                      return
+                    }
+                    setPreviewVideoError(true)
+                  }}
+                />
+              ) : (
+                <img src={getMerchantRoomImage(currentRoomId)} alt="fallback live preview" />
+              )}
+              <span>
+                {!previewVideoError
+                  ? `当前直播画面已同步视频预览${useLocalVideoFallback || !remoteVideo ? '（本地回退源）' : ''}`
+                  : '当前直播画面暂无可用视频，使用本地图片占位'}
+              </span>
             </div>
             <div className="goods-status-legend">
               <Tag color="processing">active</Tag>

@@ -242,6 +242,15 @@ body {
   object-fit: cover;
 }
 
+.dashboard-live-preview-video {
+  width: 100%;
+  max-width: 320px;
+  border-radius: 12px;
+  border: 1px solid #dbeafe;
+  object-fit: cover;
+  background: #0f172a;
+}
+
 .mock-upload-copy,
 .dashboard-mock-preview span {
   color: #64748b;

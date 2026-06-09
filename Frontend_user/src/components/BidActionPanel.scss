@@ -203,6 +203,20 @@
   box-shadow: none;
 }
 
+.smart-bid-entry-btn {
+  margin-top: 8px;
+  --background-color: rgba(58, 32, 54, 0.08);
+  --border-radius: 14px;
+  color: var(--brand-plum);
+  font-weight: 700;
+}
+
+.smart-bid-entry-btn.is-disabled {
+  --background-color: transparent;
+  background: linear-gradient(135deg, #b8b8c0 0%, #9fa4af 100%) !important;
+  color: #fff !important;
+}
+
 .detail-panel-content {
   display: flex;
   flex-direction: column;

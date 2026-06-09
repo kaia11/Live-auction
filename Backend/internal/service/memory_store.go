@@ -22,6 +22,7 @@ type memoryStore struct {
 	ordersByID        map[string]model.AuctionOrder
 	ordersBySession   map[string]model.AuctionOrder
 	processedRequests map[string]model.BidResult
+	autoProxyConfigs  map[string]model.AutoProxyConfig
 }
 
 var sharedStore = newMemoryStore()
@@ -135,6 +136,7 @@ func newMemoryStore() *memoryStore {
 		ordersByID:        map[string]model.AuctionOrder{},
 		ordersBySession:   map[string]model.AuctionOrder{},
 		processedRequests: map[string]model.BidResult{},
+		autoProxyConfigs:  map[string]model.AutoProxyConfig{},
 	}
 
 	store.processedRequests["req-001"] = model.BidResult{

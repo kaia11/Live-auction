@@ -4,11 +4,24 @@ import { AxiosError } from 'axios'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
 import { useUserStore } from '../stores/useUserStore'
 import DepositPaymentModal from './DepositPaymentModal'
+import SmartBidModal from './SmartBidModal'
 import { hasPaidDeposit, markDepositPaid } from '../utils/deposit'
 import './BidActionPanel.scss'
 
 const BidActionPanel: React.FC = () => {
-  const { items, currentItemId, closeAllModals, submitBid, bidPanelMode, openBidPanel } = useLiveRoomStore()
+  const {
+    items,
+    currentItemId,
+    closeAllModals,
+    submitBid,
+    bidPanelMode,
+    openBidPanel,
+    configureAutoProxy,
+    myBidStatus,
+    autoProxyFallbackMode,
+    autoProxyLocalEnabled,
+    autoProxyLocalMaxPrice,
+  } = useLiveRoomStore()
   const currentUserId = useUserStore((state) => state.user?.id)
   const item = items.find(i => i.id === currentItemId)
   const [biddingPrice, setBiddingPrice] = useState(0)
@@ -16,9 +29,15 @@ const BidActionPanel: React.FC = () => {
   const [countdown, setCountdown] = useState(0)
   const [pendingBidPrice, setPendingBidPrice] = useState<number | null>(null)
   const [showDepositModal, setShowDepositModal] = useState(false)
+  const [showSmartBidModal, setShowSmartBidModal] = useState(false)
+  const [smartBidPrice, setSmartBidPrice] = useState(0)
 
   const increment = item?.minIncrement || 1000
   const canBid = item?.status === '竞拍中'
+  const smartBidEnabled = autoProxyFallbackMode ? autoProxyLocalEnabled : !!myBidStatus.autoProxyEnabled
+  const smartBidMaxPrice = autoProxyFallbackMode
+    ? autoProxyLocalMaxPrice
+    : (myBidStatus.autoProxyMaxPrice ?? 0)
   const minAllowedPrice = item
     ? (item.status === '竞拍中' ? item.currentPrice + increment : Math.max(item.startPrice, item.currentPrice))
     : 0
@@ -34,6 +53,14 @@ const BidActionPanel: React.FC = () => {
   useEffect(() => {
     setBiddingPrice(minAllowedPrice)
   }, [minAllowedPrice])
+
+  useEffect(() => {
+    if (!item) {
+      return
+    }
+    const next = Math.max(minAllowedPrice, smartBidMaxPrice)
+    setSmartBidPrice(next)
+  }, [item, minAllowedPrice, smartBidMaxPrice])
 
   useEffect(() => {
     if (!countdownTargetMs) {
@@ -209,6 +236,14 @@ const BidActionPanel: React.FC = () => {
               >
                 {isSubmitting ? <Loading color="white" /> : (canBid ? '立即出价' : '暂不可出价')}
               </Button>
+              <Button
+                className={`smart-bid-entry-btn ${!canBid ? 'is-disabled' : ''}`}
+                block
+                disabled={!canBid}
+                onClick={() => setShowSmartBidModal(true)}
+              >
+                {canBid ? '智能出价' : '暂不可智能出价'}
+              </Button>
             </>
           )}
           {showDepositModal && (
@@ -227,6 +262,43 @@ const BidActionPanel: React.FC = () => {
                 setPendingBidPrice(null)
                 void submitBidRequest(nextBid)
               }}
+            />
+          )}
+          {showSmartBidModal && (
+            <SmartBidModal
+              maxPrice={smartBidPrice}
+              increment={increment}
+              minAllowedPrice={minAllowedPrice}
+              enabled={smartBidEnabled}
+              onMinus={() => setSmartBidPrice((prev) => Math.max(minAllowedPrice, prev - increment))}
+              onPlus={() => setSmartBidPrice((prev) => prev + increment)}
+              onEnable={() => {
+                void configureAutoProxy(smartBidPrice, true)
+                  .then((ok) => {
+                    if (ok) {
+                      Toast.show('智能出价已开启')
+                      setShowSmartBidModal(false)
+                    }
+                  })
+                  .catch((error) => {
+                    const err = error as AxiosError<{ message?: string }>
+                    Toast.show(err.response?.data?.message || err.message || '智能出价设置失败')
+                  })
+              }}
+              onDisable={() => {
+                void configureAutoProxy(0, false)
+                  .then((ok) => {
+                    if (ok) {
+                      Toast.show('智能出价已关闭')
+                      setShowSmartBidModal(false)
+                    }
+                  })
+                  .catch((error) => {
+                    const err = error as AxiosError<{ message?: string }>
+                    Toast.show(err.response?.data?.message || err.message || '关闭智能出价失败')
+                  })
+              }}
+              onClose={() => setShowSmartBidModal(false)}
             />
           )}
         </div>

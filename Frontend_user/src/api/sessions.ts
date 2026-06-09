@@ -24,6 +24,8 @@ export interface BackendMyStatus {
   currentPrice: number
   nextMinimumBid: number
   vibrateSignalHint: string
+  autoProxyEnabled?: boolean
+  autoProxyMaxPrice?: number
 }
 
 export const getSessionRanking = async (sessionId: string) => {

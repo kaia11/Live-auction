@@ -147,6 +147,23 @@
   box-shadow: none;
 }
 
+.smart-bid-inline-btn {
+  margin-top: 8px;
+  width: 100%;
+  --background-color: rgba(58, 32, 54, 0.08);
+  --border-radius: 14px;
+  color: var(--brand-plum);
+  font-weight: 700;
+  height: 34px;
+}
+
+.smart-bid-inline-btn.is-disabled {
+  --background-color: transparent;
+  background: linear-gradient(135deg, #b8b8c0 0%, #9fa4af 100%) !important;
+  color: #fff !important;
+  box-shadow: none;
+}
+
 .inline-bid-controls {
   flex: 1;
   display: flex;

@@ -28,6 +28,13 @@ type createBidRequest struct {
 	RequestID string `json:"requestId"`
 }
 
+type configureAutoProxyRequest struct {
+	RoomID   string `json:"roomId"`
+	ItemID   string `json:"itemId"`
+	MaxPrice int64  `json:"maxPrice"`
+	Enabled  bool   `json:"enabled"`
+}
+
 func NewBidHandler(bidService *service.BidService, userService *service.UserService, hub *ws.Hub, metrics *monitoring.Metrics) *BidHandler {
 	return &BidHandler{bidService: bidService, userService: userService, hub: hub, metrics: metrics}
 }
@@ -134,7 +141,27 @@ func (h *BidHandler) CreateBid(w nethttp.ResponseWriter, r *nethttp.Request) {
 		h.metrics.RecordBidSuccess()
 	}
 
+	autoResults, autoSettlement, autoErr := h.bidService.ProcessAutoProxy(req.RoomID, req.SessionID, req.ItemID, userID)
+	if autoErr != nil {
+		api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to process auto proxy")
+		return
+	}
+	if len(autoResults) > 0 {
+		// Return the latest market state after smart bidding replay.
+		latest := autoResults[len(autoResults)-1]
+		result.CurrentPrice = latest.CurrentPrice
+		result.NextMinimumBid = latest.NextMinimumBid
+		result.IsLeading = latest.UserID == userID
+		result.VibrateSignalHint = latest.VibrateSignalHint
+	}
+	if settlement == nil && autoSettlement != nil {
+		settlement = autoSettlement
+	}
+
 	h.hub.Publish(req.RoomID, ws.EventAuctionPriceUpdated, result)
+	for _, bid := range autoResults {
+		h.hub.Publish(req.RoomID, ws.EventAuctionPriceUpdated, bid)
+	}
 	if settlement != nil {
 		h.hub.Publish(req.RoomID, ws.EventAuctionSessionEnded, settlement)
 		if settlement.Order != nil {
@@ -159,6 +186,80 @@ func (h *BidHandler) CreateBid(w nethttp.ResponseWriter, r *nethttp.Request) {
 	)
 
 	api.Success(w, nethttp.StatusOK, result)
+}
+
+func (h *BidHandler) ConfigureAutoProxy(w nethttp.ResponseWriter, r *nethttp.Request) {
+	sessionID := r.PathValue("sessionId")
+	if sessionID == "" {
+		api.BadRequest(w, "sessionId is required")
+		return
+	}
+
+	userID, err := h.userService.GetCurrentUserID(r.Header.Get("Authorization"))
+	if err != nil {
+		api.Error(w, nethttp.StatusUnauthorized, api.CodeUnauthorized, err.Error())
+		return
+	}
+
+	var req configureAutoProxyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		api.BadRequest(w, "invalid request body")
+		return
+	}
+	if req.RoomID == "" || req.ItemID == "" {
+		api.BadRequest(w, "roomId and itemId are required")
+		return
+	}
+
+	config, err := h.bidService.ConfigureAutoProxy(service.ConfigureAutoProxyInput{
+		RoomID:    req.RoomID,
+		SessionID: sessionID,
+		ItemID:    req.ItemID,
+		UserID:    userID,
+		MaxPrice:  req.MaxPrice,
+		Enabled:   req.Enabled,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrRoomNotFound):
+			api.Error(w, nethttp.StatusNotFound, api.CodeRoomNotFound, err.Error())
+		case errors.Is(err, service.ErrSessionNotFound):
+			api.Error(w, nethttp.StatusNotFound, api.CodeSessionNotFound, err.Error())
+		case errors.Is(err, service.ErrItemNotFound):
+			api.Error(w, nethttp.StatusNotFound, api.CodeItemNotFound, err.Error())
+		case errors.Is(err, service.ErrInvalidBidPrice), errors.Is(err, service.ErrAutoProxyUnsupported):
+			api.Conflict(w, api.CodeInvalidBidPrice, err.Error())
+		default:
+			api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to configure auto proxy")
+		}
+		return
+	}
+
+	autoResults, settlement, autoErr := h.bidService.ProcessAutoProxy(req.RoomID, sessionID, req.ItemID, userID)
+	if autoErr != nil {
+		api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to process auto proxy")
+		return
+	}
+	for _, bid := range autoResults {
+		h.hub.Publish(req.RoomID, ws.EventAuctionPriceUpdated, bid)
+	}
+	if settlement != nil {
+		h.hub.Publish(req.RoomID, ws.EventAuctionSessionEnded, settlement)
+		if settlement.Order != nil {
+			h.hub.Publish(req.RoomID, ws.EventAuctionOrderCreated, settlement.Order)
+		}
+	}
+
+	api.Success(w, nethttp.StatusOK, map[string]any{
+		"sessionId":        config.SessionID,
+		"roomId":           config.RoomID,
+		"itemId":           config.ItemID,
+		"userId":           config.UserID,
+		"enabled":          req.Enabled,
+		"maxPrice":         config.MaxPrice,
+		"autoBidCount":     len(autoResults),
+		"triggeredResults": autoResults,
+	})
 }
 
 func (h *BidHandler) ListMyBids(w nethttp.ResponseWriter, r *nethttp.Request) {

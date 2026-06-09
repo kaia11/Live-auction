@@ -57,6 +57,8 @@ export interface MyBidStatus {
   myHighestPrice: number
   myRank: number
   isLeading: boolean
+  autoProxyEnabled?: boolean
+  autoProxyMaxPrice?: number
 }
 
 export interface BidHistory {

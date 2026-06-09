@@ -43,6 +43,8 @@ export const mapAuctionRuntime = (
     myHighestPrice: myStatus.myHighestBid,
     myRank: myStatus.myRank,
     isLeading: myStatus.isLeading,
+    autoProxyEnabled: myStatus.autoProxyEnabled ?? false,
+    autoProxyMaxPrice: myStatus.autoProxyMaxPrice ?? 0,
   },
 })
 

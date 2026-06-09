@@ -17,6 +17,7 @@ var (
 	ErrBidOwnershipMismatch = errors.New("room, session and item do not match")
 	ErrDuplicateBidRequest  = errors.New("duplicate bid request")
 	ErrInvalidBidPrice      = errors.New("invalid bid price")
+	ErrAutoProxyUnsupported = errors.New("auto proxy is not supported for this session")
 	ErrInvalidSessionState  = errors.New("invalid session state transition")
 	ErrRoomNotLive          = errors.New("room is not live")
 	ErrRoomHasActiveSession = errors.New("cannot stop live room while a session is bidding")

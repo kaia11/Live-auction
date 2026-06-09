@@ -108,6 +108,17 @@ type SessionUserStatus struct {
 	CurrentPrice      int64  `json:"currentPrice"`
 	NextMinimumBid    int64  `json:"nextMinimumBid"`
 	VibrateSignalHint string `json:"vibrateSignalHint"`
+	AutoProxyEnabled  bool   `json:"autoProxyEnabled"`
+	AutoProxyMaxPrice int64  `json:"autoProxyMaxPrice"`
+}
+
+type AutoProxyConfig struct {
+	SessionID string `json:"sessionId"`
+	RoomID    string `json:"roomId"`
+	ItemID    string `json:"itemId"`
+	UserID    string `json:"userId"`
+	MaxPrice  int64  `json:"maxPrice"`
+	EnabledAt string `json:"enabledAt"`
 }
 
 type AuctionResult struct {

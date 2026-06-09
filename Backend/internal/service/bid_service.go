@@ -1,6 +1,8 @@
 package service
 
 import (
+	"errors"
+	"fmt"
 	"sort"
 	"time"
 
@@ -28,6 +30,15 @@ type CreateBidInput struct {
 	UserID    string
 	BidPrice  int64
 	RequestID string
+}
+
+type ConfigureAutoProxyInput struct {
+	RoomID    string
+	SessionID string
+	ItemID    string
+	UserID    string
+	MaxPrice  int64
+	Enabled   bool
 }
 
 func NewBidService(runtime *realtime.Runtime, repo repository.BidRepository, roomRepo repository.RoomRepository, itemRepo repository.ItemRepository, userRepo repository.UserRepository, sessionRepo repository.SessionRepository, resultRepo repository.ResultRepository, orderRepo repository.OrderRepository) *BidService {
@@ -165,6 +176,104 @@ func (s *BidService) CreateBid(input CreateBidInput) (model.BidResult, *SessionS
 	s.store.mu.Unlock()
 
 	return result, settlement, nil
+}
+
+func (s *BidService) ConfigureAutoProxy(input ConfigureAutoProxyInput) (model.AutoProxyConfig, error) {
+	_, session, item, err := s.loadBidContext(CreateBidInput{
+		RoomID:    input.RoomID,
+		SessionID: input.SessionID,
+		ItemID:    input.ItemID,
+		UserID:    input.UserID,
+	})
+	if err != nil {
+		return model.AutoProxyConfig{}, err
+	}
+
+	key := autoProxyKey(input.SessionID, input.UserID)
+	s.store.mu.Lock()
+	defer s.store.mu.Unlock()
+
+	if !input.Enabled {
+		delete(s.store.autoProxyConfigs, key)
+		return model.AutoProxyConfig{
+			SessionID: input.SessionID,
+			RoomID:    input.RoomID,
+			ItemID:    input.ItemID,
+			UserID:    input.UserID,
+			MaxPrice:  0,
+		}, nil
+	}
+
+	minAllowed := session.CurrentPrice + session.IncrementStep
+	if session.CurrentPrice == 0 {
+		minAllowed = item.StartPrice
+	}
+	if input.MaxPrice < minAllowed {
+		return model.AutoProxyConfig{}, ErrInvalidBidPrice
+	}
+	if session.IncrementStep > 0 {
+		delta := input.MaxPrice - session.CurrentPrice
+		if delta > 0 && delta%session.IncrementStep != 0 {
+			return model.AutoProxyConfig{}, ErrInvalidBidPrice
+		}
+	}
+
+	now := time.Now().Format(time.RFC3339)
+	config := model.AutoProxyConfig{
+		SessionID: input.SessionID,
+		RoomID:    input.RoomID,
+		ItemID:    input.ItemID,
+		UserID:    input.UserID,
+		MaxPrice:  input.MaxPrice,
+		EnabledAt: now,
+	}
+	if existing, ok := s.store.autoProxyConfigs[key]; ok && existing.EnabledAt != "" {
+		config.EnabledAt = existing.EnabledAt
+	}
+	s.store.autoProxyConfigs[key] = config
+	return config, nil
+}
+
+func (s *BidService) GetAutoProxy(sessionID string, userID string) (model.AutoProxyConfig, bool) {
+	s.store.mu.RLock()
+	defer s.store.mu.RUnlock()
+
+	config, ok := s.store.autoProxyConfigs[autoProxyKey(sessionID, userID)]
+	return config, ok
+}
+
+func (s *BidService) ProcessAutoProxy(roomID, sessionID, itemID, triggerUserID string) ([]model.BidResult, *SessionSettlement, error) {
+	results := make([]model.BidResult, 0)
+	for attempt := 0; attempt < 16; attempt++ {
+		candidate, ok := s.pickAutoProxyCandidate(sessionID, triggerUserID)
+		if !ok {
+			return results, nil, nil
+		}
+
+		requestID := fmt.Sprintf("proxy-%d-%d", time.Now().UnixNano(), attempt)
+		result, settlement, err := s.CreateBid(CreateBidInput{
+			RoomID:    roomID,
+			SessionID: sessionID,
+			ItemID:    itemID,
+			UserID:    candidate.userID,
+			BidPrice:  candidate.bidPrice,
+			RequestID: requestID,
+		})
+		if err != nil {
+			// Skip stale candidates caused by concurrent updates and continue selecting.
+			if errors.Is(err, ErrAlreadyLeadingBid) || errors.Is(err, ErrInvalidBidPrice) || errors.Is(err, ErrSessionNotBidding) {
+				continue
+			}
+			return results, settlement, err
+		}
+		results = append(results, result)
+		triggerUserID = candidate.userID
+		if settlement != nil {
+			return results, settlement, nil
+		}
+	}
+
+	return results, nil, nil
 }
 
 func (s *BidService) createBidWithMemoryLock(input CreateBidInput, session model.AuctionSession, item model.AuctionItem) (model.BidResult, *SessionSettlement, error) {
@@ -459,6 +568,84 @@ func (s *BidService) ListMyBidHistories(userID string) []model.UserBidHistory {
 	})
 
 	return histories
+}
+
+type autoProxyCandidate struct {
+	userID   string
+	bidPrice int64
+}
+
+func (s *BidService) pickAutoProxyCandidate(sessionID string, triggerUserID string) (autoProxyCandidate, bool) {
+	s.store.mu.RLock()
+	session, ok := s.store.sessions[sessionID]
+	if !ok || session.Status != domain.SessionStateBidding || !session.SupportsAutoProxy {
+		s.store.mu.RUnlock()
+		return autoProxyCandidate{}, false
+	}
+
+	nextMinimumBid := session.CurrentPrice + session.IncrementStep
+	type contender struct {
+		config model.AutoProxyConfig
+	}
+	contenders := make([]contender, 0)
+	for _, cfg := range s.store.autoProxyConfigs {
+		if cfg.SessionID != sessionID || cfg.MaxPrice < nextMinimumBid {
+			continue
+		}
+		if cfg.UserID == session.LeaderUserID {
+			continue
+		}
+		contenders = append(contenders, contender{config: cfg})
+	}
+	s.store.mu.RUnlock()
+
+	if len(contenders) == 0 {
+		return autoProxyCandidate{}, false
+	}
+
+	sort.SliceStable(contenders, func(i, j int) bool {
+		if contenders[i].config.MaxPrice != contenders[j].config.MaxPrice {
+			return contenders[i].config.MaxPrice > contenders[j].config.MaxPrice
+		}
+		return contenders[i].config.EnabledAt < contenders[j].config.EnabledAt
+	})
+
+	top := contenders[0].config
+	targetPrice := nextMinimumBid
+
+	if len(contenders) > 1 {
+		second := contenders[1].config
+		if top.MaxPrice == second.MaxPrice {
+			// Same psychological price: whoever enabled earlier gets priority.
+			targetPrice = top.MaxPrice
+		} else {
+			// Multiple smart bids: jump directly to the higher psychological price.
+			targetPrice = top.MaxPrice
+		}
+	}
+
+	if targetPrice < nextMinimumBid {
+		targetPrice = nextMinimumBid
+	}
+	if targetPrice > top.MaxPrice {
+		targetPrice = top.MaxPrice
+	}
+	if targetPrice <= 0 {
+		return autoProxyCandidate{}, false
+	}
+
+	if triggerUserID != "" && top.UserID == triggerUserID && len(contenders) == 1 {
+		return autoProxyCandidate{}, false
+	}
+
+	return autoProxyCandidate{
+		userID:   top.UserID,
+		bidPrice: targetPrice,
+	}, true
+}
+
+func autoProxyKey(sessionID string, userID string) string {
+	return sessionID + "::" + userID
 }
 
 func currentParticipantsCount(bids []model.Bid, sessionID string, userID string) int {

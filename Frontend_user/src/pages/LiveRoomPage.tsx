@@ -16,6 +16,7 @@ import { useLiveRoomStore } from '../stores/useLiveRoomStore'
 import { useLiveRoomUIStore } from '../stores/useLiveRoomUIStore'
 import { useLiveRuntimeStore } from '../stores/useLiveRuntimeStore'
 import { useAppStore } from '../stores/useAppStore'
+import { useUserStore } from '../stores/useUserStore'
 import { useRoomsQuery } from '../hooks/queries/useRoomsQuery'
 import { useRoomRuntimeQuery } from '../hooks/queries/useRoomRuntimeQuery'
 import { useBidHistoriesQuery } from '../hooks/queries/useBidHistoriesQuery'
@@ -45,6 +46,8 @@ const LiveRoomPage: React.FC = () => {
     comments,
     onlineCount,
     top3Ranking,
+    autoProxyFallbackMode,
+    autoProxyLocalEnabled,
     syncRooms,
     syncRuntimeSnapshot,
     syncBidHistories,
@@ -74,6 +77,8 @@ const LiveRoomPage: React.FC = () => {
   const [collapsedReady, setCollapsedReady] = useState(false)
   const pageRef = React.useRef<HTMLDivElement | null>(null)
   const bgVideoRef = React.useRef<HTMLVideoElement | null>(null)
+  const videoProgressRef = React.useRef<{ lastTime: number; stuckCount: number }>({ lastTime: 0, stuckCount: 0 })
+  const autoBidRef = React.useRef<{ inFlight: boolean; lastAttemptAt: number }>({ inFlight: false, lastAttemptAt: 0 })
   const dragRef = React.useRef({
     dragging: false,
     moved: false,
@@ -200,7 +205,21 @@ const LiveRoomPage: React.FC = () => {
 
     tryPlay()
     const timer = window.setInterval(() => {
+      const nowTime = video.currentTime
+      if (!video.paused && Number.isFinite(nowTime)) {
+        if (Math.abs(nowTime - videoProgressRef.current.lastTime) < 0.01) {
+          videoProgressRef.current.stuckCount += 1
+        } else {
+          videoProgressRef.current.stuckCount = 0
+        }
+        videoProgressRef.current.lastTime = nowTime
+      }
       if (video.paused && !video.ended) {
+        tryPlay()
+      }
+      if (videoProgressRef.current.stuckCount >= 3) {
+        videoProgressRef.current.stuckCount = 0
+        video.load()
         tryPlay()
       }
     }, 1500)
@@ -213,6 +232,53 @@ const LiveRoomPage: React.FC = () => {
       window.removeEventListener('focus', tryPlay)
     }
   }, [bgVideoError])
+
+  useEffect(() => {
+    if (!autoProxyFallbackMode || !autoProxyLocalEnabled) {
+      return
+    }
+
+    const tick = () => {
+      const store = useLiveRoomStore.getState()
+      const userId = useUserStore.getState().user?.id
+      if (!userId || !store.currentItemId) {
+        return
+      }
+      const currentItemForAutoBid = store.items.find((item) => item.id === store.currentItemId)
+      if (!currentItemForAutoBid || currentItemForAutoBid.status !== '竞拍中') {
+        return
+      }
+
+      const isLeadingByItem = currentItemForAutoBid.currentLeader === userId
+      if (isLeadingByItem || store.myBidStatus.isLeading) {
+        return
+      }
+
+      const nextBid = currentItemForAutoBid.currentPrice + (currentItemForAutoBid.minIncrement || 1)
+      if (nextBid > store.autoProxyLocalMaxPrice) {
+        return
+      }
+
+      const now = Date.now()
+      if (autoBidRef.current.inFlight || now - autoBidRef.current.lastAttemptAt < 1200) {
+        return
+      }
+
+      autoBidRef.current.inFlight = true
+      autoBidRef.current.lastAttemptAt = now
+      void store.submitBid(nextBid)
+        .catch(() => {
+          // Ignore transient conflicts from competing bidders; next tick will retry.
+        })
+        .finally(() => {
+          autoBidRef.current.inFlight = false
+        })
+    }
+
+    tick()
+    const timer = window.setInterval(tick, 1200)
+    return () => window.clearInterval(timer)
+  }, [autoProxyFallbackMode, autoProxyLocalEnabled])
 
   const currentItem = items.find((item) => item.id === currentItemId)
   const currentRoom = rooms.find((room) => room.id === roomId)
@@ -497,7 +563,6 @@ const LiveRoomPage: React.FC = () => {
           {hasItems ? (
             <span className="func-btn" onClick={toggleAuctionItemDrawer}>拍品列表</span>
           ) : null}
-          <span className="func-btn">智能出价</span>
         </div>
       </div>
 

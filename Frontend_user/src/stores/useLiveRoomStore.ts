@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { LiveRoom, AuctionItem, BidHistory, LiveComment } from '@/types'
 import { BackendCommentPayload, createRoomComment, getCurrentSession, getRoomDetail, getRoomEvents, getRoomItems, getRooms } from '@/api/rooms'
-import { createBid, getMyBidHistories } from '@/api/bids'
+import { configureAutoProxy, createBid, getMyBidHistories } from '@/api/bids'
 import { getMyBidStatus, getSessionRanking } from '@/api/sessions'
 import { mapAuctionRuntime, mapBackendRoom, mapBidHistories } from '@/adapters/auction'
 import { useUserStore } from './useUserStore'
@@ -12,6 +12,9 @@ interface LiveRoomState extends LiveRoomUIStateValues, LiveRuntimeSnapshot {
   rooms: LiveRoom[]
   items: AuctionItem[]
   bidHistories: BidHistory[]
+  autoProxyFallbackMode: boolean
+  autoProxyLocalEnabled: boolean
+  autoProxyLocalMaxPrice: number
   setCurrentRoomId: (roomId: string) => void
   setCurrentItemId: (itemId: string) => void
   syncRooms: (rooms: LiveRoom[]) => void
@@ -30,6 +33,7 @@ interface LiveRoomState extends LiveRoomUIStateValues, LiveRuntimeSnapshot {
   closeAllModals: () => void
   setCurrentAuctionCardClosed: (closed: boolean) => void
   submitBid: (price: number) => Promise<boolean>
+  configureAutoProxy: (maxPrice: number, enabled: boolean) => Promise<boolean>
   submitComment: (content: string) => Promise<boolean>
 }
 
@@ -52,7 +56,7 @@ const initialRuntimeState: LiveRuntimeSnapshot = {
   lastEventVersion: 0,
   comments: [],
   top3Ranking: [],
-  myBidStatus: { myHighestPrice: 0, myRank: 0, isLeading: false },
+  myBidStatus: { myHighestPrice: 0, myRank: 0, isLeading: false, autoProxyEnabled: false, autoProxyMaxPrice: 0 },
   onlineCount: 0,
   currentCountdown: 0,
   connectionState: 'idle',
@@ -70,6 +74,9 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
   rooms: [],
   items: [],
   bidHistories: [],
+  autoProxyFallbackMode: false,
+  autoProxyLocalEnabled: false,
+  autoProxyLocalMaxPrice: 0,
   ...initialUIState,
   ...initialRuntimeState,
 
@@ -277,6 +284,43 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
       showBidSuccessModal: true,
     })
     return true
+  },
+
+  configureAutoProxy: async (maxPrice, enabled) => {
+    const { currentRoomId, currentSessionId, currentItemId, loadRoomRuntime } = useLiveRoomStore.getState()
+    if (!currentRoomId || !currentSessionId || !currentItemId) {
+      return false
+    }
+
+    try {
+      await configureAutoProxy({
+        sessionId: currentSessionId,
+        roomId: currentRoomId,
+        itemId: currentItemId,
+        maxPrice,
+        enabled,
+      })
+
+      await loadRoomRuntime(currentRoomId)
+      set({
+        autoProxyFallbackMode: false,
+        autoProxyLocalEnabled: false,
+        autoProxyLocalMaxPrice: 0,
+      })
+      return true
+    } catch (error: unknown) {
+      // Cloud backend might not have the new auto-proxy endpoint yet.
+      const status = (error as { response?: { status?: number } })?.response?.status
+      if (status === 404 || status === 405) {
+        set({
+          autoProxyFallbackMode: true,
+          autoProxyLocalEnabled: enabled,
+          autoProxyLocalMaxPrice: enabled ? maxPrice : 0,
+        })
+        return true
+      }
+      throw error
+    }
   },
 
   submitComment: async (content) => {
