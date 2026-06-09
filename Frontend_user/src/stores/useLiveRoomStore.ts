@@ -307,6 +307,9 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
         autoProxyLocalEnabled: false,
         autoProxyLocalMaxPrice: 0,
       })
+      if (enabled) {
+        await executeAutoProxyBid()
+      }
       return true
     } catch (error: unknown) {
       // Cloud backend might not have the new auto-proxy endpoint yet.
@@ -317,6 +320,9 @@ export const useLiveRoomStore = create<LiveRoomState>((set) => ({
           autoProxyLocalEnabled: enabled,
           autoProxyLocalMaxPrice: enabled ? maxPrice : 0,
         })
+        if (enabled) {
+          await executeAutoProxyBid()
+        }
         return true
       }
       throw error
@@ -356,4 +362,52 @@ const mergeComments = (prev: LiveComment[], next: LiveComment[]) => {
     merged.push(comment)
   }
   return merged
+}
+
+const executeAutoProxyBid = async () => {
+  const state = useLiveRoomStore.getState()
+  const userId = useUserStore.getState().user?.id
+  const roomId = state.currentRoomId
+  const sessionId = state.currentSessionId
+  const itemId = state.currentItemId
+  if (!roomId || !sessionId || !itemId || !userId) {
+    return false
+  }
+
+  await state.loadRoomRuntime(roomId)
+  const latest = useLiveRoomStore.getState()
+  const item = latest.items.find((entry) => entry.id === latest.currentItemId)
+  if (!item || item.status !== '竞拍中') {
+    return false
+  }
+  if (item.currentLeader === userId || latest.myBidStatus.isLeading) {
+    return false
+  }
+
+  const maxPrice = latest.autoProxyFallbackMode
+    ? latest.autoProxyLocalMaxPrice
+    : (latest.myBidStatus.autoProxyMaxPrice ?? 0)
+  if (maxPrice <= 0) {
+    return false
+  }
+
+  const nextBid = item.currentPrice + (item.minIncrement || 1)
+  if (nextBid > maxPrice) {
+    return false
+  }
+
+  try {
+    await createBid({
+      roomId,
+      sessionId,
+      itemId,
+      userId,
+      bidPrice: nextBid,
+      requestId: `proxy-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    })
+    await latest.loadRoomRuntime(roomId)
+    return true
+  } catch {
+    return false
+  }
 }

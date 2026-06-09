@@ -227,7 +227,7 @@ func (s *BidService) ConfigureAutoProxy(input ConfigureAutoProxyInput) (model.Au
 		MaxPrice:  input.MaxPrice,
 		EnabledAt: now,
 	}
-	if existing, ok := s.store.autoProxyConfigs[key]; ok && existing.EnabledAt != "" {
+	if existing, ok := s.store.autoProxyConfigs[key]; ok && existing.EnabledAt != "" && existing.MaxPrice == input.MaxPrice {
 		config.EnabledAt = existing.EnabledAt
 	}
 	s.store.autoProxyConfigs[key] = config
@@ -576,6 +576,8 @@ type autoProxyCandidate struct {
 }
 
 func (s *BidService) pickAutoProxyCandidate(sessionID string, triggerUserID string) (autoProxyCandidate, bool) {
+	_ = triggerUserID
+
 	s.store.mu.RLock()
 	session, ok := s.store.sessions[sessionID]
 	if !ok || session.Status != domain.SessionStateBidding || !session.SupportsAutoProxy {
@@ -584,6 +586,7 @@ func (s *BidService) pickAutoProxyCandidate(sessionID string, triggerUserID stri
 	}
 
 	nextMinimumBid := session.CurrentPrice + session.IncrementStep
+	incrementStep := session.IncrementStep
 	type contender struct {
 		config model.AutoProxyConfig
 	}
@@ -616,11 +619,19 @@ func (s *BidService) pickAutoProxyCandidate(sessionID string, triggerUserID stri
 	if len(contenders) > 1 {
 		second := contenders[1].config
 		if top.MaxPrice == second.MaxPrice {
-			// Same psychological price: whoever enabled earlier gets priority.
 			targetPrice = top.MaxPrice
 		} else {
-			// Multiple smart bids: jump directly to the higher psychological price.
-			targetPrice = top.MaxPrice
+			step := incrementStep
+			if step <= 0 {
+				step = 1
+			}
+			targetPrice = second.MaxPrice + step
+			if targetPrice < nextMinimumBid {
+				targetPrice = nextMinimumBid
+			}
+			if targetPrice > top.MaxPrice {
+				targetPrice = top.MaxPrice
+			}
 		}
 	}
 
@@ -631,10 +642,6 @@ func (s *BidService) pickAutoProxyCandidate(sessionID string, triggerUserID stri
 		targetPrice = top.MaxPrice
 	}
 	if targetPrice <= 0 {
-		return autoProxyCandidate{}, false
-	}
-
-	if triggerUserID != "" && top.UserID == triggerUserID && len(contenders) == 1 {
 		return autoProxyCandidate{}, false
 	}
 

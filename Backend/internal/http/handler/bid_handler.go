@@ -235,7 +235,7 @@ func (h *BidHandler) ConfigureAutoProxy(w nethttp.ResponseWriter, r *nethttp.Req
 		return
 	}
 
-	autoResults, settlement, autoErr := h.bidService.ProcessAutoProxy(req.RoomID, sessionID, req.ItemID, userID)
+	autoResults, settlement, autoErr := h.bidService.ProcessAutoProxy(req.RoomID, sessionID, req.ItemID, "")
 	if autoErr != nil {
 		api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to process auto proxy")
 		return

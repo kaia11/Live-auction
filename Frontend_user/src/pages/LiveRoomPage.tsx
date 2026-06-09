@@ -12,6 +12,7 @@ import {
   UserRound,
 } from 'lucide-react'
 import { USE_MOCK } from '../api/client'
+import { createBid } from '../api/bids'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
 import { useLiveRoomUIStore } from '../stores/useLiveRoomUIStore'
 import { useLiveRuntimeStore } from '../stores/useLiveRuntimeStore'
@@ -48,6 +49,8 @@ const LiveRoomPage: React.FC = () => {
     top3Ranking,
     autoProxyFallbackMode,
     autoProxyLocalEnabled,
+    autoProxyLocalMaxPrice,
+    myBidStatus,
     syncRooms,
     syncRuntimeSnapshot,
     syncBidHistories,
@@ -234,7 +237,14 @@ const LiveRoomPage: React.FC = () => {
   }, [bgVideoError])
 
   useEffect(() => {
-    if (!autoProxyFallbackMode || !autoProxyLocalEnabled) {
+    const smartEnabled = autoProxyFallbackMode
+      ? autoProxyLocalEnabled
+      : !!myBidStatus.autoProxyEnabled
+    const smartMaxPrice = autoProxyFallbackMode
+      ? autoProxyLocalMaxPrice
+      : (myBidStatus.autoProxyMaxPrice ?? 0)
+
+    if (!smartEnabled || smartMaxPrice <= 0) {
       return
     }
 
@@ -249,13 +259,23 @@ const LiveRoomPage: React.FC = () => {
         return
       }
 
+      const enabled = store.autoProxyFallbackMode
+        ? store.autoProxyLocalEnabled
+        : !!store.myBidStatus.autoProxyEnabled
+      const maxPrice = store.autoProxyFallbackMode
+        ? store.autoProxyLocalMaxPrice
+        : (store.myBidStatus.autoProxyMaxPrice ?? 0)
+      if (!enabled || maxPrice <= 0) {
+        return
+      }
+
       const isLeadingByItem = currentItemForAutoBid.currentLeader === userId
       if (isLeadingByItem || store.myBidStatus.isLeading) {
         return
       }
 
       const nextBid = currentItemForAutoBid.currentPrice + (currentItemForAutoBid.minIncrement || 1)
-      if (nextBid > store.autoProxyLocalMaxPrice) {
+      if (nextBid > maxPrice) {
         return
       }
 
@@ -266,9 +286,17 @@ const LiveRoomPage: React.FC = () => {
 
       autoBidRef.current.inFlight = true
       autoBidRef.current.lastAttemptAt = now
-      void store.submitBid(nextBid)
+      void createBid({
+        roomId: store.currentRoomId!,
+        sessionId: store.currentSessionId!,
+        itemId: store.currentItemId!,
+        userId,
+        bidPrice: nextBid,
+        requestId: `proxy-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      })
+        .then(() => store.loadRoomRuntime(store.currentRoomId!))
         .catch(() => {
-          // Ignore transient conflicts from competing bidders; next tick will retry.
+          // Ignore transient conflicts; next tick will retry.
         })
         .finally(() => {
           autoBidRef.current.inFlight = false
@@ -278,7 +306,13 @@ const LiveRoomPage: React.FC = () => {
     tick()
     const timer = window.setInterval(tick, 1200)
     return () => window.clearInterval(timer)
-  }, [autoProxyFallbackMode, autoProxyLocalEnabled])
+  }, [
+    autoProxyFallbackMode,
+    autoProxyLocalEnabled,
+    autoProxyLocalMaxPrice,
+    myBidStatus.autoProxyEnabled,
+    myBidStatus.autoProxyMaxPrice,
+  ])
 
   const currentItem = items.find((item) => item.id === currentItemId)
   const currentRoom = rooms.find((room) => room.id === roomId)
