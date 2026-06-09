@@ -1,18 +1,20 @@
-import { App, Button, Card, Col, Divider, Row, Space, Table, Tag } from 'antd'
+import { App, Button, Card, Col, Row, Space, Table, Tag } from 'antd'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AxiosError } from 'axios'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '@/layouts/AdminLayout'
 import StatCard from '@/components/common/StatCard'
+import TrendLineChart from '@/components/charts/TrendLineChart'
 import {
   getOverview,
   getRoomItems,
+  getRoomSessions,
   getTimeline,
   startRoomLive,
   stopRoomLive,
 } from '@/api/admin'
 import { getMerchantRoomImage } from '@/assets/localImages'
-import type { AuctionItem, DashboardOverview, DashboardTimelineEvent } from '@/types'
+import type { AdminSession, AuctionItem, DashboardOverview, DashboardTimelineEvent } from '@/types'
 import { useAdminStore } from '@/stores/useAdminStore'
 
 const getApiErrorMessage = (error: unknown, fallback: string) => {
@@ -30,9 +32,10 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
 function DashboardPage() {
   const { message } = App.useApp()
   const navigate = useNavigate()
-  const [activeMetric, setActiveMetric] = useState<'traffic' | 'price'>('traffic')
+  const [activeMetric, setActiveMetric] = useState<'traffic' | 'price'>('price')
   const [overview, setOverview] = useState<DashboardOverview | null>(null)
   const [items, setItems] = useState<AuctionItem[]>([])
+  const [sessions, setSessions] = useState<AdminSession[]>([])
   const [timeline, setTimeline] = useState<DashboardTimelineEvent[]>([])
   const [previewVideoError, setPreviewVideoError] = useState(false)
   const [useLocalVideoFallback, setUseLocalVideoFallback] = useState(false)
@@ -107,10 +110,15 @@ function DashboardPage() {
         setOverview(overviewResult)
         setTimeline(timelineResult)
         if (currentRoomId) {
-          const itemResult = await getRoomItems(currentRoomId)
+          const [itemResult, sessionResult] = await Promise.all([
+            getRoomItems(currentRoomId),
+            getRoomSessions(currentRoomId),
+          ])
           setItems(itemResult)
+          setSessions(sessionResult)
         } else {
           setItems([])
+          setSessions([])
         }
       } catch (error) {
         const nextMessage =
@@ -121,19 +129,6 @@ function DashboardPage() {
 
     void loadDashboard()
   }, [currentRoomId, message])
-
-  const chartRows = useMemo(
-    () =>
-      timeline.slice(0, 6).map((item) => ({
-        key: `${item.sessionId}-${item.time}`,
-        name: item.itemId,
-        data:
-          activeMetric === 'traffic'
-            ? `${item.event} / ${item.userId}`
-            : `¥ ${item.price} / ${item.time}`,
-      })),
-    [activeMetric, timeline],
-  )
 
   const itemRows = useMemo(
     () =>
@@ -282,27 +277,21 @@ function DashboardPage() {
             extra={
               <Button.Group>
                 <Button
-                  type={activeMetric === 'traffic' ? 'primary' : 'default'}
-                  onClick={() => setActiveMetric('traffic')}
-                >
-                  流量
-                </Button>
-                <Button
                   type={activeMetric === 'price' ? 'primary' : 'default'}
                   onClick={() => setActiveMetric('price')}
                 >
                   价格轨迹
                 </Button>
+                <Button
+                  type={activeMetric === 'traffic' ? 'primary' : 'default'}
+                  onClick={() => setActiveMetric('traffic')}
+                >
+                  流量
+                </Button>
               </Button.Group>
             }
           >
-            {chartRows.map((row) => (
-              <div key={row.key} className="trend-line-item">
-                <strong>{row.name}</strong>
-                <Divider />
-                <span>{row.data}</span>
-              </div>
-            ))}
+            <TrendLineChart mode={activeMetric} events={timeline} items={items} sessions={sessions} />
           </Card>
         </Col>
       </Row>

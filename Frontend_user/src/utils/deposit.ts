@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'live-auction-paid-deposits-v1'
+const STORAGE_KEY = 'live-auction-paid-deposits-v2'
 
 type DepositMap = Record<string, true>
 
@@ -35,3 +35,15 @@ export const markDepositPaid = (userId: string, itemId: string) => {
   store[getKey(userId, itemId)] = true
   writeStore(store)
 }
+
+export const clearDepositPaid = (userId: string, itemId: string) => {
+  const store = readStore()
+  delete store[getKey(userId, itemId)]
+  writeStore(store)
+}
+
+export const needsDepositPayment = (
+  userId: string | undefined,
+  itemId: string | undefined,
+  depositAmount: number,
+) => depositAmount > 0 && !!userId && !!itemId && !hasPaidDeposit(userId, itemId)

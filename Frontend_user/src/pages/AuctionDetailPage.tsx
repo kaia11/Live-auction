@@ -58,7 +58,7 @@ const AuctionDetailPage: React.FC = () => {
             <h4>竞拍规则摘要</h4>
             <ul>
               <li>0元起拍，每次至少加价{item.minIncrement}元</li>
-              <li>最后30秒内出价自动延长30秒</li>
+              <li>最后{item.extensionTriggerSeconds}秒内出价自动延长{item.extendedSeconds}秒</li>
               <li>达到封顶价直接成交</li>
             </ul>
           </div>

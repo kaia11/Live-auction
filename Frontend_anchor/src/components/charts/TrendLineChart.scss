@@ -1,0 +1,17 @@
+.trend-line-chart {
+  min-height: 360px;
+}
+
+.trend-line-chart-caption {
+  margin: 0 0 12px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.trend-line-chart-empty {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

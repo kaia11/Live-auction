@@ -1,11 +1,26 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Button } from 'antd-mobile'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
+import { useLiveRoomUIStore } from '../stores/useLiveRoomUIStore'
 import './OvertakenModal.scss'
 
 const OvertakenModal: React.FC = () => {
   const { closeAllModals, toggleBidPanel, myBidStatus, items, currentItemId } = useLiveRoomStore()
   const item = items.find(i => i.id === currentItemId)
+  const shouldRender =
+    item?.status === '竞拍中' &&
+    myBidStatus.myHighestPrice > 0 &&
+    !myBidStatus.isLeading
+
+  useEffect(() => {
+    if (!shouldRender) {
+      useLiveRoomUIStore.getState().setUIState({ showOvertakenModal: false })
+    }
+  }, [shouldRender])
+
+  if (!shouldRender) {
+    return null
+  }
 
   return (
     <div className="custom-mask" onClick={closeAllModals}>

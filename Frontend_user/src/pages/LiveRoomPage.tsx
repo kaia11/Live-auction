@@ -44,6 +44,7 @@ const LiveRoomPage: React.FC = () => {
     rooms,
     items,
     currentItemId,
+    currentSessionId,
     comments,
     onlineCount,
     top3Ranking,
@@ -120,6 +121,13 @@ const LiveRoomPage: React.FC = () => {
   const roomCommentsQuery = useRoomCommentsQuery(roomId)
 
   useLiveRoomRealtime(roomId)
+
+  useEffect(() => {
+    useLiveRoomUIStore.getState().setUIState({
+      showOvertakenModal: false,
+      showDelayBanner: false,
+    })
+  }, [currentItemId, currentSessionId])
 
   useEffect(() => {
     if (roomsQuery.data) {

@@ -83,7 +83,10 @@ func (e *AuctionEngine) StartSessionLocked(sessionID string) (map[string]any, er
 
 	session.Status = nextSessionStatus
 	session.CurrentPrice = item.StartPrice
-	session.EndTime = time.Now().Add(time.Duration(item.DurationSeconds) * time.Second).Format(time.RFC3339)
+	now := time.Now()
+	session.StartTime = now.Format(time.RFC3339)
+	session.ViewerCount = room.OnlineCount
+	session.EndTime = now.Add(time.Duration(item.DurationSeconds) * time.Second).Format(time.RFC3339)
 	session.IncrementStep = item.IncrementStep
 	session.ExtensionSeconds = item.ExtensionSeconds
 	session.ExtensionTrigger = item.ExtensionTriggerSeconds
@@ -263,6 +266,9 @@ func (e *AuctionEngine) settleSessionWithEventLocked(session model.AuctionSessio
 
 	session.Status = nextSessionStatus
 	session.EndTime = time.Now().Format(time.RFC3339)
+	if room, ok := e.store.rooms[session.RoomID]; ok && room.OnlineCount > session.ViewerCount {
+		session.ViewerCount = room.OnlineCount
+	}
 	e.store.sessions[session.ID] = session
 
 	item.QueueStatus = nextQueueStatus
@@ -327,6 +333,9 @@ func (e *AuctionEngine) reconcileTerminalSessionLocked(session model.AuctionSess
 		session.Status = domain.SessionStateEndedPassed
 	}
 	session.EndTime = time.Now().Format(time.RFC3339)
+	if room, ok := e.store.rooms[session.RoomID]; ok && room.OnlineCount > session.ViewerCount {
+		session.ViewerCount = room.OnlineCount
+	}
 	e.store.sessions[session.ID] = session
 
 	if err := e.persistItemSession(item, session); err != nil {

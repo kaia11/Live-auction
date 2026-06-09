@@ -162,6 +162,9 @@ func (s *BidService) CreateBid(input CreateBidInput) (model.BidResult, *SessionS
 	}
 
 	s.store.mu.Lock()
+	if currentRoom, ok := s.store.rooms[session.RoomID]; ok && currentRoom.OnlineCount > session.ViewerCount {
+		session.ViewerCount = currentRoom.OnlineCount
+	}
 	s.store.bids = append(s.store.bids, bid)
 	s.store.sessions[session.ID] = session
 	s.store.processedRequests[input.RequestID] = result

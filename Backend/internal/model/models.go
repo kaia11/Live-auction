@@ -44,8 +44,10 @@ type AuctionSession struct {
 	Status            string `json:"status"`
 	CurrentPrice      int64  `json:"currentPrice"`
 	LeaderUserID      string `json:"leaderUserId"`
+	StartTime         string `json:"startTime"`
 	EndTime           string `json:"endTime"`
 	ParticipantCount  int    `json:"participantCount"`
+	ViewerCount       int    `json:"viewerCount"`
 	IncrementStep     int64  `json:"incrementStep"`
 	ExtensionSeconds  int    `json:"extensionSeconds"`
 	ExtensionTrigger  int    `json:"extensionTriggerSeconds"`

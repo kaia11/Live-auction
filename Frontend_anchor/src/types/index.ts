@@ -39,7 +39,11 @@ export interface AdminSession {
   status: SessionStatus
   currentPrice: number
   queueStatus: QueueStatus
+  startTime?: string
   endTime: string
+  participantCount?: number
+  viewerCount?: number
+  durationSeconds?: number
 }
 
 export interface GoodsRow {

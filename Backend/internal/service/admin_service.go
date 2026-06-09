@@ -405,13 +405,17 @@ func (s *AdminService) ListRoomSessions(roomID string) []map[string]any {
 		for sessionID, session := range s.store.sessions {
 			if session.RoomID == roomID && session.ItemID == itemID {
 				results = append(results, map[string]any{
-					"roomId":       roomID,
-					"sessionId":    sessionID,
-					"itemId":       session.ItemID,
-					"status":       session.Status,
-					"currentPrice": session.CurrentPrice,
-					"queueStatus":  s.store.items[itemID].QueueStatus,
-					"endTime":      session.EndTime,
+					"roomId":            roomID,
+					"sessionId":         sessionID,
+					"itemId":            session.ItemID,
+					"status":            session.Status,
+					"currentPrice":      session.CurrentPrice,
+					"queueStatus":       s.store.items[itemID].QueueStatus,
+					"startTime":         session.StartTime,
+					"endTime":           session.EndTime,
+					"participantCount":  session.ParticipantCount,
+					"viewerCount":       session.ViewerCount,
+					"durationSeconds":   s.store.items[itemID].DurationSeconds,
 				})
 			}
 		}

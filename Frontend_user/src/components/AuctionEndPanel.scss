@@ -36,6 +36,13 @@
   font-size: 24px;
   font-weight: 800;
   color: var(--brand-plum);
+  text-align: center;
+  line-height: 1.35;
+}
+
+.end-title.is-lost {
+  font-size: 20px;
+  color: var(--text-secondary);
 }
 
 .end-price {

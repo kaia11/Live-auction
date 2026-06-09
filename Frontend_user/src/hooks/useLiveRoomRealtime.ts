@@ -1,9 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { BackendCommentPayload, BackendRoomEvent } from '@/api/rooms'
+import { BackendBidResult } from '@/api/bids'
 import { USE_MOCK, apiClient, getAccessToken } from '@/api/client'
 import { useLiveRoomStore } from '@/stores/useLiveRoomStore'
 import { useLiveRuntimeStore } from '@/stores/useLiveRuntimeStore'
 import { useLiveRoomUIStore } from '@/stores/useLiveRoomUIStore'
+import { clearDepositPaid } from '@/utils/deposit'
+import { useUserStore } from '@/stores/useUserStore'
 
 const getWebSocketUrl = (roomId: string) => {
   const baseUrl = new URL(apiClient.defaults.baseURL ?? window.location.origin)
@@ -20,8 +23,16 @@ const getWebSocketUrl = (roomId: string) => {
 const isReconnectState = (state: ReturnType<typeof useLiveRuntimeStore.getState>['connectionState']) =>
   state === 'connected' || state === 'reconnecting'
 
+const SESSION_TRANSITION_EVENTS = new Set([
+  'auction_session_ended',
+  'auction_session_upcoming',
+  'auction_session_activated',
+  'room_item_queue_updated',
+])
+
 export const useLiveRoomRealtime = (roomId: string | undefined) => {
   const reconnectTimerRef = useRef<number | null>(null)
+  const syncQueueRef = useRef(Promise.resolve())
 
   useEffect(() => {
     if (!roomId || USE_MOCK || typeof window === 'undefined') {
@@ -64,15 +75,54 @@ export const useLiveRoomRealtime = (roomId: string | undefined) => {
 
       const runtimeStateAfter = useLiveRuntimeStore.getState()
       const uiStore = useLiveRoomUIStore.getState()
+      const itemsAfter = useLiveRoomStore.getState().items
+      const currentItemAfter = itemsAfter.find((item) => item.id === runtimeStateAfter.currentItemId)
 
-      if (
+      const auctionContextChanged =
+        runtimeStateBefore.currentSessionId !== runtimeStateAfter.currentSessionId ||
+        runtimeStateBefore.currentItemId !== runtimeStateAfter.currentItemId
+
+      const isSameAuctionContext =
+        !auctionContextChanged &&
+        runtimeStateBefore.currentSessionId !== null &&
+        runtimeStateBefore.currentItemId !== null
+
+      const isActiveBidding = currentItemAfter?.status === '竞拍中'
+
+      const shouldShowOvertakenModal =
+        event.event === 'auction_price_updated' &&
+        isSameAuctionContext &&
+        isActiveBidding &&
         runtimeStateBefore.myBidStatus.isLeading &&
-        !runtimeStateAfter.myBidStatus.isLeading
-      ) {
+        !runtimeStateAfter.myBidStatus.isLeading &&
+        runtimeStateBefore.myBidStatus.myHighestPrice > 0 &&
+        runtimeStateAfter.myBidStatus.myHighestPrice > 0
+
+      if (auctionContextChanged || SESSION_TRANSITION_EVENTS.has(event.event)) {
+        uiStore.setUIState({ showOvertakenModal: false, showDelayBanner: false })
+      }
+
+      if (shouldShowOvertakenModal) {
         uiStore.setUIState({ showOvertakenModal: true })
       }
 
-      if (runtimeStateAfter.currentCountdown > runtimeStateBefore.currentCountdown) {
+      const bidPayload =
+        event.event === 'auction_price_updated'
+          ? (event.payload as Partial<BackendBidResult>)
+          : null
+      const countdownDelta = runtimeStateAfter.currentCountdown - runtimeStateBefore.currentCountdown
+      const extensionSeconds = currentItemAfter?.extendedSeconds ?? 0
+      const shouldShowDelayBanner =
+        event.event === 'auction_price_updated' &&
+        isSameAuctionContext &&
+        isActiveBidding &&
+        (bidPayload?.extensionApplied === true ||
+          (bidPayload?.extensionApplied === undefined &&
+            countdownDelta > 0 &&
+            extensionSeconds > 0 &&
+            countdownDelta <= extensionSeconds + 2))
+
+      if (shouldShowDelayBanner) {
         uiStore.setUIState({ showDelayBanner: true })
         window.setTimeout(() => {
           useLiveRoomUIStore.getState().setUIState({ showDelayBanner: false })
@@ -80,6 +130,11 @@ export const useLiveRoomRealtime = (roomId: string | undefined) => {
       }
 
       if (event.event === 'auction_session_ended') {
+        const userId = useUserStore.getState().user?.id
+        const endedItemId = runtimeStateBefore.currentItemId
+        if (userId && endedItemId) {
+          clearDepositPaid(userId, endedItemId)
+        }
         uiStore.setUIState({ showAuctionEndPanel: true })
       }
     }
@@ -100,7 +155,11 @@ export const useLiveRoomRealtime = (roomId: string | undefined) => {
       socket.onmessage = (messageEvent) => {
         try {
           const event = JSON.parse(messageEvent.data) as BackendRoomEvent
-          void syncAfterEvent(event)
+          syncQueueRef.current = syncQueueRef.current
+            .then(() => syncAfterEvent(event))
+            .catch(() => {
+              useLiveRuntimeStore.getState().setConnectionState('error')
+            })
         } catch {
           useLiveRuntimeStore.getState().setConnectionState('error')
         }

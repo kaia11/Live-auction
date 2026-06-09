@@ -89,14 +89,14 @@ const extractDepositAmount = (description: string) => {
   const marker = /#deposit=(\d+)#/i
   const matched = description.match(marker)
   if (!matched) {
-    return { description, depositAmount: 0 }
+    return { description, depositAmount: 10 }
   }
 
   const amount = Number.parseInt(matched[1], 10)
   const cleaned = description.replace(marker, '').trim()
   return {
     description: cleaned || description,
-    depositAmount: Number.isFinite(amount) ? amount : 0,
+    depositAmount: Number.isFinite(amount) ? amount : 10,
   }
 }
 
@@ -135,6 +135,8 @@ const resolveAuctionItemStatus = (
     case 'queued':
     case 'upcoming':
       return AuctionItemStatus.COMING_SOON
+    case 'cancelled':
+      return AuctionItemStatus.CANCELLED
     case 'finished':
       return AuctionItemStatus.ENDED
     default:

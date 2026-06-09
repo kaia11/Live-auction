@@ -1,4 +1,5 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from 'antd-mobile'
 import './DepositPaymentModal.scss'
 
@@ -9,7 +10,11 @@ interface Props {
 }
 
 const DepositPaymentModal: React.FC<Props> = ({ amount, onCancel, onConfirm }) => {
-  return (
+  if (typeof document === 'undefined') {
+    return null
+  }
+
+  return createPortal(
     <div className="deposit-mask" onClick={onCancel}>
       <div className="deposit-modal" onClick={(event) => event.stopPropagation()}>
         <h3 className="deposit-title">支付保证金后可继续出价</h3>
@@ -27,7 +32,8 @@ const DepositPaymentModal: React.FC<Props> = ({ amount, onCancel, onConfirm }) =
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

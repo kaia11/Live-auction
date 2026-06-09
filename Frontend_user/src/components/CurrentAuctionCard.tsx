@@ -6,7 +6,7 @@ import { useLiveRoomStore } from '../stores/useLiveRoomStore'
 import { useUserStore } from '../stores/useUserStore'
 import DepositPaymentModal from './DepositPaymentModal'
 import SmartBidModal from './SmartBidModal'
-import { hasPaidDeposit, markDepositPaid } from '../utils/deposit'
+import { markDepositPaid, needsDepositPayment } from '../utils/deposit'
 import './CurrentAuctionCard.scss'
 
 interface Props {
@@ -29,6 +29,7 @@ const CurrentAuctionCard: React.FC<Props> = ({ item, onClose, onOpenDetail }) =>
   const [biddingPrice, setBiddingPrice] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [pendingBidPrice, setPendingBidPrice] = useState<number | null>(null)
+  const [pendingDepositAction, setPendingDepositAction] = useState<'bid' | 'smartBid' | null>(null)
   const [showDepositModal, setShowDepositModal] = useState(false)
   const [showSmartBidModal, setShowSmartBidModal] = useState(false)
   const [smartBidPrice, setSmartBidPrice] = useState(0)
@@ -123,13 +124,42 @@ const CurrentAuctionCard: React.FC<Props> = ({ item, onClose, onOpenDetail }) =>
       return
     }
 
-    if (item.depositAmount > 0 && currentUserId && !hasPaidDeposit(currentUserId, item.id)) {
+    if (needsDepositPayment(currentUserId, item.id, item.depositAmount)) {
+      setPendingDepositAction('bid')
       setPendingBidPrice(biddingPrice)
       setShowDepositModal(true)
       return
     }
 
     await submitBidRequest(biddingPrice)
+  }
+
+  const openSmartBidModal = () => {
+    if (needsDepositPayment(currentUserId, item.id, item.depositAmount)) {
+      setPendingDepositAction('smartBid')
+      setShowDepositModal(true)
+      return
+    }
+    setShowSmartBidModal(true)
+  }
+
+  const handleDepositConfirm = () => {
+    if (!currentUserId) {
+      return
+    }
+    markDepositPaid(currentUserId, item.id)
+    const action = pendingDepositAction
+    setShowDepositModal(false)
+    setPendingDepositAction(null)
+
+    if (action === 'smartBid') {
+      setShowSmartBidModal(true)
+      return
+    }
+
+    const nextBid = pendingBidPrice ?? biddingPrice
+    setPendingBidPrice(null)
+    void submitBidRequest(nextBid)
   }
 
   return (
@@ -168,7 +198,7 @@ const CurrentAuctionCard: React.FC<Props> = ({ item, onClose, onOpenDetail }) =>
       </Button>
       <Button
         className={`smart-bid-inline-btn ${!canBid ? 'is-disabled' : ''}`}
-        onClick={() => setShowSmartBidModal(true)}
+        onClick={openSmartBidModal}
         disabled={!canBid}
       >
         {canBid ? '智能出价' : '暂不可智能出价'}
@@ -182,16 +212,9 @@ const CurrentAuctionCard: React.FC<Props> = ({ item, onClose, onOpenDetail }) =>
           onCancel={() => {
             setShowDepositModal(false)
             setPendingBidPrice(null)
+            setPendingDepositAction(null)
           }}
-          onConfirm={() => {
-            if (currentUserId) {
-              markDepositPaid(currentUserId, item.id)
-            }
-            const nextBid = pendingBidPrice ?? biddingPrice
-            setShowDepositModal(false)
-            setPendingBidPrice(null)
-            void submitBidRequest(nextBid)
-          }}
+          onConfirm={handleDepositConfirm}
         />
       )}
       {showSmartBidModal && (
