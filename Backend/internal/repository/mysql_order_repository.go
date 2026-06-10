@@ -27,6 +27,64 @@ func (r *MySQLOrderRepository) CreateOrder(order model.AuctionOrder) error {
 	return err
 }
 
+func (r *MySQLOrderRepository) GetOrderByID(orderID string) (*model.AuctionOrder, error) {
+	row := r.db.QueryRow(`
+		SELECT id, session_id, room_id, item_id, buyer_user_id, amount, status, create_time
+		FROM auction_orders
+		WHERE id = ?
+	`, orderID)
+
+	var order model.AuctionOrder
+	var createTime sql.NullTime
+	if err := row.Scan(
+		&order.ID,
+		&order.SessionID,
+		&order.RoomID,
+		&order.ItemID,
+		&order.BuyerUserID,
+		&order.Amount,
+		&order.Status,
+		&createTime,
+	); err != nil {
+		return nil, err
+	}
+	order.CreateTime = nullableTimeString(createTime)
+	return &order, nil
+}
+
+func (r *MySQLOrderRepository) ListAllOrders() ([]model.AuctionOrder, error) {
+	rows, err := r.db.Query(`
+		SELECT id, session_id, room_id, item_id, buyer_user_id, amount, status, create_time
+		FROM auction_orders
+		ORDER BY create_time DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	orders := make([]model.AuctionOrder, 0)
+	for rows.Next() {
+		var order model.AuctionOrder
+		var createTime sql.NullTime
+		if err := rows.Scan(
+			&order.ID,
+			&order.SessionID,
+			&order.RoomID,
+			&order.ItemID,
+			&order.BuyerUserID,
+			&order.Amount,
+			&order.Status,
+			&createTime,
+		); err != nil {
+			return nil, err
+		}
+		order.CreateTime = nullableTimeString(createTime)
+		orders = append(orders, order)
+	}
+	return orders, rows.Err()
+}
+
 func (r *MySQLOrderRepository) ListUserOrders(userID string) ([]model.AuctionOrder, error) {
 	rows, err := r.db.Query(`
 		SELECT id, session_id, room_id, item_id, buyer_user_id, amount, status, create_time

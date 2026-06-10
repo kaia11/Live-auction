@@ -8,6 +8,8 @@ type MemoryStore interface {
 	GetRoomDetail(roomID string) model.LiveRoom
 	ListRoomItems(roomID string) []model.AuctionItem
 	GetItemDetail(roomID string, itemID string) model.AuctionItem
+	ListAllOrders() []model.AuctionOrder
+	GetOrderByID(orderID string) model.AuctionOrder
 	ListUserOrders(userID string) []model.AuctionOrder
 	ListUserBids(userID string) []model.Bid
 	GetUserByID(userID string) model.User
@@ -120,6 +122,22 @@ func NewMemoryOrderRepository(store MemoryStore) *MemoryOrderRepository {
 func (r *MemoryOrderRepository) CreateOrder(order model.AuctionOrder) error {
 	_ = order
 	return nil
+}
+
+func (r *MemoryOrderRepository) GetOrderByID(orderID string) (*model.AuctionOrder, error) {
+	order := r.store.GetOrderByID(orderID)
+	return &order, nil
+}
+
+func (r *MemoryOrderRepository) ListAllOrders() ([]model.AuctionOrder, error) {
+	storeWithOrders, ok := r.store.(interface {
+		ListAllOrders() []model.AuctionOrder
+	})
+	if !ok {
+		return []model.AuctionOrder{}, nil
+	}
+
+	return storeWithOrders.ListAllOrders(), nil
 }
 
 func (r *MemoryOrderRepository) ListUserOrders(userID string) ([]model.AuctionOrder, error) {

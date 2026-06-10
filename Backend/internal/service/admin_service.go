@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -15,17 +16,23 @@ type AdminService struct {
 	store       *memoryStore
 	engine      *AuctionEngine
 	runtime     *realtime.Runtime
+	roomRepo    repository.RoomRepository
 	itemRepo    repository.ItemRepository
 	sessionRepo repository.SessionRepository
+	bidRepo     repository.BidRepository
+	orderRepo   repository.OrderRepository
 }
 
-func NewAdminService(runtime *realtime.Runtime, roomRepo repository.RoomRepository, itemRepo repository.ItemRepository, sessionRepo repository.SessionRepository, resultRepo repository.ResultRepository, orderRepo repository.OrderRepository) *AdminService {
+func NewAdminService(runtime *realtime.Runtime, roomRepo repository.RoomRepository, itemRepo repository.ItemRepository, sessionRepo repository.SessionRepository, bidRepo repository.BidRepository, resultRepo repository.ResultRepository, orderRepo repository.OrderRepository) *AdminService {
 	return &AdminService{
 		store:       sharedStore,
 		engine:      NewAuctionEngine(sharedStore, runtime, roomRepo, itemRepo, sessionRepo, resultRepo, orderRepo),
 		runtime:     runtime,
+		roomRepo:    roomRepo,
 		itemRepo:    itemRepo,
 		sessionRepo: sessionRepo,
+		bidRepo:     bidRepo,
+		orderRepo:   orderRepo,
 	}
 }
 
@@ -397,6 +404,10 @@ func (s *AdminService) refreshSessionContextLocked(sessionID string) {
 }
 
 func (s *AdminService) ListRoomSessions(roomID string) []map[string]any {
+	if sessions, ok := s.listRoomSessionsFromRepositories(roomID); ok {
+		return sessions
+	}
+
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 
@@ -405,17 +416,17 @@ func (s *AdminService) ListRoomSessions(roomID string) []map[string]any {
 		for sessionID, session := range s.store.sessions {
 			if session.RoomID == roomID && session.ItemID == itemID {
 				results = append(results, map[string]any{
-					"roomId":            roomID,
-					"sessionId":         sessionID,
-					"itemId":            session.ItemID,
-					"status":            session.Status,
-					"currentPrice":      session.CurrentPrice,
-					"queueStatus":       s.store.items[itemID].QueueStatus,
-					"startTime":         session.StartTime,
-					"endTime":           session.EndTime,
-					"participantCount":  session.ParticipantCount,
-					"viewerCount":       session.ViewerCount,
-					"durationSeconds":   s.store.items[itemID].DurationSeconds,
+					"roomId":           roomID,
+					"sessionId":        sessionID,
+					"itemId":           session.ItemID,
+					"status":           session.Status,
+					"currentPrice":     session.CurrentPrice,
+					"queueStatus":      s.store.items[itemID].QueueStatus,
+					"startTime":        session.StartTime,
+					"endTime":          session.EndTime,
+					"participantCount": session.ParticipantCount,
+					"viewerCount":      session.ViewerCount,
+					"durationSeconds":  s.store.items[itemID].DurationSeconds,
 				})
 			}
 		}
@@ -424,6 +435,10 @@ func (s *AdminService) ListRoomSessions(roomID string) []map[string]any {
 }
 
 func (s *AdminService) ListOrders() []map[string]any {
+	if orders, ok := s.listOrdersFromRepository(""); ok {
+		return orders
+	}
+
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 
@@ -444,6 +459,10 @@ func (s *AdminService) ListOrders() []map[string]any {
 }
 
 func (s *AdminService) ListOrdersByAnchorUserID(anchorUserID string) []map[string]any {
+	if orders, ok := s.listOrdersFromRepository(anchorUserID); ok {
+		return orders
+	}
+
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 
@@ -468,6 +487,10 @@ func (s *AdminService) ListOrdersByAnchorUserID(anchorUserID string) []map[strin
 }
 
 func (s *AdminService) GetStatsOverview() map[string]any {
+	if overview, ok := s.getStatsOverviewFromRepositories(""); ok {
+		return overview
+	}
+
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 
@@ -491,6 +514,10 @@ func (s *AdminService) GetStatsOverview() map[string]any {
 }
 
 func (s *AdminService) GetStatsOverviewByAnchorUserID(anchorUserID string) map[string]any {
+	if overview, ok := s.getStatsOverviewFromRepositories(anchorUserID); ok {
+		return overview
+	}
+
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 
@@ -526,6 +553,10 @@ func (s *AdminService) GetStatsOverviewByAnchorUserID(anchorUserID string) map[s
 }
 
 func (s *AdminService) GetStatsTimeline() []map[string]any {
+	if timeline, ok := s.getStatsTimelineFromRepositories(""); ok {
+		return timeline
+	}
+
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 
@@ -544,6 +575,10 @@ func (s *AdminService) GetStatsTimeline() []map[string]any {
 }
 
 func (s *AdminService) GetStatsTimelineByAnchorUserID(anchorUserID string) []map[string]any {
+	if timeline, ok := s.getStatsTimelineFromRepositories(anchorUserID); ok {
+		return timeline
+	}
+
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 
@@ -598,6 +633,14 @@ func (s *AdminService) ItemOwnedBy(itemID string, anchorUserID string) bool {
 }
 
 func (s *AdminService) OrderOwnedBy(orderID string, anchorUserID string) bool {
+	if s.orderRepo != nil && s.roomRepo != nil {
+		order, err := s.orderRepo.GetOrderByID(orderID)
+		if err == nil && order != nil && order.ID != "" {
+			room, roomErr := s.roomRepo.GetRoomDetail(order.RoomID)
+			return roomErr == nil && room != nil && room.AnchorUserID == anchorUserID
+		}
+	}
+
 	s.store.mu.RLock()
 	defer s.store.mu.RUnlock()
 
@@ -607,6 +650,188 @@ func (s *AdminService) OrderOwnedBy(orderID string, anchorUserID string) bool {
 	}
 	room, ok := s.store.rooms[order.RoomID]
 	return ok && room.AnchorUserID == anchorUserID
+}
+
+func (s *AdminService) listRoomSessionsFromRepositories(roomID string) ([]map[string]any, bool) {
+	if roomID == "" || s.sessionRepo == nil || s.itemRepo == nil {
+		return nil, false
+	}
+
+	sessions, err := s.sessionRepo.ListRoomSessions(roomID)
+	if err != nil {
+		return nil, false
+	}
+	items, err := s.itemRepo.ListRoomItems(roomID)
+	if err != nil {
+		return nil, false
+	}
+	sessionByItemID := make(map[string]model.AuctionSession, len(sessions))
+	for _, session := range sessions {
+		sessionByItemID[session.ItemID] = session
+	}
+
+	results := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		session, ok := sessionByItemID[item.ID]
+		if !ok {
+			continue
+		}
+		results = append(results, map[string]any{
+			"roomId":           roomID,
+			"sessionId":        session.ID,
+			"itemId":           session.ItemID,
+			"status":           session.Status,
+			"currentPrice":     session.CurrentPrice,
+			"queueStatus":      item.QueueStatus,
+			"startTime":        session.StartTime,
+			"endTime":          session.EndTime,
+			"participantCount": session.ParticipantCount,
+			"viewerCount":      session.ViewerCount,
+			"durationSeconds":  item.DurationSeconds,
+		})
+	}
+
+	return results, true
+}
+
+func (s *AdminService) listOrdersFromRepository(anchorUserID string) ([]map[string]any, bool) {
+	if s.orderRepo == nil {
+		return nil, false
+	}
+
+	allOrders, err := s.orderRepo.ListAllOrders()
+	if err != nil {
+		return nil, false
+	}
+
+	allowedRooms := map[string]struct{}{}
+	if anchorUserID != "" {
+		if s.roomRepo == nil {
+			return nil, false
+		}
+		rooms, err := s.roomRepo.ListRoomsByAnchorUserID(anchorUserID)
+		if err != nil {
+			return nil, false
+		}
+		for _, room := range rooms {
+			allowedRooms[room.ID] = struct{}{}
+		}
+	}
+
+	orders := make([]map[string]any, 0, len(allOrders))
+	for _, order := range allOrders {
+		if anchorUserID != "" {
+			if _, ok := allowedRooms[order.RoomID]; !ok {
+				continue
+			}
+		}
+		orders = append(orders, map[string]any{
+			"orderId":     order.ID,
+			"sessionId":   order.SessionID,
+			"roomId":      order.RoomID,
+			"itemId":      order.ItemID,
+			"buyerUserId": order.BuyerUserID,
+			"amount":      order.Amount,
+			"status":      order.Status,
+			"createTime":  order.CreateTime,
+		})
+	}
+
+	return orders, true
+}
+
+func (s *AdminService) getStatsOverviewFromRepositories(anchorUserID string) (map[string]any, bool) {
+	if s.roomRepo == nil || s.sessionRepo == nil {
+		return nil, false
+	}
+
+	var (
+		rooms []model.LiveRoom
+		err   error
+	)
+	if anchorUserID == "" {
+		rooms, err = s.roomRepo.ListRooms()
+	} else {
+		rooms, err = s.roomRepo.ListRoomsByAnchorUserID(anchorUserID)
+	}
+	if err != nil {
+		return nil, false
+	}
+
+	sessionCount := 0
+	sold := 0
+	cancelled := 0
+	for _, room := range rooms {
+		sessions, err := s.sessionRepo.ListRoomSessions(room.ID)
+		if err != nil {
+			return nil, false
+		}
+		sessionCount += len(sessions)
+		for _, session := range sessions {
+			if session.Status == domain.SessionStateEndedSold {
+				sold++
+			}
+			if session.Status == domain.SessionStateCancelled {
+				cancelled++
+			}
+		}
+	}
+
+	return map[string]any{
+		"totalRooms":        len(rooms),
+		"totalSessions":     sessionCount,
+		"soldSessions":      sold,
+		"cancelledSessions": cancelled,
+	}, true
+}
+
+func (s *AdminService) getStatsTimelineFromRepositories(anchorUserID string) ([]map[string]any, bool) {
+	if s.roomRepo == nil || s.sessionRepo == nil || s.bidRepo == nil {
+		return nil, false
+	}
+
+	var (
+		rooms []model.LiveRoom
+		err   error
+	)
+	if anchorUserID == "" {
+		rooms, err = s.roomRepo.ListRooms()
+	} else {
+		rooms, err = s.roomRepo.ListRoomsByAnchorUserID(anchorUserID)
+	}
+	if err != nil {
+		return nil, false
+	}
+
+	timeline := make([]map[string]any, 0)
+	for _, room := range rooms {
+		sessions, err := s.sessionRepo.ListRoomSessions(room.ID)
+		if err != nil {
+			return nil, false
+		}
+		for _, session := range sessions {
+			bids, err := s.bidRepo.ListSessionBids(session.ID)
+			if err != nil {
+				return nil, false
+			}
+			for _, bid := range bids {
+				timeline = append(timeline, map[string]any{
+					"time":      bid.CreateTime,
+					"event":     "bid_accepted",
+					"sessionId": bid.SessionID,
+					"itemId":    bid.ItemID,
+					"price":     bid.BidPrice,
+					"userId":    bid.UserID,
+				})
+			}
+		}
+	}
+
+	sort.SliceStable(timeline, func(i, j int) bool {
+		return fmt.Sprint(timeline[i]["time"]) < fmt.Sprint(timeline[j]["time"])
+	})
+
+	return timeline, true
 }
 
 func uniqueQueueIDs(itemIDs []string) []string {

@@ -251,6 +251,22 @@ func (s *memoryStore) ListUserOrders(userID string) []model.AuctionOrder {
 	return orders
 }
 
+func (s *memoryStore) ListAllOrders() []model.AuctionOrder {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	orders := make([]model.AuctionOrder, len(s.orders))
+	copy(orders, s.orders)
+	return orders
+}
+
+func (s *memoryStore) GetOrderByID(orderID string) model.AuctionOrder {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.ordersByID[orderID]
+}
+
 func (s *memoryStore) ListUserBids(userID string) []model.Bid {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

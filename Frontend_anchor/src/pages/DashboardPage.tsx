@@ -137,10 +137,11 @@ function DashboardPage() {
         id: item.id,
         name: item.title,
         status: item.queueStatus,
-        currentPrice: item.startPrice,
+        currentPrice:
+          sessions.find((session) => session.itemId === item.id)?.currentPrice ?? item.startPrice,
         incrementStep: item.incrementStep,
       })),
-    [items],
+    [items, sessions],
   )
 
   return (

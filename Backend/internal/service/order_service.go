@@ -42,7 +42,27 @@ func (s *OrderService) UpdateOrderStatus(orderID string, event statemachine.Orde
 
 	order, ok := s.store.ordersByID[orderID]
 	if !ok {
-		return model.AuctionOrder{}, ErrOrderNotFound
+		if s.repo == nil {
+			return model.AuctionOrder{}, ErrOrderNotFound
+		}
+		persistedOrder, err := s.repo.GetOrderByID(orderID)
+		if err != nil || persistedOrder == nil || persistedOrder.ID == "" {
+			return model.AuctionOrder{}, ErrOrderNotFound
+		}
+		order = *persistedOrder
+		s.store.ordersByID[orderID] = order
+		s.store.ordersBySession[order.SessionID] = order
+		found := false
+		for i := range s.store.orders {
+			if s.store.orders[i].ID == order.ID {
+				s.store.orders[i] = order
+				found = true
+				break
+			}
+		}
+		if !found {
+			s.store.orders = append(s.store.orders, order)
+		}
 	}
 
 	nextStatus, err := statemachine.NextOrderState(order.Status, event)

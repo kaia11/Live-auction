@@ -30,6 +30,8 @@ type BidRepository interface {
 
 type OrderRepository interface {
 	CreateOrder(order model.AuctionOrder) error
+	GetOrderByID(orderID string) (*model.AuctionOrder, error)
+	ListAllOrders() ([]model.AuctionOrder, error)
 	ListUserOrders(userID string) ([]model.AuctionOrder, error)
 	UpdateOrder(order model.AuctionOrder) error
 }

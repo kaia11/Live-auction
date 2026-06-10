@@ -68,7 +68,7 @@ func TestAuctionEngineStartSessionRequiresRoomLive(t *testing.T) {
 
 func TestAdminServiceStopRoomLiveRejectsActiveSession(t *testing.T) {
 	store := newMemoryStore()
-	adminService := NewAdminService(nil, repository.NewMemoryRoomRepository(store), repository.NewMemoryItemRepository(store), repository.NewMemorySessionRepository(store), nil, nil)
+	adminService := NewAdminService(nil, repository.NewMemoryRoomRepository(store), repository.NewMemoryItemRepository(store), repository.NewMemorySessionRepository(store), repository.NewMemoryBidRepository(store), nil, nil)
 	adminService.store = store
 
 	_, err := adminService.StopRoomLive("room-001")
@@ -80,7 +80,7 @@ func TestAdminServiceStopRoomLiveRejectsActiveSession(t *testing.T) {
 func TestAdminServiceStartRoomLiveMarksRoomLive(t *testing.T) {
 	store := newMemoryStore()
 	store.rooms["room-001"] = withRoomStatus(store.rooms["room-001"], domain.RoomStatusOffline)
-	adminService := NewAdminService(nil, repository.NewMemoryRoomRepository(store), repository.NewMemoryItemRepository(store), repository.NewMemorySessionRepository(store), nil, nil)
+	adminService := NewAdminService(nil, repository.NewMemoryRoomRepository(store), repository.NewMemoryItemRepository(store), repository.NewMemorySessionRepository(store), repository.NewMemoryBidRepository(store), nil, nil)
 	adminService.store = store
 
 	result, err := adminService.StartRoomLive("room-001")

@@ -85,7 +85,7 @@ func New(cfg config.Config) *App {
 	commentService := service.NewCommentService(commentRepo)
 	auditService := service.NewAuditService(logRepo)
 	bidService := service.NewBidService(runtime, cfg.RepeatBid, bidRepo, roomRepo, itemRepo, userRepo, sessionRepo, resultRepo, orderRepo)
-	adminService := service.NewAdminService(runtime, roomRepo, itemRepo, sessionRepo, resultRepo, orderRepo)
+	adminService := service.NewAdminService(runtime, roomRepo, itemRepo, sessionRepo, bidRepo, resultRepo, orderRepo)
 	orderService := service.NewOrderService(orderRepo)
 	scheduler := service.NewSettlementScheduler(store, hub, runtime, roomRepo, itemRepo, sessionRepo, resultRepo, orderRepo, metrics, time.Second)
 	if err := os.MkdirAll(cfg.UploadDir, 0o755); err != nil {
