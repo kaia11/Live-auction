@@ -7,6 +7,7 @@ import LiveRoomsPage from './pages/LiveRoomsPage'
 import LiveRoomPage from './pages/LiveRoomPage'
 import AuctionDetailPage from './pages/AuctionDetailPage'
 import ProfilePage from './pages/ProfilePage'
+import OrderPaymentPage from './pages/OrderPaymentPage'
 import { useUserStore } from './stores/useUserStore'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -69,6 +70,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orders/:orderId/pay"
+          element={
+            <ProtectedRoute>
+              <OrderPaymentPage />
             </ProtectedRoute>
           }
         />

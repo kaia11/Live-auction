@@ -1,17 +1,28 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Image, Card } from 'antd-mobile'
+import { Image, Card, Toast } from 'antd-mobile'
 import { useUserStore } from '../stores/useUserStore'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
 import { useAppStore } from '../stores/useAppStore'
 import { computeProfileStats, getProfileBadge } from '../utils/profileStats'
+import { getMyOrders } from '../api/orders'
+import type { OrderStatus, UserOrder } from '../types'
 import './ProfilePage.scss'
+
+const orderStatusLabelMap: Record<OrderStatus, string> = {
+  pending_payment: '待支付',
+  paid: '已支付待发货',
+  shipped: '已发货',
+  completed: '已完成',
+  cancelled: '已取消',
+}
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate()
   const { user, logout, hydrateUser } = useUserStore()
   const { bidHistories, loadBidHistories } = useLiveRoomStore()
   const { currentTab, setCurrentTab, lastVisitedRoomId } = useAppStore()
+  const [orders, setOrders] = useState<UserOrder[]>([])
 
   const profileStats = useMemo(() => computeProfileStats(bidHistories), [bidHistories])
   const profileBadge = useMemo(() => getProfileBadge(profileStats), [profileStats])
@@ -46,9 +57,29 @@ const ProfilePage: React.FC = () => {
     })
   }, [bidHistories])
 
+  const orderByItemId = useMemo(() => {
+    const map = new Map<string, UserOrder>()
+    for (const order of orders) {
+      if (!map.has(order.itemId)) {
+        map.set(order.itemId, order)
+      }
+    }
+    return map
+  }, [orders])
+
   useEffect(() => {
-    void hydrateUser()
-    void loadBidHistories()
+    const load = async () => {
+      try {
+        await Promise.all([hydrateUser(), loadBidHistories()])
+        const myOrders = await getMyOrders()
+        setOrders(myOrders)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : '订单加载失败'
+        Toast.show({ icon: 'fail', content: message })
+      }
+    }
+
+    void load()
   }, [hydrateUser, loadBidHistories])
 
   const handleLogout = () => {
@@ -111,12 +142,32 @@ const ProfilePage: React.FC = () => {
               <div className="history-info">
                 <div className="history-item-title">{h.itemTitle}</div>
                 <div className="history-time">{h.bidTime}</div>
+                {h.result === 'win' && orderByItemId.get(h.itemId) ? (
+                  <div className="history-order-status">
+                    {orderStatusLabelMap[orderByItemId.get(h.itemId)!.status]}
+                  </div>
+                ) : null}
               </div>
               <div className="history-result">
                 <span className={`price-tag ${h.result}`}>¥{h.bidPrice}</span>
                 <span className={`result-text ${h.result}`}>
                   {h.result === 'win' ? '已成交' : h.result === 'lose' ? '未中标' : '进行中'}
                 </span>
+                {h.result === 'win' && orderByItemId.get(h.itemId)?.status === 'pending_payment' ? (
+                  <button
+                    className="history-pay-btn"
+                    onClick={() =>
+                      navigate(`/orders/${orderByItemId.get(h.itemId)!.id}/pay`, {
+                        state: {
+                          itemTitle: h.itemTitle,
+                          itemImage: h.itemImage,
+                        },
+                      })
+                    }
+                  >
+                    去支付
+                  </button>
+                ) : null}
               </div>
             </div>
           ))}

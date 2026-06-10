@@ -2,7 +2,7 @@ export type RoomStatus = 'live' | 'offline'
 export type QueueStatus = 'queued' | 'upcoming' | 'active' | 'finished' | 'cancelled'
 export type SessionStatus = 'pending' | 'bidding' | 'ended_sold' | 'ended_passed' | 'cancelled'
 export type OrderStatus = 'pending_payment' | 'paid' | 'shipped' | 'completed' | 'cancelled'
-export type OrderAction = 'mark_paid' | 'ship' | 'complete' | 'cancel'
+export type OrderAction = 'ship' | 'complete' | 'cancel'
 
 export interface LiveRoom {
   id: string

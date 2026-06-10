@@ -56,6 +56,37 @@ func (h *OrderHandler) ListMyOrders(w nethttp.ResponseWriter, r *nethttp.Request
 	api.Success(w, nethttp.StatusOK, h.orderService.ListMyOrders(userID))
 }
 
+func (h *OrderHandler) PayOrder(w nethttp.ResponseWriter, r *nethttp.Request) {
+	userID, err := h.userService.GetCurrentUserID(r.Header.Get("Authorization"))
+	if err != nil {
+		api.Error(w, nethttp.StatusUnauthorized, api.CodeUnauthorized, err.Error())
+		return
+	}
+
+	orderID := r.PathValue("orderId")
+	if orderID == "" {
+		api.BadRequest(w, "orderId is required")
+		return
+	}
+
+	order, err := h.orderService.PayOrder(orderID, userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrOrderNotFound):
+			api.Error(w, nethttp.StatusNotFound, api.CodeNotFound, err.Error())
+		case errors.Is(err, service.ErrInvalidOrderState):
+			api.Conflict(w, api.CodeInvalidParams, err.Error())
+		default:
+			api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to pay order")
+		}
+		return
+	}
+
+	h.hub.Publish(order.RoomID, ws.EventAuctionOrderUpdated, order)
+	_ = h.auditService.CreateLog("order", "pay", userID, order.RoomID, "order", order.ID, "mark_paid")
+	api.Success(w, nethttp.StatusOK, order)
+}
+
 func (h *OrderHandler) UpdateOrderStatus(w nethttp.ResponseWriter, r *nethttp.Request) {
 	if !h.ensureAdminAccess(w, r) {
 		return
@@ -86,6 +117,10 @@ func (h *OrderHandler) UpdateOrderStatus(w nethttp.ResponseWriter, r *nethttp.Re
 	event, err := parseOrderEvent(req.Action)
 	if err != nil {
 		api.BadRequest(w, err.Error())
+		return
+	}
+	if event == statemachine.OrderEventMarkPaid {
+		api.Error(w, nethttp.StatusForbidden, api.CodeForbidden, "mark_paid must be triggered by buyer payment")
 		return
 	}
 

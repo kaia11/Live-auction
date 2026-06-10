@@ -71,6 +71,19 @@ export interface BidHistory {
   bidTime: string
 }
 
+export type OrderStatus = 'pending_payment' | 'paid' | 'shipped' | 'completed' | 'cancelled'
+
+export interface UserOrder {
+  id: string
+  sessionId: string
+  roomId: string
+  itemId: string
+  buyerUserId: string
+  amount: number
+  status: OrderStatus
+  createTime: string
+}
+
 export interface LiveComment {
   userId: string
   nickname: string

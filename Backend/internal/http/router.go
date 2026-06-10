@@ -43,6 +43,7 @@ func NewRouter(handlers Handlers) http.Handler {
 	mux.HandleFunc("GET /sessions/{sessionId}/my-status", handlers.Session.GetMyStatus)
 	mux.HandleFunc("GET /users/me/bids", handlers.Bids.ListMyBids)
 	mux.HandleFunc("GET /users/me/orders", handlers.Orders.ListMyOrders)
+	mux.HandleFunc("POST /users/me/orders/{orderId}/pay", handlers.Orders.PayOrder)
 	mux.HandleFunc("POST /bids", handlers.Bids.CreateBid)
 	mux.HandleFunc("POST /sessions/{sessionId}/auto-proxy", handlers.Bids.ConfigureAutoProxy)
 

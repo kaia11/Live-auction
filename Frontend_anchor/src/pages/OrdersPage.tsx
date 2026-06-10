@@ -7,7 +7,7 @@ import type { AdminOrder, OrderAction } from '@/types'
 
 const orderStatusLabelMap: Record<string, string> = {
   pending_payment: '待支付',
-  paid: '待发货',
+  paid: '已支付待发货',
   shipped: '已发货',
   completed: '已完成',
   cancelled: '已取消',
@@ -69,7 +69,7 @@ function OrdersPage() {
             value={status}
             onChange={setStatus}
             style={{ width: 180 }}
-            options={['全部', '待支付', '待发货', '已发货', '已完成', '已取消'].map((item) => ({
+            options={['全部', '待支付', '已支付待发货', '已发货', '已完成', '已取消'].map((item) => ({
               label: item,
               value: item,
             }))}
@@ -133,11 +133,6 @@ function OrdersPage() {
         actions={
           selectedOrder ? (
             <Space wrap>
-              {selectedOrder.status === 'pending_payment' ? (
-                <Button onClick={() => void runOrderAction(selectedOrder.orderId, 'mark_paid')}>
-                  标记已支付
-                </Button>
-              ) : null}
               {selectedOrder.status === 'paid' ? (
                 <Button type="primary" onClick={() => void runOrderAction(selectedOrder.orderId, 'ship')}>
                   发货

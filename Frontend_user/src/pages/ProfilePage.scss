@@ -179,6 +179,17 @@
   color: var(--text-secondary);
 }
 
+.history-order-status {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 134, 105, 0.12);
+  color: var(--brand-rose);
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .history-result {
   display: flex;
   flex-direction: column;
@@ -217,6 +228,18 @@
 
 .result-text.pending {
   color: var(--brand-pink);
+}
+
+.history-pay-btn {
+  min-width: 84px;
+  height: 34px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff8f73 0%, #ef5f75 100%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .logout-btn {

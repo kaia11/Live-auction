@@ -24,6 +24,8 @@ interface Props {
   sessions: AdminSession[]
 }
 
+type TooltipValue = number | string | readonly (number | string)[] | null | undefined
+
 function TrendLineChart({ mode, events, items, sessions }: Props) {
   const trafficData = useMemo(
     () => buildTrafficBarData(items, sessions),
@@ -70,7 +72,12 @@ function TrendLineChart({ mode, events, items, sessions }: Props) {
                 fontSize: 11,
               }}
             />
-            <Tooltip formatter={(value) => [`${value} 人`, '观看人数']} />
+            <Tooltip
+              formatter={(value: TooltipValue) => {
+                const nextValue = Array.isArray(value) ? value[0] : value
+                return [`${nextValue ?? 0} 人`, '观看人数']
+              }}
+            />
             <Bar dataKey="viewerCount" name="观看人数" radius={[8, 8, 0, 0]}>
               {trafficData.map((entry, index) => (
                 <Cell
@@ -106,7 +113,7 @@ function TrendLineChart({ mode, events, items, sessions }: Props) {
             type="number"
             domain={['dataMin', 'dataMax']}
             tick={{ fontSize: 11, fill: '#6b7280' }}
-            tickFormatter={(value) => formatRelativeSeconds(Number(value))}
+            tickFormatter={(value: string | number) => formatRelativeSeconds(Number(value))}
             label={{
               value: '相对开拍时间',
               position: 'insideBottom',
@@ -127,17 +134,18 @@ function TrendLineChart({ mode, events, items, sessions }: Props) {
             }}
           />
           <Tooltip
-            formatter={(value, name) => {
-              const numericValue = typeof value === 'number' ? value : Number(value ?? 0)
+            formatter={(value: TooltipValue, name: string | number | undefined) => {
+              const nextValue = Array.isArray(value) ? value[0] : value
+              const numericValue = typeof nextValue === 'number' ? nextValue : Number(nextValue ?? 0)
               const seriesKey = String(name ?? '')
               const label =
                 priceModel.series.find((entry) => entry.key === seriesKey)?.label ?? seriesKey
               return [`¥ ${numericValue}`, label]
             }}
-            labelFormatter={(label) => `开拍后 ${formatRelativeSeconds(Number(label))}`}
+            labelFormatter={(label: unknown) => `开拍后 ${formatRelativeSeconds(Number(label ?? 0))}`}
           />
           <Legend
-            formatter={(value) =>
+            formatter={(value: string) =>
               priceModel.series.find((entry) => entry.key === value)?.label ?? value
             }
           />
