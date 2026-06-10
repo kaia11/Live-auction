@@ -161,8 +161,8 @@ func (h *BidHandler) CreateBid(w nethttp.ResponseWriter, r *nethttp.Request) {
 			req.RequestID,
 			autoErr,
 		)
-		api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to process auto proxy")
-		return
+		autoResults = nil
+		autoSettlement = nil
 	}
 	if len(autoResults) > 0 {
 		// Return the latest market state after smart bidding replay.

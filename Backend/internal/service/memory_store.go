@@ -160,7 +160,8 @@ func newMemoryStore() *memoryStore {
 }
 
 func nextBidID(_ int) string {
-	return fmt.Sprintf("bid-%d", atomic.AddUint64(&bidIDCounter, 1))
+	seq := atomic.AddUint64(&bidIDCounter, 1)
+	return fmt.Sprintf("bid-%d-%d", time.Now().UnixNano(), seq)
 }
 
 func (s *memoryStore) ListRooms() []model.LiveRoom {

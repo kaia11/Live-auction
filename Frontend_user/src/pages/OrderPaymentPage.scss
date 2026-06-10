@@ -1,6 +1,9 @@
 .order-payment-page {
-  min-height: 100%;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
   padding: 20px;
+  padding-bottom: 40px;
   background:
     radial-gradient(circle at top right, rgba(255, 134, 105, 0.18), transparent 24%),
     linear-gradient(180deg, #fff9f6 0%, #f2eaee 100%);
@@ -11,6 +14,7 @@
   flex-direction: column;
   gap: 18px;
   padding: 20px;
+  margin-bottom: 20px;
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow-soft);
