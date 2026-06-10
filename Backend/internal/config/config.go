@@ -10,6 +10,7 @@ type Config struct {
 	AppPort                 string
 	MySQLDSN                string
 	RequirePersistentLedger bool
+	RepeatBid               bool
 	RedisAddr               string
 	RedisPassword           string
 	RedisDB                 int
@@ -28,6 +29,7 @@ func Load() Config {
 		AppPort:                 getEnv("APP_PORT", "8080"),
 		MySQLDSN:                getEnv("MYSQL_DSN", ""),
 		RequirePersistentLedger: getEnvAsBool("REQUIRE_PERSISTENT_LEDGER", true),
+		RepeatBid:               getEnvAsBool("REPEAT_BID", true),
 		RedisAddr:               getEnv("REDIS_ADDR", "127.0.0.1:6379"),
 		RedisPassword:           getEnv("REDIS_PASSWORD", ""),
 		RedisDB:                 getEnvAsInt("REDIS_DB", 0),

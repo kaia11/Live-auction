@@ -24,7 +24,7 @@ func TestBidServiceCreateBidAcceptsRepoBackedUserOutsideSharedStore(t *testing.T
 		t.Fatalf("Create() error = %v", err)
 	}
 
-	bidService := NewBidService(nil, repository.NewMemoryBidRepository(store), repository.NewMemoryRoomRepository(store), repository.NewMemoryItemRepository(store), userRepo, repository.NewMemorySessionRepository(store), nil, nil)
+	bidService := NewBidService(nil, false, repository.NewMemoryBidRepository(store), repository.NewMemoryRoomRepository(store), repository.NewMemoryItemRepository(store), userRepo, repository.NewMemorySessionRepository(store), nil, nil)
 	bidService.store = store
 	bidService.engine = NewAuctionEngine(store, nil, nil, nil, nil, nil, nil)
 
@@ -55,7 +55,7 @@ func TestBidServiceCreateBidUsesRepositoryContextForRoomSessionItem(t *testing.T
 	sessionRepo := repository.NewMemorySessionRepository(newMemoryStore())
 	userRepo := repository.NewMemoryUserRepository(newMemoryStore())
 
-	bidService := NewBidService(nil, repository.NewMemoryBidRepository(store), roomRepo, itemRepo, userRepo, sessionRepo, nil, nil)
+	bidService := NewBidService(nil, false, repository.NewMemoryBidRepository(store), roomRepo, itemRepo, userRepo, sessionRepo, nil, nil)
 	bidService.store = store
 	bidService.engine = NewAuctionEngine(store, nil, nil, nil, nil, nil, nil)
 
@@ -77,7 +77,7 @@ func TestBidServiceCreateBidUsesRepositoryContextForRoomSessionItem(t *testing.T
 
 func TestBidServiceCreateBidRejectsCurrentLeader(t *testing.T) {
 	store := newMemoryStore()
-	bidService := NewBidService(nil, repository.NewMemoryBidRepository(store), repository.NewMemoryRoomRepository(store), repository.NewMemoryItemRepository(store), repository.NewMemoryUserRepository(store), repository.NewMemorySessionRepository(store), nil, nil)
+	bidService := NewBidService(nil, false, repository.NewMemoryBidRepository(store), repository.NewMemoryRoomRepository(store), repository.NewMemoryItemRepository(store), repository.NewMemoryUserRepository(store), repository.NewMemorySessionRepository(store), nil, nil)
 	bidService.store = store
 	bidService.engine = NewAuctionEngine(store, nil, nil, nil, nil, nil, nil)
 
@@ -91,5 +91,27 @@ func TestBidServiceCreateBidRejectsCurrentLeader(t *testing.T) {
 	})
 	if !errors.Is(err, ErrAlreadyLeadingBid) {
 		t.Fatalf("expected ErrAlreadyLeadingBid, got %v", err)
+	}
+}
+
+func TestBidServiceCreateBidAllowsCurrentLeaderWhenRepeatBidEnabled(t *testing.T) {
+	store := newMemoryStore()
+	bidService := NewBidService(nil, true, repository.NewMemoryBidRepository(store), repository.NewMemoryRoomRepository(store), repository.NewMemoryItemRepository(store), repository.NewMemoryUserRepository(store), repository.NewMemorySessionRepository(store), nil, nil)
+	bidService.store = store
+	bidService.engine = NewAuctionEngine(store, nil, nil, nil, nil, nil, nil)
+
+	result, _, err := bidService.CreateBid(CreateBidInput{
+		RoomID:    "room-001",
+		SessionID: "session-001",
+		ItemID:    "item-001",
+		UserID:    "user-003",
+		BidPrice:  140,
+		RequestID: "req-leading-user-repeat",
+	})
+	if err != nil {
+		t.Fatalf("CreateBid() error = %v", err)
+	}
+	if result.UserID != "user-003" {
+		t.Fatalf("expected user-003, got %s", result.UserID)
 	}
 }

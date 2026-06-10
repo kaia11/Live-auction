@@ -16,6 +16,7 @@ type BidService struct {
 	store       *memoryStore
 	engine      *AuctionEngine
 	runtime     *realtime.Runtime
+	repeatBid   bool
 	repo        repository.BidRepository
 	roomRepo    repository.RoomRepository
 	itemRepo    repository.ItemRepository
@@ -41,11 +42,12 @@ type ConfigureAutoProxyInput struct {
 	Enabled   bool
 }
 
-func NewBidService(runtime *realtime.Runtime, repo repository.BidRepository, roomRepo repository.RoomRepository, itemRepo repository.ItemRepository, userRepo repository.UserRepository, sessionRepo repository.SessionRepository, resultRepo repository.ResultRepository, orderRepo repository.OrderRepository) *BidService {
+func NewBidService(runtime *realtime.Runtime, repeatBid bool, repo repository.BidRepository, roomRepo repository.RoomRepository, itemRepo repository.ItemRepository, userRepo repository.UserRepository, sessionRepo repository.SessionRepository, resultRepo repository.ResultRepository, orderRepo repository.OrderRepository) *BidService {
 	return &BidService{
 		store:       sharedStore,
 		engine:      NewAuctionEngine(sharedStore, runtime, nil, nil, sessionRepo, resultRepo, orderRepo),
 		runtime:     runtime,
+		repeatBid:   repeatBid,
 		repo:        repo,
 		roomRepo:    roomRepo,
 		itemRepo:    itemRepo,
@@ -64,7 +66,7 @@ func (s *BidService) CreateBid(input CreateBidInput) (model.BidResult, *SessionS
 		return model.BidResult{}, nil, ErrBidOwnershipMismatch
 	}
 
-	if session.LeaderUserID != "" && session.LeaderUserID == input.UserID {
+	if !s.repeatBid && session.LeaderUserID != "" && session.LeaderUserID == input.UserID {
 		return model.BidResult{}, nil, ErrAlreadyLeadingBid
 	}
 

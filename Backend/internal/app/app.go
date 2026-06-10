@@ -84,7 +84,7 @@ func New(cfg config.Config) *App {
 	sessionService := service.NewSessionService(runtime, sessionRepo, bidRepo, userRepo)
 	commentService := service.NewCommentService(commentRepo)
 	auditService := service.NewAuditService(logRepo)
-	bidService := service.NewBidService(runtime, bidRepo, roomRepo, itemRepo, userRepo, sessionRepo, resultRepo, orderRepo)
+	bidService := service.NewBidService(runtime, cfg.RepeatBid, bidRepo, roomRepo, itemRepo, userRepo, sessionRepo, resultRepo, orderRepo)
 	adminService := service.NewAdminService(runtime, roomRepo, itemRepo, sessionRepo, resultRepo, orderRepo)
 	orderService := service.NewOrderService(orderRepo)
 	scheduler := service.NewSettlementScheduler(store, hub, runtime, roomRepo, itemRepo, sessionRepo, resultRepo, orderRepo, metrics, time.Second)
