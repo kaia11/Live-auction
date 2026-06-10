@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"auction-live/backend/internal/domain"
@@ -26,6 +27,7 @@ type memoryStore struct {
 }
 
 var sharedStore = newMemoryStore()
+var bidIDCounter uint64
 
 func SharedStore() *memoryStore {
 	return sharedStore
@@ -157,8 +159,8 @@ func newMemoryStore() *memoryStore {
 	return store
 }
 
-func nextBidID(count int) string {
-	return fmt.Sprintf("bid-%03d", count+1)
+func nextBidID(_ int) string {
+	return fmt.Sprintf("bid-%d", atomic.AddUint64(&bidIDCounter, 1))
 }
 
 func (s *memoryStore) ListRooms() []model.LiveRoom {

@@ -130,6 +130,15 @@ func (h *BidHandler) CreateBid(w nethttp.ResponseWriter, r *nethttp.Request) {
 			}
 			api.Error(w, nethttp.StatusBadRequest, api.CodeInvalidBidPrice, err.Error())
 		default:
+			logger.Error(
+				"create bid failed room_id=%s session_id=%s item_id=%s user_id=%s request_id=%s error=%v",
+				req.RoomID,
+				req.SessionID,
+				req.ItemID,
+				userID,
+				req.RequestID,
+				err,
+			)
 			if h.metrics != nil {
 				h.metrics.RecordBidFailure("internal_error")
 			}
@@ -143,6 +152,15 @@ func (h *BidHandler) CreateBid(w nethttp.ResponseWriter, r *nethttp.Request) {
 
 	autoResults, autoSettlement, autoErr := h.bidService.ProcessAutoProxy(req.RoomID, req.SessionID, req.ItemID, userID)
 	if autoErr != nil {
+		logger.Error(
+			"process auto proxy failed room_id=%s session_id=%s item_id=%s user_id=%s request_id=%s error=%v",
+			req.RoomID,
+			req.SessionID,
+			req.ItemID,
+			userID,
+			req.RequestID,
+			autoErr,
+		)
 		api.Error(w, nethttp.StatusInternalServerError, api.CodeInternalError, "failed to process auto proxy")
 		return
 	}
