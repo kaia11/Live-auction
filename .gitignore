@@ -70,6 +70,8 @@ temp/
 
 # local PDFs / competition materials
 *.pdf
+*.docx
+~$*.docx
 
 # local extracted previews / temp exports
 _pdf_pages/
@@ -89,9 +91,15 @@ Frontend_user_分阶段改造执行方案.md
 接口测试.md
 接口权限矩阵.md
 Backend/压测操作手册.md
+Backend/k6继续压测流程.md
+Backend/WebSocket在线压测流程.md
+Backend/性能指标_报告版.md
+Backend/k6压测结果1.md
 
 # local tool artifacts
 .codex
+__report_tmp.zip
+__report_tmp/
 
 # java backend migration workspace
 java_backend/
