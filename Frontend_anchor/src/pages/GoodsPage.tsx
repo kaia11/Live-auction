@@ -270,6 +270,8 @@ function GoodsPage() {
           dataSource={goodsList}
           loading={loading}
           pagination={false}
+          scroll={{ x: 1200 }}
+          tableLayout="fixed"
           columns={[
             {
               title: '商品',
@@ -293,7 +295,7 @@ function GoodsPage() {
               render: (v?: number) => (typeof v === 'number' ? `¥${v}` : '无封顶'),
             },
             { title: '当前出价', dataIndex: 'currentPrice', render: (v: number) => `¥${v}` },
-            { title: '场次', dataIndex: 'sessionId', render: (v: string) => v || '--' },
+            { title: '场次', dataIndex: 'sessionId', width: 140, ellipsis: true, render: (v: string) => v || '--' },
             {
               title: '状态',
               dataIndex: 'displayStatus',

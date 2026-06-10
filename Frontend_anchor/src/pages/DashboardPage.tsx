@@ -260,13 +260,15 @@ function DashboardPage() {
             <Table
               size="small"
               pagination={false}
+              scroll={{ x: 640 }}
+              tableLayout="fixed"
               dataSource={itemRows}
               columns={[
-                { title: '拍品ID', dataIndex: 'id' },
-                { title: '拍品', dataIndex: 'name' },
-                { title: '状态', dataIndex: 'status' },
-                { title: '当前价', dataIndex: 'currentPrice', render: (v) => `¥ ${v}` },
-                { title: '加价幅度', dataIndex: 'incrementStep', render: (v) => `¥ ${v}` },
+                { title: '拍品ID', dataIndex: 'id', width: 120, ellipsis: true },
+                { title: '拍品', dataIndex: 'name', ellipsis: true },
+                { title: '状态', dataIndex: 'status', width: 90 },
+                { title: '当前价', dataIndex: 'currentPrice', width: 90, render: (v) => `¥ ${v}` },
+                { title: '加价幅度', dataIndex: 'incrementStep', width: 90, render: (v) => `¥ ${v}` },
               ]}
             />
           </Card>

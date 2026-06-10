@@ -19,6 +19,7 @@ body {
 
 .pc-admin-shell {
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .pc-admin-sider {
@@ -56,23 +57,29 @@ body {
 
 .pc-admin-main {
   min-width: 0;
+  overflow: hidden;
 }
 
 .pc-admin-header {
-  height: 74px !important;
+  height: auto !important;
+  min-height: 74px;
   line-height: normal !important;
   background: #fff !important;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px !important;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 24px !important;
 
   h1 {
     margin: 0;
-    font-size: 26px;
+    font-size: clamp(20px, 2.4vw, 26px);
     font-weight: 800;
     color: #111827;
+    flex: 1 1 200px;
+    min-width: 0;
   }
 }
 
@@ -83,12 +90,24 @@ body {
 
 .pc-admin-content {
   padding: 20px;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .jewel-card {
   border-radius: 14px !important;
   border: 1px solid #e5e7eb !important;
   box-shadow: 0 8px 18px rgba(17, 24, 39, 0.06);
+  overflow: hidden;
+
+  .ant-card-body {
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .ant-table-wrapper {
+    overflow-x: auto;
+  }
 }
 
 .section-gap {

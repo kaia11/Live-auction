@@ -80,14 +80,17 @@ function OrdersPage() {
           dataSource={rows}
           loading={loading}
           pagination={false}
+          scroll={{ x: 1080 }}
+          tableLayout="fixed"
           columns={[
-            { title: '订单号', dataIndex: 'orderId' },
-            { title: '拍品ID', dataIndex: 'itemId' },
-            { title: '买家ID', dataIndex: 'buyerUserId' },
-            { title: '成交金额', dataIndex: 'amount', render: (v: number) => `¥${v}` },
+            { title: '订单号', dataIndex: 'orderId', width: 180, ellipsis: true },
+            { title: '拍品ID', dataIndex: 'itemId', width: 140, ellipsis: true },
+            { title: '买家ID', dataIndex: 'buyerUserId', width: 120, ellipsis: true },
+            { title: '成交金额', dataIndex: 'amount', width: 100, render: (v: number) => `¥${v}` },
             {
               title: '订单状态',
               dataIndex: 'status',
+              width: 100,
               render: (v: AdminOrder['status']) => (
                 <Tag
                   color={
@@ -104,10 +107,12 @@ function OrdersPage() {
                 </Tag>
               ),
             },
-            { title: '物流单号', render: () => '--' },
-            { title: '下单时间', dataIndex: 'createTime' },
+            { title: '物流单号', width: 120, render: () => '--' },
+            { title: '下单时间', dataIndex: 'createTime', width: 180, ellipsis: true },
             {
               title: '操作',
+              width: 120,
+              fixed: 'right',
               render: (_, row: AdminOrder) => (
                 <Space>
                   <Button
