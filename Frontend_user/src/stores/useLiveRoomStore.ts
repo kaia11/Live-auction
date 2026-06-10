@@ -47,6 +47,7 @@ const initialUIState: LiveRoomUIStateValues = {
   showOvertakenModal: false,
   showAuctionEndPanel: false,
   showDelayBanner: false,
+  endedAuctionItem: null,
 }
 
 const initialRuntimeState: LiveRuntimeSnapshot = {

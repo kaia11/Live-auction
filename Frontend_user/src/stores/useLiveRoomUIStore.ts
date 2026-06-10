@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { AuctionItem } from '@/types'
 
 export interface LiveRoomUIStateValues {
   isCurrentAuctionCardClosed: boolean
@@ -10,6 +11,7 @@ export interface LiveRoomUIStateValues {
   showOvertakenModal: boolean
   showAuctionEndPanel: boolean
   showDelayBanner: boolean
+  endedAuctionItem: AuctionItem | null
 }
 
 interface LiveRoomUIState extends LiveRoomUIStateValues {
@@ -32,6 +34,7 @@ const initialState: LiveRoomUIStateValues = {
   showOvertakenModal: false,
   showAuctionEndPanel: false,
   showDelayBanner: false,
+  endedAuctionItem: null,
 }
 
 export const useLiveRoomUIStore = create<LiveRoomUIState>((set) => ({
@@ -57,6 +60,7 @@ export const useLiveRoomUIStore = create<LiveRoomUIState>((set) => ({
       showOvertakenModal: false,
       showAuctionEndPanel: false,
       showDelayBanner: false,
+      endedAuctionItem: null,
     }),
 
   setCurrentAuctionCardClosed: (closed) => set({ isCurrentAuctionCardClosed: closed }),

@@ -135,7 +135,13 @@ export const useLiveRoomRealtime = (roomId: string | undefined) => {
         if (userId && endedItemId) {
           clearDepositPaid(userId, endedItemId)
         }
-        uiStore.setUIState({ showAuctionEndPanel: true })
+        const endedItem =
+          useLiveRoomStore.getState().items.find((item) => item.id === endedItemId) ??
+          null
+        uiStore.setUIState({
+          showAuctionEndPanel: true,
+          endedAuctionItem: endedItem,
+        })
       }
     }
 

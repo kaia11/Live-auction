@@ -1,13 +1,15 @@
 import React from 'react'
 import { Button } from 'antd-mobile'
 import { useLiveRoomStore } from '../stores/useLiveRoomStore'
+import { useLiveRoomUIStore } from '../stores/useLiveRoomUIStore'
 import { useUserStore } from '../stores/useUserStore'
 import './AuctionEndPanel.scss'
 
 const AuctionEndPanel: React.FC = () => {
   const currentUserId = useUserStore((state) => state.user?.id)
   const { closeAllModals, myBidStatus, items, currentItemId } = useLiveRoomStore()
-  const item = items.find(i => i.id === currentItemId)
+  const endedAuctionItem = useLiveRoomUIStore((state) => state.endedAuctionItem)
+  const item = endedAuctionItem ?? items.find(i => i.id === currentItemId)
   const isSold = item?.status === '已成交'
   const isPassed = item?.status === '已流拍'
   const isWinner =

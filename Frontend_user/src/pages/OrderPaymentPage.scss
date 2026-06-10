@@ -1,9 +1,8 @@
 .order-payment-page {
   height: 100%;
-  overflow-y: auto;
+  overflow: hidden;
   box-sizing: border-box;
   padding: 20px;
-  padding-bottom: 40px;
   background:
     radial-gradient(circle at top right, rgba(255, 134, 105, 0.18), transparent 24%),
     linear-gradient(180deg, #fff9f6 0%, #f2eaee 100%);
@@ -12,12 +11,22 @@
 .order-payment-card {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 20px;
-  margin-bottom: 20px;
+  height: 100%;
+  min-height: 0;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow-soft);
+}
+
+.payment-scroll-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-bottom: 20px;
 }
 
 .payment-top-nav {
@@ -105,4 +114,11 @@
   height: 52px;
   font-size: 16px;
   font-weight: 800;
+}
+
+.payment-action-bar {
+  flex-shrink: 0;
+  padding-top: 12px;
+  border-top: 1px solid rgba(60, 36, 52, 0.08);
+  background: rgba(255, 255, 255, 0.96);
 }

@@ -97,51 +97,55 @@ const OrderPaymentPage: React.FC = () => {
   return (
     <div className="order-payment-page">
       <div className="order-payment-card">
-        <div className="payment-top-nav">
-          <span className="payment-back" onClick={() => navigate('/profile')}>‹</span>
-          <span className="payment-nav-title">订单支付</span>
-          <span className="payment-nav-placeholder" />
+        <div className="payment-scroll-content">
+          <div className="payment-top-nav">
+            <span className="payment-back" onClick={() => navigate('/profile')}>‹</span>
+            <span className="payment-nav-title">订单支付</span>
+            <span className="payment-nav-placeholder" />
+          </div>
+
+          <Image className="payment-item-image" src={itemImage} fit="cover" />
+
+          <div className="payment-item-title">{itemTitle}</div>
+          <div className="payment-status">{orderStatusLabelMap[order.status]}</div>
+
+          <div className="payment-detail-list">
+            <div className="payment-detail-row">
+              <span>订单号</span>
+              <span>{order.id}</span>
+            </div>
+            <div className="payment-detail-row">
+              <span>拍品 ID</span>
+              <span>{order.itemId}</span>
+            </div>
+            <div className="payment-detail-row">
+              <span>成交金额</span>
+              <span className="payment-amount">¥{order.amount}</span>
+            </div>
+            <div className="payment-detail-row">
+              <span>创建时间</span>
+              <span>{order.createTime}</span>
+            </div>
+          </div>
         </div>
 
-        <Image className="payment-item-image" src={itemImage} fit="cover" />
-
-        <div className="payment-item-title">{itemTitle}</div>
-        <div className="payment-status">{orderStatusLabelMap[order.status]}</div>
-
-        <div className="payment-detail-list">
-          <div className="payment-detail-row">
-            <span>订单号</span>
-            <span>{order.id}</span>
-          </div>
-          <div className="payment-detail-row">
-            <span>拍品 ID</span>
-            <span>{order.itemId}</span>
-          </div>
-          <div className="payment-detail-row">
-            <span>成交金额</span>
-            <span className="payment-amount">¥{order.amount}</span>
-          </div>
-          <div className="payment-detail-row">
-            <span>创建时间</span>
-            <span>{order.createTime}</span>
-          </div>
+        <div className="payment-action-bar">
+          {order.status === 'pending_payment' ? (
+            <Button
+              block
+              color="primary"
+              loading={submitting}
+              className="payment-submit-btn"
+              onClick={() => void handlePay()}
+            >
+              确认支付
+            </Button>
+          ) : (
+            <Button block className="payment-return-btn" onClick={() => navigate('/profile')}>
+              返回个人主页
+            </Button>
+          )}
         </div>
-
-        {order.status === 'pending_payment' ? (
-          <Button
-            block
-            color="primary"
-            loading={submitting}
-            className="payment-submit-btn"
-            onClick={() => void handlePay()}
-          >
-            确认支付
-          </Button>
-        ) : (
-          <Button block className="payment-return-btn" onClick={() => navigate('/profile')}>
-            返回个人主页
-          </Button>
-        )}
       </div>
     </div>
   )
