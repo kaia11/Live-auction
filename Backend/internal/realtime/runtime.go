@@ -28,6 +28,10 @@ func (r *Runtime) Ping() error {
 	return r.client.Ping()
 }
 
+func (r *Runtime) NowUnix() (int64, error) {
+	return r.client.Time()
+}
+
 func (r *Runtime) PublishMessage(roomID string, event string, payload any) (ws.Message, error) {
 	version, err := r.client.Incr(RoomEventVersionKey(roomID))
 	if err != nil {

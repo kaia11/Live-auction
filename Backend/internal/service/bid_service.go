@@ -86,7 +86,7 @@ func (s *BidService) CreateBid(input CreateBidInput) (model.BidResult, *SessionS
 		UserID:    input.UserID,
 		BidPrice:  input.BidPrice,
 		RequestID: input.RequestID,
-		NowUnix:   time.Now().Unix(),
+		NowUnix:   nowUnix(s.runtime),
 	})
 	if err != nil {
 		return model.BidResult{}, nil, err
@@ -323,7 +323,7 @@ func (s *BidService) createBidWithMemoryLock(input CreateBidInput, session model
 	extensionApplied := false
 	if !ceilingReached {
 		endTime, err := time.Parse(time.RFC3339, session.EndTime)
-		if err == nil && endTime.Sub(time.Now()) <= time.Duration(session.ExtensionTrigger)*time.Second {
+		if err == nil && endTime.Sub(nowTime(s.runtime)) <= time.Duration(session.ExtensionTrigger)*time.Second {
 			session.EndTime = endTime.Add(time.Duration(session.ExtensionSeconds) * time.Second).Format(time.RFC3339)
 			extensionApplied = true
 		}

@@ -44,6 +44,29 @@ func (c *Client) Ping() error {
 	return fmt.Errorf("unexpected ping response: %v", reply)
 }
 
+func (c *Client) Time() (int64, error) {
+	reply, err := c.do("TIME")
+	if err != nil {
+		return 0, err
+	}
+
+	items, ok := reply.([]any)
+	if !ok || len(items) < 1 {
+		return 0, fmt.Errorf("unexpected TIME response type %T", reply)
+	}
+
+	secondsText, ok := items[0].(string)
+	if !ok {
+		return 0, fmt.Errorf("unexpected TIME seconds type %T", items[0])
+	}
+
+	seconds, err := strconv.ParseInt(secondsText, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return seconds, nil
+}
+
 func (c *Client) Get(key string) (string, bool, error) {
 	reply, err := c.do("GET", key)
 	if err != nil {

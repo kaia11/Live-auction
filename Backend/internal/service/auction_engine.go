@@ -83,7 +83,7 @@ func (e *AuctionEngine) StartSessionLocked(sessionID string) (map[string]any, er
 
 	session.Status = nextSessionStatus
 	session.CurrentPrice = item.StartPrice
-	now := time.Now()
+	now := nowTime(e.runtime)
 	session.StartTime = now.Format(time.RFC3339)
 	session.ViewerCount = room.OnlineCount
 	session.EndTime = now.Add(time.Duration(item.DurationSeconds) * time.Second).Format(time.RFC3339)
@@ -265,7 +265,7 @@ func (e *AuctionEngine) settleSessionWithEventLocked(session model.AuctionSessio
 	}
 
 	session.Status = nextSessionStatus
-	session.EndTime = time.Now().Format(time.RFC3339)
+	session.EndTime = nowTime(e.runtime).Format(time.RFC3339)
 	if room, ok := e.store.rooms[session.RoomID]; ok && room.OnlineCount > session.ViewerCount {
 		session.ViewerCount = room.OnlineCount
 	}
@@ -332,7 +332,7 @@ func (e *AuctionEngine) reconcileTerminalSessionLocked(session model.AuctionSess
 	} else {
 		session.Status = domain.SessionStateEndedPassed
 	}
-	session.EndTime = time.Now().Format(time.RFC3339)
+	session.EndTime = nowTime(e.runtime).Format(time.RFC3339)
 	if room, ok := e.store.rooms[session.RoomID]; ok && room.OnlineCount > session.ViewerCount {
 		session.ViewerCount = room.OnlineCount
 	}

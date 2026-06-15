@@ -70,7 +70,7 @@ func (s *SettlementScheduler) Stop() {
 
 func (s *SettlementScheduler) ScanOnce() []SessionSettlement {
 	sessions := s.snapshotSessions()
-	now := time.Now()
+	now := nowTime(s.runtime)
 	outcomes := make([]SessionSettlement, 0)
 	for _, localSession := range sessions {
 		session := localSession
