@@ -6,6 +6,7 @@ import { useUserStore } from '../stores/useUserStore'
 import DepositPaymentModal from './DepositPaymentModal'
 import SmartBidModal from './SmartBidModal'
 import { markDepositPaid, needsDepositPayment } from '../utils/deposit'
+import { getServerNowMs } from '../api/client'
 import './BidActionPanel.scss'
 
 const BidActionPanel: React.FC = () => {
@@ -70,7 +71,7 @@ const BidActionPanel: React.FC = () => {
     }
 
     const tick = () => {
-      const next = Math.max(0, Math.ceil((countdownTargetMs - Date.now()) / 1000))
+      const next = Math.max(0, Math.ceil((countdownTargetMs - getServerNowMs()) / 1000))
       setCountdown(next)
     }
 

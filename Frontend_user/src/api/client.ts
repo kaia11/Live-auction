@@ -9,6 +9,7 @@ export interface ApiEnvelope<T> {
 }
 
 const TOKEN_STORAGE_KEY = 'live-auction-token'
+let serverTimeOffsetMs = 0
 
 export { USE_MOCK }
 
@@ -50,4 +51,16 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
-export const unwrapResponse = <T>(response: { data: ApiEnvelope<T> }) => response.data.data
+const syncServerTimeOffset = (serverTime: string) => {
+  if (!serverTime) return
+  const ts = new Date(serverTime).getTime()
+  if (!Number.isFinite(ts)) return
+  serverTimeOffsetMs = ts - Date.now()
+}
+
+export const getServerNowMs = () => Date.now() + serverTimeOffsetMs
+
+export const unwrapResponse = <T>(response: { data: ApiEnvelope<T> }) => {
+  syncServerTimeOffset(response.data.serverTime)
+  return response.data.data
+}

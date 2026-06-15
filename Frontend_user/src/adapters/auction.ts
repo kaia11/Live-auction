@@ -4,6 +4,7 @@ import { BackendBidHistory } from '@/api/bids'
 import { BackendMyStatus, BackendRankingResponse } from '@/api/sessions'
 import { getHistoryImage, getItemCoverImage, getRoomCoverImage, getRoomThumbnailImage } from '@/assets/localImages'
 import { resolveItemCoverImage } from '@/utils/assetUrl'
+import { getServerNowMs } from '@/api/client'
 
 export interface AuctionRuntimeViewModel {
   items: AuctionItem[]
@@ -173,7 +174,7 @@ const getCountdownSeconds = (endTime: string) => {
     return 0
   }
 
-  const diffMs = new Date(endTime).getTime() - Date.now()
+  const diffMs = new Date(endTime).getTime() - getServerNowMs()
   return Math.max(0, Math.ceil(diffMs / 1000))
 }
 
